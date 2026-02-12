@@ -1,0 +1,176 @@
+# DockPilot - Production Docker Compose
+#
+# This compose file is optimized for production deployments.
+# It uses pre-built images and persistent volumes for data.
+#
+# Usage:
+#   docker compose -f infra/docker-compose.yml up -d
+#   docker compose -f infra/docker-compose.yml logs -f
+#
+# Environment variables should be defined in infra/.env
+
+version: '3.8'
+
+services:
+  # API Gateway - Authentication, RBAC, and routing
+  api-gateway:
+    build:
+      context: ../..
+      dockerfile: services/api-gateway/Dockerfile
+      target: production
+    container_name: dockpilot-api-gateway
+    restart: unless-stopped
+    ports:
+      - '${API_GATEWAY_PORT:-3000}:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      - REFRESH_TOKEN_EXPIRES_IN=${REFRESH_TOKEN_EXPIRES_IN:-7d}
+      - DOCKER_CONTROL_URL=${DOCKER_CONTROL_URL:-http://docker-control:3001}
+      - TUNNEL_CONTROL_URL=${TUNNEL_CONTROL_URL:-http://tunnel-control:3002}
+      - INITIAL_ADMIN_PASSWORD=${INITIAL_ADMIN_PASSWORD}
+      - DATA_DIR=/data
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-100}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-1 minute}
+    volumes:
+      - api-gateway-data:/data
+    networks:
+      - dockpilot-network
+    healthcheck:
+      test:
+        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000/healthz']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      docker-control:
+        condition: service_healthy
+      tunnel-control:
+        condition: service_healthy
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  # Docker Control Service - Manages Docker containers and compose files
+  docker-control:
+    build:
+      context: ../..
+      dockerfile: services/docker-control/Dockerfile
+      target: production
+    container_name: dockpilot-docker-control
+    restart: unless-stopped
+    ports:
+      - '${DOCKER_CONTROL_PORT:-3001}:3001'
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOST=0.0.0.0
+      - DOCKER_HOST=${DOCKER_HOST:-unix:///var/run/docker.sock}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - COMPOSE_DIR=/data/compose
+    volumes:
+      - docker-control-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - dockpilot-network
+    healthcheck:
+      test:
+        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3001/healthz']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    privileged: true
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  # Tunnel Control Service - Manages Cloudflare Tunnels
+  tunnel-control:
+    build:
+      context: ../..
+      dockerfile: services/tunnel-control/Dockerfile
+      target: production
+    container_name: dockpilot-tunnel-control
+    restart: unless-stopped
+    ports:
+      - '${TUNNEL_CONTROL_PORT:-3002}:3002'
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - HOST=0.0.0.0
+      - CLOUDFLARED_PATH=${CLOUDFLARED_PATH:-/usr/local/bin/cloudflared}
+      - CREDENTIALS_DIR=${CREDENTIALS_DIR:-/data/tunnels}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - tunnel-control-data:/data
+    networks:
+      - dockpilot-network
+    healthcheck:
+      test:
+        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3002/healthz']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # Required for running cloudflared tunnels
+    cap_add:
+      - NET_BIND_SERVICE
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  # Web Frontend - React SPA served by Nginx
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/web.Dockerfile
+    container_name: dockpilot-web
+    restart: unless-stopped
+    ports:
+      - '${WEB_PORT:-80}:80'
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
+    networks:
+      - dockpilot-network
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:80/']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+volumes:
+  api-gateway-data:
+    driver: local
+  docker-control-data:
+    driver: local
+  tunnel-control-data:
+    driver: local
+
+networks:
+  dockpilot-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

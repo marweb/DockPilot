@@ -1,0 +1,114 @@
+{
+  "nav": {
+    "dashboard": "Panel",
+    "containers": "Contenedores",
+    "images": "Imágenes",
+    "volumes": "Volúmenes",
+    "networks": "Redes",
+    "builds": "Construcciones",
+    "compose": "Compose",
+    "tunnels": "Túneles",
+    "settings": "Configuración"
+  },
+  "theme": {
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema"
+  },
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signingIn": "Iniciando sesión...",
+    "username": "Usuario",
+    "password": "Contraseña",
+    "logout": "Cerrar sesión",
+    "loginError": "Usuario o contraseña inválidos"
+  },
+  "setup": {
+    "title": "Configuración Inicial",
+    "description": "Crea tu cuenta de administrador para comenzar",
+    "username": "Usuario",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar Contraseña",
+    "create": "Crear Cuenta",
+    "creating": "Creando...",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+    "error": "Error al crear la cuenta"
+  },
+  "dashboard": {
+    "title": "Panel de Control",
+    "containers": "Contenedores",
+    "images": "Imágenes",
+    "volumes": "Volúmenes",
+    "networks": "Redes",
+    "running": "ejecutándose",
+    "systemInfo": "Información del Sistema",
+    "cpus": "CPUs",
+    "memory": "Memoria",
+    "os": "Sistema Operativo",
+    "version": "Versión Docker",
+    "quickActions": "Acciones Rápidas",
+    "pullImage": "Descargar Imagen",
+    "createContainer": "Crear Contenedor",
+    "prune": "Limpiar Sistema"
+  },
+  "containers": {
+    "title": "Contenedores",
+    "comingSoon": "Gestión de contenedores próximamente..."
+  },
+  "images": {
+    "title": "Imágenes",
+    "comingSoon": "Gestión de imágenes próximamente..."
+  },
+  "volumes": {
+    "title": "Volúmenes",
+    "comingSoon": "Gestión de volúmenes próximamente..."
+  },
+  "networks": {
+    "title": "Redes",
+    "comingSoon": "Gestión de redes próximamente..."
+  },
+  "builds": {
+    "title": "Construcciones",
+    "comingSoon": "Gestión de construcciones próximamente..."
+  },
+  "compose": {
+    "title": "Stacks Compose",
+    "comingSoon": "Gestión de compose próximamente..."
+  },
+  "tunnels": {
+    "title": "Túneles Cloudflare",
+    "comingSoon": "Gestión de túneles próximamente..."
+  },
+  "settings": {
+    "title": "Configuración",
+    "comingSoon": "Configuración próximamente..."
+  },
+  "errors": {
+    "pageNotFound": "Página No Encontrada",
+    "pageNotFoundDescription": "La página que buscas no existe o ha sido movida.",
+    "goHome": "Ir al Inicio",
+    "goBack": "Volver Atrás",
+    "ifProblem": "Si crees que esto es un error, por favor",
+    "contactSupport": "contacta soporte"
+  },
+  "footer": {
+    "allRightsReserved": "Todos los derechos reservados.",
+    "documentation": "Documentación",
+    "support": "Soporte",
+    "madeWith": "Hecho con",
+    "api": "API",
+    "github": "GitHub"
+  },
+  "sidebar": {
+    "version": "Versión"
+  },
+  "common": {
+    "menu": "Menú",
+    "close": "Cerrar",
+    "more": "Más",
+    "moreOptions": "Más Opciones",
+    "expand": "Expandir",
+    "collapse": "Colapsar"
+  }
+}

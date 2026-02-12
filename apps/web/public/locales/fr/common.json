@@ -1,0 +1,114 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "containers": "Conteneurs",
+    "images": "Images",
+    "volumes": "Volumes",
+    "networks": "Réseaux",
+    "builds": "Constructions",
+    "compose": "Compose",
+    "tunnels": "Tunnels",
+    "settings": "Paramètres"
+  },
+  "theme": {
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Système"
+  },
+  "auth": {
+    "signIn": "Se connecter",
+    "signingIn": "Connexion en cours...",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "logout": "Déconnexion",
+    "loginError": "Nom d'utilisateur ou mot de passe invalide"
+  },
+  "setup": {
+    "title": "Configuration Initiale",
+    "description": "Créez votre compte administrateur pour commencer",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "create": "Créer le compte",
+    "creating": "Création en cours...",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
+    "error": "Échec de la création du compte"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "containers": "Conteneurs",
+    "images": "Images",
+    "volumes": "Volumes",
+    "networks": "Réseaux",
+    "running": "en cours d'exécution",
+    "systemInfo": "Informations Système",
+    "cpus": "CPUs",
+    "memory": "Mémoire",
+    "os": "Système d'exploitation",
+    "version": "Version Docker",
+    "quickActions": "Actions Rapides",
+    "pullImage": "Télécharger Image",
+    "createContainer": "Créer Conteneur",
+    "prune": "Nettoyer Système"
+  },
+  "containers": {
+    "title": "Conteneurs",
+    "comingSoon": "Gestion des conteneurs à venir..."
+  },
+  "images": {
+    "title": "Images",
+    "comingSoon": "Gestion des images à venir..."
+  },
+  "volumes": {
+    "title": "Volumes",
+    "comingSoon": "Gestion des volumes à venir..."
+  },
+  "networks": {
+    "title": "Réseaux",
+    "comingSoon": "Gestion des réseaux à venir..."
+  },
+  "builds": {
+    "title": "Constructions",
+    "comingSoon": "Gestion des constructions à venir..."
+  },
+  "compose": {
+    "title": "Stacks Compose",
+    "comingSoon": "Gestion compose à venir..."
+  },
+  "tunnels": {
+    "title": "Tunnels Cloudflare",
+    "comingSoon": "Gestion des tunnels à venir..."
+  },
+  "settings": {
+    "title": "Paramètres",
+    "comingSoon": "Paramètres à venir..."
+  },
+  "errors": {
+    "pageNotFound": "Page Non Trouvée",
+    "pageNotFoundDescription": "La page que vous recherchez n'existe pas ou a été déplacée.",
+    "goHome": "Retour Accueil",
+    "goBack": "Retour",
+    "ifProblem": "Si vous pensez que c'est une erreur, veuillez",
+    "contactSupport": "contacter le support"
+  },
+  "footer": {
+    "allRightsReserved": "Tous droits réservés.",
+    "documentation": "Documentation",
+    "support": "Support",
+    "madeWith": "Fait avec",
+    "api": "API",
+    "github": "GitHub"
+  },
+  "sidebar": {
+    "version": "Version"
+  },
+  "common": {
+    "menu": "Menu",
+    "close": "Fermer",
+    "more": "Plus",
+    "moreOptions": "Plus d'Options",
+    "expand": "Développer",
+    "collapse": "Réduire"
+  }
+}

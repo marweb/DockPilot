@@ -1,0 +1,13 @@
+export { default as Login } from './Login';
+export { default as Setup } from './Setup';
+export { default as Dashboard } from './Dashboard';
+export { default as Containers } from './Containers';
+export { default as ContainerDetail } from './ContainerDetail';
+export { default as Images } from './Images';
+export { default as Volumes } from './Volumes';
+export { default as Networks } from './Networks';
+export { default as Builds } from './Builds';
+export { default as Compose } from './Compose';
+export { default as Tunnels } from './Tunnels';
+export { default as Settings } from './Settings';
+export { default as NotFound } from './NotFound';

@@ -1,0 +1,114 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "containers": "Containers",
+    "images": "Images",
+    "volumes": "Volumes",
+    "networks": "Networks",
+    "builds": "Builds",
+    "compose": "Compose",
+    "tunnels": "Tunnels",
+    "settings": "Settings"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signingIn": "Signing in...",
+    "username": "Username",
+    "password": "Password",
+    "logout": "Logout",
+    "loginError": "Invalid username or password"
+  },
+  "setup": {
+    "title": "Initial Setup",
+    "description": "Create your admin account to get started",
+    "username": "Username",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "create": "Create Account",
+    "creating": "Creating...",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "error": "Failed to create account"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "containers": "Containers",
+    "images": "Images",
+    "volumes": "Volumes",
+    "networks": "Networks",
+    "running": "running",
+    "systemInfo": "System Information",
+    "cpus": "CPUs",
+    "memory": "Memory",
+    "os": "Operating System",
+    "version": "Docker Version",
+    "quickActions": "Quick Actions",
+    "pullImage": "Pull Image",
+    "createContainer": "Create Container",
+    "prune": "Prune System"
+  },
+  "containers": {
+    "title": "Containers",
+    "comingSoon": "Container management coming soon..."
+  },
+  "images": {
+    "title": "Images",
+    "comingSoon": "Image management coming soon..."
+  },
+  "volumes": {
+    "title": "Volumes",
+    "comingSoon": "Volume management coming soon..."
+  },
+  "networks": {
+    "title": "Networks",
+    "comingSoon": "Network management coming soon..."
+  },
+  "builds": {
+    "title": "Builds",
+    "comingSoon": "Build management coming soon..."
+  },
+  "compose": {
+    "title": "Compose Stacks",
+    "comingSoon": "Compose management coming soon..."
+  },
+  "tunnels": {
+    "title": "Cloudflare Tunnels",
+    "comingSoon": "Tunnel management coming soon..."
+  },
+  "settings": {
+    "title": "Settings",
+    "comingSoon": "Settings coming soon..."
+  },
+  "errors": {
+    "pageNotFound": "Page Not Found",
+    "pageNotFoundDescription": "The page you're looking for doesn't exist or has been moved.",
+    "goHome": "Go Home",
+    "goBack": "Go Back",
+    "ifProblem": "If you think this is a mistake, please",
+    "contactSupport": "contact support"
+  },
+  "footer": {
+    "allRightsReserved": "All rights reserved.",
+    "documentation": "Documentation",
+    "support": "Support",
+    "madeWith": "Made with",
+    "api": "API",
+    "github": "GitHub"
+  },
+  "sidebar": {
+    "version": "Version"
+  },
+  "common": {
+    "menu": "Menu",
+    "close": "Close",
+    "more": "More",
+    "moreOptions": "More Options",
+    "expand": "Expand",
+    "collapse": "Collapse"
+  }
+}

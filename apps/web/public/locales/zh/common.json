@@ -1,0 +1,114 @@
+{
+  "nav": {
+    "dashboard": "仪表板",
+    "containers": "容器",
+    "images": "镜像",
+    "volumes": "卷",
+    "networks": "网络",
+    "builds": "构建",
+    "compose": "Compose",
+    "tunnels": "隧道",
+    "settings": "设置"
+  },
+  "theme": {
+    "light": "浅色",
+    "dark": "深色",
+    "system": "系统"
+  },
+  "auth": {
+    "signIn": "登录",
+    "signingIn": "登录中...",
+    "username": "用户名",
+    "password": "密码",
+    "logout": "退出登录",
+    "loginError": "用户名或密码无效"
+  },
+  "setup": {
+    "title": "初始设置",
+    "description": "创建您的管理员账户以开始使用",
+    "username": "用户名",
+    "password": "密码",
+    "confirmPassword": "确认密码",
+    "create": "创建账户",
+    "creating": "创建中...",
+    "passwordMismatch": "密码不匹配",
+    "passwordTooShort": "密码至少需要8个字符",
+    "error": "创建账户失败"
+  },
+  "dashboard": {
+    "title": "仪表板",
+    "containers": "容器",
+    "images": "镜像",
+    "volumes": "卷",
+    "networks": "网络",
+    "running": "运行中",
+    "systemInfo": "系统信息",
+    "cpus": "CPU",
+    "memory": "内存",
+    "os": "操作系统",
+    "version": "Docker版本",
+    "quickActions": "快速操作",
+    "pullImage": "拉取镜像",
+    "createContainer": "创建容器",
+    "prune": "清理系统"
+  },
+  "containers": {
+    "title": "容器",
+    "comingSoon": "容器管理即将推出..."
+  },
+  "images": {
+    "title": "镜像",
+    "comingSoon": "镜像管理即将推出..."
+  },
+  "volumes": {
+    "title": "卷",
+    "comingSoon": "卷管理即将推出..."
+  },
+  "networks": {
+    "title": "网络",
+    "comingSoon": "网络管理即将推出..."
+  },
+  "builds": {
+    "title": "构建",
+    "comingSoon": "构建管理即将推出..."
+  },
+  "compose": {
+    "title": "Compose堆栈",
+    "comingSoon": "Compose管理即将推出..."
+  },
+  "tunnels": {
+    "title": "Cloudflare隧道",
+    "comingSoon": "隧道管理即将推出..."
+  },
+  "settings": {
+    "title": "设置",
+    "comingSoon": "设置即将推出..."
+  },
+  "errors": {
+    "pageNotFound": "页面未找到",
+    "pageNotFoundDescription": "您要找的页面不存在或已被移动。",
+    "goHome": "返回首页",
+    "goBack": "返回",
+    "ifProblem": "如果您认为这是一个错误，请",
+    "contactSupport": "联系支持"
+  },
+  "footer": {
+    "allRightsReserved": "版权所有。",
+    "documentation": "文档",
+    "support": "支持",
+    "madeWith": "用",
+    "api": "API",
+    "github": "GitHub"
+  },
+  "sidebar": {
+    "version": "版本"
+  },
+  "common": {
+    "menu": "菜单",
+    "close": "关闭",
+    "more": "更多",
+    "moreOptions": "更多选项",
+    "expand": "展开",
+    "collapse": "收起"
+  }
+}

@@ -1,0 +1,67 @@
+import { loadConfig } from './config/index.js';
+import { createApp } from './app.js';
+import { isSetupComplete, createUser, findUserByUsername } from './services/database.js';
+import * as argon2 from 'argon2';
+
+async function main() {
+  const config = loadConfig();
+
+  // Validate required config
+  if (!config.jwtSecret) {
+    console.error('JWT_SECRET environment variable is required');
+    process.exit(1);
+  }
+
+  const app = await createApp(config);
+
+  // Check if setup is needed and create initial admin if password provided
+  const setupComplete = await isSetupComplete();
+  if (!setupComplete && config.initialAdminPassword) {
+    app.log.info('Creating initial admin user...');
+
+    const existingAdmin = await findUserByUsername('admin');
+    if (!existingAdmin) {
+      const passwordHash = await argon2.hash(config.initialAdminPassword);
+      await createUser({
+        username: 'admin',
+        passwordHash,
+        role: 'admin',
+      });
+      app.log.info('Initial admin user created with username: admin');
+      app.log.warn('IMPORTANT: Please change the admin password after first login!');
+    }
+  }
+
+  // Start server
+  try {
+    await app.listen({ port: config.port, host: config.host });
+    app.log.info(`API Gateway listening on http://${config.host}:${config.port}`);
+
+    if (!setupComplete) {
+      app.log.warn('');
+      app.log.warn('═══════════════════════════════════════════════════════════════');
+      app.log.warn('  SETUP REQUIRED: Please complete the initial setup');
+      app.log.warn('  Open the web interface to create your admin account');
+      app.log.warn('═══════════════════════════════════════════════════════════════');
+      app.log.warn('');
+    }
+  } catch (err) {
+    app.log.error(err);
+    process.exit(1);
+  }
+
+  // Graceful shutdown
+  const signals = ['SIGINT', 'SIGTERM'] as const;
+  for (const signal of signals) {
+    process.on(signal, async () => {
+      app.log.info(`Received ${signal}, shutting down...`);
+      await app.close();
+      process.exit(0);
+    });
+  }
+}
+
+main().catch((err) => {
+  console.error('Fatal error:', err);
+  process.exit(1);
+});

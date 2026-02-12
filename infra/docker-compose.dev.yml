@@ -1,0 +1,192 @@
+# DockPilot - Development Docker Compose
+#
+# This compose file is optimized for local development with hot reload.
+# It mounts the source code as volumes for real-time updates.
+#
+# Usage:
+#   docker compose -f infra/docker-compose.dev.yml up --build
+#   docker compose -f infra/docker-compose.dev.yml watch
+#
+# Prerequisites:
+#   - pnpm installed locally
+#   - Node.js 20+ installed
+
+version: '3.8'
+
+services:
+  # API Gateway - Development mode with hot reload
+  api-gateway:
+    build:
+      context: ../..
+      dockerfile: services/api-gateway/Dockerfile
+      target: builder
+    container_name: dockpilot-api-gateway-dev
+    command: pnpm --filter @dockpilot/api-gateway dev
+    ports:
+      - '${API_GATEWAY_PORT:-3000}:3000'
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - HOST=0.0.0.0
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      - REFRESH_TOKEN_EXPIRES_IN=${REFRESH_TOKEN_EXPIRES_IN:-7d}
+      - DOCKER_CONTROL_URL=${DOCKER_CONTROL_URL:-http://docker-control:3001}
+      - TUNNEL_CONTROL_URL=${TUNNEL_CONTROL_URL:-http://tunnel-control:3002}
+      - INITIAL_ADMIN_PASSWORD=${INITIAL_ADMIN_PASSWORD:-admin123}
+      - DATA_DIR=/data
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-1000}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-1 minute}
+    volumes:
+      # Bind mount for hot reload
+      - ../../services/api-gateway:/app/services/api-gateway
+      - ../../packages/types:/app/packages/types
+      # Named volume for data persistence
+      - api-gateway-data-dev:/data
+      # Node modules (anonymous volume to prevent overwriting)
+      - /app/node_modules
+      - /app/services/api-gateway/node_modules
+      - /app/packages/types/node_modules
+    networks:
+      - dockpilot-network-dev
+    depends_on:
+      - docker-control
+      - tunnel-control
+    healthcheck:
+      test:
+        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000/healthz']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    stdin_open: true
+    tty: true
+
+  # Docker Control Service - Development mode
+  docker-control:
+    build:
+      context: ../..
+      dockerfile: services/docker-control/Dockerfile
+      target: builder
+    container_name: dockpilot-docker-control-dev
+    command: pnpm --filter @dockpilot/docker-control dev
+    ports:
+      - '${DOCKER_CONTROL_PORT:-3001}:3001'
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - HOST=0.0.0.0
+      - DOCKER_HOST=${DOCKER_HOST:-unix:///var/run/docker.sock}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - COMPOSE_DIR=/data/compose
+    volumes:
+      # Bind mount for hot reload
+      - ../../services/docker-control:/app/services/docker-control
+      - ../../packages/types:/app/packages/types
+      # Named volume for data persistence
+      - docker-control-data-dev:/data
+      # Docker socket access
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Node modules (anonymous volume)
+      - /app/node_modules
+      - /app/services/docker-control/node_modules
+      - /app/packages/types/node_modules
+    networks:
+      - dockpilot-network-dev
+    healthcheck:
+      test:
+        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3001/healthz']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    privileged: true
+    stdin_open: true
+    tty: true
+
+  # Tunnel Control Service - Development mode
+  tunnel-control:
+    build:
+      context: ../..
+      dockerfile: services/tunnel-control/Dockerfile
+      target: builder
+    container_name: dockpilot-tunnel-control-dev
+    command: pnpm --filter @dockpilot/tunnel-control dev
+    ports:
+      - '${TUNNEL_CONTROL_PORT:-3002}:3002'
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - HOST=0.0.0.0
+      - CLOUDFLARED_PATH=${CLOUDFLARED_PATH:-/usr/local/bin/cloudflared}
+      - CREDENTIALS_DIR=${CREDENTIALS_DIR:-/data/tunnels}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+    volumes:
+      # Bind mount for hot reload
+      - ../../services/tunnel-control:/app/services/tunnel-control
+      - ../../packages/types:/app/packages/types
+      # Named volume for data persistence
+      - tunnel-control-data-dev:/data
+      # Node modules (anonymous volume)
+      - /app/node_modules
+      - /app/services/tunnel-control/node_modules
+      - /app/packages/types/node_modules
+    networks:
+      - dockpilot-network-dev
+    cap_add:
+      - NET_BIND_SERVICE
+    healthcheck:
+      test:
+        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3002/healthz']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    stdin_open: true
+    tty: true
+
+  # Web Frontend - Development mode with Vite dev server
+  web:
+    image: node:20-alpine
+    container_name: dockpilot-web-dev
+    working_dir: /app
+    command: sh -c "corepack enable && corepack prepare pnpm@8.15.0 --activate && pnpm install && pnpm --filter @dockpilot/web dev --host"
+    ports:
+      - '${WEB_PORT:-5173}:5173'
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
+    volumes:
+      # Bind mount for hot reload
+      - ../../apps/web:/app/apps/web
+      - ../../packages/types:/app/packages/types
+      - ../../package.json:/app/package.json
+      - ../../pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ../../tsconfig.json:/app/tsconfig.json
+      - ../../turbo.json:/app/turbo.json
+      # Node modules (anonymous volume)
+      - /app/node_modules
+      - /app/apps/web/node_modules
+      - /app/packages/types/node_modules
+    networks:
+      - dockpilot-network-dev
+    depends_on:
+      - api-gateway
+    stdin_open: true
+    tty: true
+
+volumes:
+  api-gateway-data-dev:
+    driver: local
+  docker-control-data-dev:
+    driver: local
+  tunnel-control-data-dev:
+    driver: local
+
+networks:
+  dockpilot-network-dev:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

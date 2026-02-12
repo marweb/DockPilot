@@ -1,0 +1,25 @@
+[Unit]
+Description=DockPilot - Web-based Docker Administration Platform
+Documentation=https://github.com/dockpilot/dockpilot
+Requires=docker.service
+After=docker.service network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/dockpilot
+
+# Load environment variables from file
+EnvironmentFile=-/opt/dockpilot/infra/.env
+
+# Start the stack
+ExecStart=/opt/dockpilot/infra/scripts/start.sh
+
+# Stop the stack
+ExecStop=/opt/dockpilot/infra/scripts/stop.sh
+
+# Reload/restart the stack
+ExecReload=/opt/dockpilot/infra/scripts/update.sh
+
+[Install]
+WantedBy=multi-user.target

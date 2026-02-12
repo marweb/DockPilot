@@ -1,0 +1,54 @@
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+
+# Copy package files
+COPY package.json pnpm-lock.yaml* ./
+COPY packages/types/package.json ./packages/types/
+COPY services/api-gateway/package.json ./services/api-gateway/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY packages/types ./packages/types
+COPY services/api-gateway ./services/api-gateway
+COPY tsconfig.json ./
+
+# Build types package first
+RUN pnpm --filter @dockpilot/types build
+
+# Build api-gateway
+RUN pnpm --filter @dockpilot/api-gateway build
+
+# Production stage
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+
+# Copy built files
+COPY --from=builder /app/services/api-gateway/dist ./dist
+COPY --from=builder /app/services/api-gateway/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/types/dist ./node_modules/@dockpilot/types/dist
+COPY --from=builder /app/packages/types/package.json ./node_modules/@dockpilot/types/
+
+# Create data directory
+RUN mkdir -p /data
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/healthz || exit 1
+
+# Start the service
+CMD ["node", "dist/index.js"]

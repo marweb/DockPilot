@@ -1,0 +1,372 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import {
+  Play,
+  Square,
+  RotateCw,
+  Trash2,
+  Search,
+  Filter,
+  RefreshCw,
+  Plus,
+  Eye,
+  Terminal,
+} from 'lucide-react';
+import type { Container, ContainerStatus } from '@dockpilot/types';
+import api from '../../api/client';
+import ContainerList from '../../components/containers/ContainerList';
+import ContainerDetails from '../../components/containers/ContainerDetails';
+import ContainerLogs from '../../components/containers/ContainerLogs';
+import ContainerExec from '../../components/containers/ContainerExec';
+
+export default function Containers() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const containerId = searchParams.get('id');
+  const viewParam = searchParams.get('view');
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<ContainerStatus | 'all'>('all');
+  const [selectedContainer, setSelectedContainer] = useState<Container | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [containerToDelete, setContainerToDelete] = useState<Container | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'exec' | 'stats'>('overview');
+
+  // Fetch containers
+  const {
+    data: containers,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ['containers'],
+    queryFn: async () => {
+      const response = await api.get('/containers');
+      return response.data.data as Container[];
+    },
+    refetchInterval: 5000,
+  });
+
+  // Container actions
+  const startMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/containers/${id}/start`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['containers'] });
+      queryClient.invalidateQueries({ queryKey: ['container', containerId] });
+    },
+  });
+
+  const stopMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/containers/${id}/stop`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['containers'] });
+      queryClient.invalidateQueries({ queryKey: ['container', containerId] });
+    },
+  });
+
+  const restartMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/containers/${id}/restart`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['containers'] });
+      queryClient.invalidateQueries({ queryKey: ['container', containerId] });
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/containers/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['containers'] });
+      setShowDeleteModal(false);
+      setContainerToDelete(null);
+      if (containerId) {
+        navigate('/containers');
+      }
+    },
+  });
+
+  // Filter containers
+  const filteredContainers = containers?.filter((container) => {
+    const matchesSearch =
+      container.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      container.image.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      container.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || container.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  // Handle container selection
+  const handleSelectContainer = (container: Container) => {
+    setSearchParams({ id: container.id });
+    setSelectedContainer(container);
+    setActiveTab('overview');
+  };
+
+  // Handle back to list
+  const handleBackToList = () => {
+    navigate('/containers');
+    setSelectedContainer(null);
+  };
+
+  // Handle delete confirmation
+  const handleDeleteClick = (container: Container, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setContainerToDelete(container);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (containerToDelete) {
+      removeMutation.mutate(containerToDelete.id);
+    }
+  };
+
+  // Load container details when ID changes
+  useEffect(() => {
+    if (containerId && containers) {
+      const container = containers.find((c) => c.id === containerId);
+      if (container) {
+        setSelectedContainer(container);
+      }
+    } else {
+      setSelectedContainer(null);
+    }
+
+    if (viewParam) {
+      setActiveTab(viewParam as 'overview' | 'logs' | 'exec' | 'stats');
+    }
+  }, [containerId, containers, viewParam]);
+
+  const statusOptions: { value: ContainerStatus | 'all'; label: string; color: string }[] = [
+    { value: 'all', label: t('containers.filter.all'), color: 'bg-gray-100 text-gray-800' },
+    {
+      value: 'running',
+      label: t('containers.status.running'),
+      color: 'bg-green-100 text-green-800',
+    },
+    { value: 'exited', label: t('containers.status.exited'), color: 'bg-red-100 text-red-800' },
+    {
+      value: 'paused',
+      label: t('containers.status.paused'),
+      color: 'bg-yellow-100 text-yellow-800',
+    },
+    { value: 'created', label: t('containers.status.created'), color: 'bg-blue-100 text-blue-800' },
+    {
+      value: 'restarting',
+      label: t('containers.status.restarting'),
+      color: 'bg-purple-100 text-purple-800',
+    },
+  ];
+
+  // Show container details view
+  if (selectedContainer && containerId) {
+    return (
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={handleBackToList} className="btn btn-ghost btn-sm">
+              ← {t('common.back')}
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {selectedContainer.name}
+            </h1>
+            <span
+              className={`badge ${
+                selectedContainer.status === 'running'
+                  ? 'badge-success'
+                  : selectedContainer.status === 'exited'
+                    ? 'badge-danger'
+                    : selectedContainer.status === 'paused'
+                      ? 'badge-warning'
+                      : 'badge-neutral'
+              }`}
+            >
+              {selectedContainer.status}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {selectedContainer.status !== 'running' && (
+              <button
+                onClick={() => startMutation.mutate(selectedContainer.id)}
+                disabled={startMutation.isLoading}
+                className="btn btn-primary btn-sm"
+                title={t('containers.actions.start')}
+              >
+                <Play className="h-4 w-4 mr-1" />
+                {t('containers.actions.start')}
+              </button>
+            )}
+            {selectedContainer.status === 'running' && (
+              <button
+                onClick={() => stopMutation.mutate(selectedContainer.id)}
+                disabled={stopMutation.isLoading}
+                className="btn btn-secondary btn-sm"
+                title={t('containers.actions.stop')}
+              >
+                <Square className="h-4 w-4 mr-1" />
+                {t('containers.actions.stop')}
+              </button>
+            )}
+            <button
+              onClick={() => restartMutation.mutate(selectedContainer.id)}
+              disabled={restartMutation.isLoading}
+              className="btn btn-secondary btn-sm"
+              title={t('containers.actions.restart')}
+            >
+              <RotateCw className="h-4 w-4 mr-1" />
+              {t('containers.actions.restart')}
+            </button>
+            <button
+              onClick={() => handleDeleteClick(selectedContainer)}
+              disabled={removeMutation.isLoading}
+              className="btn btn-danger btn-sm"
+              title={t('containers.actions.remove')}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              {t('containers.actions.remove')}
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="flex space-x-8">
+            {[
+              { id: 'overview', label: t('containers.tabs.overview'), icon: Eye },
+              { id: 'logs', label: t('containers.tabs.logs'), icon: null },
+              { id: 'exec', label: t('containers.tabs.exec'), icon: Terminal },
+              { id: 'stats', label: t('containers.tabs.stats'), icon: null },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === tab.id
+                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        <div className="mt-4">
+          {activeTab === 'overview' && <ContainerDetails containerId={selectedContainer.id} />}
+          {activeTab === 'logs' && <ContainerLogs containerId={selectedContainer.id} />}
+          {activeTab === 'exec' && <ContainerExec containerId={selectedContainer.id} />}
+          {activeTab === 'stats' && (
+            <div className="card p-6">
+              <p className="text-gray-500 dark:text-gray-400">{t('containers.stats.comingSoon')}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Show container list view
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {t('containers.title')}
+        </h1>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refetch()}
+            disabled={isLoading}
+            className="btn btn-secondary btn-sm"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+          <button className="btn btn-primary btn-sm">
+            <Plus className="h-4 w-4 mr-1" />
+            {t('containers.create')}
+          </button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder={t('containers.searchPlaceholder')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input pl-10"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-5 w-5 text-gray-400" />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as ContainerStatus | 'all')}
+            className="input w-40"
+          >
+            {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Container List */}
+      <ContainerList
+        containers={filteredContainers || []}
+        isLoading={isLoading}
+        onSelect={handleSelectContainer}
+        onStart={(id) => startMutation.mutate(id)}
+        onStop={(id) => stopMutation.mutate(id)}
+        onRestart={(id) => restartMutation.mutate(id)}
+        onDelete={handleDeleteClick}
+        isStarting={startMutation.isLoading}
+        isStopping={stopMutation.isLoading}
+        isRestarting={restartMutation.isLoading}
+        isDeleting={removeMutation.isLoading}
+      />
+
+      {/* Delete Modal */}
+      {showDeleteModal && containerToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                {t('containers.delete.title')}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                {t('containers.delete.message', { name: containerToDelete.name })}
+              </p>
+              <div className="flex justify-end gap-3">
+                <button onClick={() => setShowDeleteModal(false)} className="btn btn-secondary">
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={removeMutation.isLoading}
+                  className="btn btn-danger"
+                >
+                  {removeMutation.isLoading ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    t('common.delete')
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
