@@ -5,7 +5,7 @@
 # Removes DockPilot installed via the one-liner to /data/dockpilot/
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/main/scripts/uninstall.sh | sudo bash
+#   curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts/uninstall.sh | sudo bash
 #   # Or if already installed:
 #   /data/dockpilot/source/uninstall.sh
 

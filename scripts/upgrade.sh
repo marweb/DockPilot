@@ -14,7 +14,7 @@
 
 set -e
 
-CDN="${CDN:-https://raw.githubusercontent.com/marweb/DockerPilot/main/scripts}"
+CDN="${CDN:-https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts}"
 SOURCE_DIR="${SOURCE_DIR:-/data/dockpilot/source}"
 VERSION="${1:-latest}"
 REGISTRY_URL="${2:-ghcr.io}"

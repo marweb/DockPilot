@@ -244,7 +244,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 ```bash
 # Desinstalador para instalaciones con curl
-curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/main/scripts/uninstall.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts/uninstall.sh | sudo bash
 
 # O manualmente
 cd /data/dockpilot/source

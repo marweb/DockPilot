@@ -12,7 +12,7 @@
 set -e
 set -o pipefail
 
-CDN="https://raw.githubusercontent.com/marweb/DockerPilot/main/scripts"
+CDN="https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts"
 DATE=$(date +"%Y%m%d-%H%M%S")
 DOCKER_VERSION="27.0"
 DOCKPILOT_HOME="/data/dockpilot"
@@ -317,7 +317,7 @@ if [ ! -f /data/dockpilot/ssh/keys/id.dockpilot@localhost ]; then
   ssh-keygen -t ed25519 -f /data/dockpilot/ssh/keys/id.dockpilot@localhost -q -N "" -C "dockpilot" 2>/dev/null || true
   if [ -f /data/dockpilot/ssh/keys/id.dockpilot@localhost.pub ]; then
     grep -v "dockpilot" ~/.ssh/authorized_keys > ~/.ssh/authorized_keys.tmp 2>/dev/null || true
-    cat /data/dockpilot/ssh/keys/id.dockpilot@localhost.pub >> ~/.ssh/authorized_keys
+    cat /data/dockpilot/ssh/keys/id.dockpilot@localhost.pub >> ~/.ssh/authorized_keys.tmp
     mv ~/.ssh/authorized_keys.tmp ~/.ssh/authorized_keys 2>/dev/null || true
   fi
 fi
