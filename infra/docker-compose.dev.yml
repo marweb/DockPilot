@@ -11,8 +11,6 @@
 #   - pnpm installed locally
 #   - Node.js 20+ installed
 
-version: '3.8'
-
 services:
   # API Gateway - Development mode with hot reload
   api-gateway:
@@ -54,11 +52,10 @@ services:
       - docker-control
       - tunnel-control
     healthcheck:
-      test:
-        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000/healthz']
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://localhost:3000/healthz || exit 1']
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 30s
     stdin_open: true
     tty: true
@@ -95,11 +92,10 @@ services:
     networks:
       - dockpilot-network-dev
     healthcheck:
-      test:
-        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3001/healthz']
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://localhost:3001/healthz || exit 1']
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 30s
     privileged: true
     stdin_open: true
@@ -137,11 +133,10 @@ services:
     cap_add:
       - NET_BIND_SERVICE
     healthcheck:
-      test:
-        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3002/healthz']
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://localhost:3002/healthz || exit 1']
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 30s
     stdin_open: true
     tty: true

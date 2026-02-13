@@ -97,7 +97,14 @@ write_status "4" "Images pulled"
 
 # Step 4: Recreate containers
 log "Recreating containers..."
-docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" up -d --remove-orphans --force-recreate
+if ! docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" up -d --remove-orphans --force-recreate; then
+  log "Container startup failed. Collecting diagnostics..."
+  docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" ps || true
+  docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" logs --tail=120 \
+    docker-control tunnel-control api-gateway web || true
+  write_status "5" "Containers failed to start"
+  exit 1
+fi
 write_status "5" "Containers recreated"
 
 # Step 5: Cleanup old images

@@ -6,8 +6,6 @@
 # Usage:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --pull always
 
-version: '3.8'
-
 services:
   api-gateway:
     pull_policy: always
