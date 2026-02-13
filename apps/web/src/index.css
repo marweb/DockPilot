@@ -146,6 +146,22 @@ body {
   @apply w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
 }
 
+.input-has-left-icon {
+  @apply pl-11;
+}
+
+.input-has-right-icon {
+  @apply pr-11;
+}
+
+.input-icon-left {
+  @apply pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400;
+}
+
+.input-icon-right-btn {
+  @apply absolute right-0 top-0 bottom-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300;
+}
+
 .input-error {
   @apply border-red-500 focus:ring-red-500;
 }

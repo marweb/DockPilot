@@ -1,5 +1,6 @@
 # Build stage for the web application
-FROM node:20-alpine AS builder
+ARG BUILDPLATFORM
+FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
 
 WORKDIR /app
 

@@ -1,17 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import {
-  Shield,
-  User,
-  Lock,
-  Eye,
-  EyeOff,
-  Check,
-  X,
-  AlertCircle,
-  Loader2,
-} from 'lucide-react';
+import { Shield, User, Lock, Eye, EyeOff, Check, X, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../stores/auth';
 
 export default function Setup() {
@@ -42,16 +32,24 @@ export default function Setup() {
   }, [checking, setupComplete, navigate]);
 
   // Password strength checks
-  const passwordChecks = useMemo(() => [
-    { key: 'length', pass: password.length >= 8, label: t('setup.reqMinLength') },
-    { key: 'upper', pass: /[A-Z]/.test(password), label: t('setup.reqUppercase') },
-    { key: 'lower', pass: /[a-z]/.test(password), label: t('setup.reqLowercase') },
-    { key: 'number', pass: /[0-9]/.test(password), label: t('setup.reqNumber') },
-    { key: 'special', pass: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password), label: t('setup.reqSpecial') },
-  ], [password, t]);
+  const passwordChecks = useMemo(
+    () => [
+      { key: 'length', pass: password.length >= 8, label: t('setup.reqMinLength') },
+      { key: 'upper', pass: /[A-Z]/.test(password), label: t('setup.reqUppercase') },
+      { key: 'lower', pass: /[a-z]/.test(password), label: t('setup.reqLowercase') },
+      { key: 'number', pass: /[0-9]/.test(password), label: t('setup.reqNumber') },
+      {
+        key: 'special',
+        pass: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+        label: t('setup.reqSpecial'),
+      },
+    ],
+    [password, t]
+  );
 
   const allChecksPassed = passwordChecks.every((c) => c.pass);
-  const passwordsMatch = password.length > 0 && confirmPassword.length > 0 && password === confirmPassword;
+  const passwordsMatch =
+    password.length > 0 && confirmPassword.length > 0 && password === confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,9 +101,7 @@ export default function Setup() {
           <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary-600 shadow-lg shadow-primary-600/30 mb-4">
             <Shield className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-primary-600 dark:text-primary-400">
-            DockPilot
-          </h1>
+          <h1 className="text-3xl font-bold text-primary-600 dark:text-primary-400">DockPilot</h1>
         </div>
 
         {/* Card */}
@@ -133,11 +129,14 @@ export default function Setup() {
             <div className="space-y-4">
               {/* Username */}
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label
+                  htmlFor="username"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                >
                   {t('setup.username')}
                 </label>
                 <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <div className="input-icon-left">
                     <User className="h-4 w-4 text-gray-400" />
                   </div>
                   <input
@@ -145,7 +144,7 @@ export default function Setup() {
                     name="username"
                     type="text"
                     required
-                    className="input pl-10"
+                    className="input input-has-left-icon"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
@@ -154,11 +153,14 @@ export default function Setup() {
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                >
                   {t('setup.password')}
                 </label>
                 <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <div className="input-icon-left">
                     <Lock className="h-4 w-4 text-gray-400" />
                   </div>
                   <input
@@ -166,14 +168,14 @@ export default function Setup() {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    className="input pl-10 pr-10"
+                    className="input input-has-left-icon input-has-right-icon"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="input-icon-right-btn"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -208,11 +210,14 @@ export default function Setup() {
 
               {/* Confirm Password */}
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                >
                   {t('setup.confirmPassword')}
                 </label>
                 <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <div className="input-icon-left">
                     <Lock className="h-4 w-4 text-gray-400" />
                   </div>
                   <input
@@ -220,7 +225,7 @@ export default function Setup() {
                     name="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
                     required
-                    className={`input pl-10 pr-10 ${
+                    className={`input input-has-left-icon input-has-right-icon ${
                       confirmPassword.length > 0
                         ? passwordsMatch
                           ? 'border-green-400 focus:ring-green-500'
@@ -233,9 +238,13 @@ export default function Setup() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="input-icon-right-btn"
                   >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
                 {confirmPassword.length > 0 && !passwordsMatch && (

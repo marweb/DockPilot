@@ -1,15 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import {
-  LogIn,
-  User,
-  Lock,
-  Eye,
-  EyeOff,
-  AlertCircle,
-  Loader2,
-} from 'lucide-react';
+import { LogIn, User, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../stores/auth';
 
 export default function Login() {
@@ -74,9 +66,7 @@ export default function Login() {
           <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary-600 shadow-lg shadow-primary-600/30 mb-4">
             <LogIn className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-primary-600 dark:text-primary-400">
-            DockPilot
-          </h1>
+          <h1 className="text-3xl font-bold text-primary-600 dark:text-primary-400">DockPilot</h1>
         </div>
 
         {/* Card */}
@@ -101,11 +91,14 @@ export default function Login() {
             <div className="space-y-4">
               {/* Username */}
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label
+                  htmlFor="username"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                >
                   {t('auth.username')}
                 </label>
                 <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <div className="input-icon-left">
                     <User className="h-4 w-4 text-gray-400" />
                   </div>
                   <input
@@ -114,7 +107,7 @@ export default function Login() {
                     type="text"
                     required
                     autoFocus
-                    className="input pl-10"
+                    className="input input-has-left-icon"
                     placeholder={t('auth.username')}
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -124,11 +117,14 @@ export default function Login() {
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                >
                   {t('auth.password')}
                 </label>
                 <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <div className="input-icon-left">
                     <Lock className="h-4 w-4 text-gray-400" />
                   </div>
                   <input
@@ -136,7 +132,7 @@ export default function Login() {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    className="input pl-10 pr-10"
+                    className="input input-has-left-icon input-has-right-icon"
                     placeholder={t('auth.password')}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -144,7 +140,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="input-icon-right-btn"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -153,11 +149,7 @@ export default function Login() {
             </div>
 
             {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary w-full mt-6 py-2.5"
-            >
+            <button type="submit" disabled={loading} className="btn btn-primary w-full mt-6 py-2.5">
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
