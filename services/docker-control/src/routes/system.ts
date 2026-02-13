@@ -148,8 +148,9 @@ export async function systemRoutes(fastify: FastifyInstance) {
         // Pull the docker:latest image (has Docker CLI + Compose)
         fastify.log.info({ version }, 'Pulling docker:latest image for upgrade...');
         await new Promise<void>((resolve, reject) => {
-          docker.pull('docker:latest', {}, (err: Error | null, stream: NodeJS.ReadableStream) => {
+          docker.pull('docker:latest', {}, (err: Error | null, stream?: NodeJS.ReadableStream) => {
             if (err) return reject(err);
+            if (!stream) return reject(new Error('No stream returned from docker.pull'));
             docker.modem.followProgress(stream, (err2: Error | null) => {
               if (err2) return reject(err2);
               resolve();
