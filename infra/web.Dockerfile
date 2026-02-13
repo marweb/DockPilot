@@ -43,9 +43,9 @@ RUN echo '<!DOCTYPE html><html><body>OK</body></html>' > /usr/share/nginx/html/h
 # Expose port
 EXPOSE 80
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget -q -O /dev/null http://localhost:80/healthz || exit 1
+# Health check (wget --spider avoids download; 127.0.0.1 avoids IPv6 resolution issues)
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --spider -q http://127.0.0.1:80/ || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

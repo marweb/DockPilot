@@ -57,9 +57,9 @@ RUN mkdir -p /data/tunnels
 # Expose port
 EXPOSE 3002
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget -q -O /dev/null http://localhost:3002/healthz || exit 1
+# Health check (curl -sf fails on HTTP errors; 127.0.0.1 avoids IPv6 resolution issues)
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
+  CMD curl -sf http://127.0.0.1:3002/healthz || exit 1
 
 # Start the service
 CMD ["node", "dist/index.js"]

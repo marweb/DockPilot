@@ -34,8 +34,8 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Install docker CLI (for compose commands)
-RUN apk add --no-cache docker-cli docker-cli-compose
+# Install docker CLI (for compose commands) and curl for health checks
+RUN apk add --no-cache docker-cli docker-cli-compose curl
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
@@ -53,9 +53,9 @@ RUN mkdir -p /data/compose
 # Expose port
 EXPOSE 3001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget -q -O /dev/null http://localhost:3001/healthz || exit 1
+# Health check (curl -sf fails on HTTP errors; 127.0.0.1 avoids IPv6 resolution issues)
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
+  CMD curl -sf http://127.0.0.1:3001/healthz || exit 1
 
 # Start the service
 CMD ["node", "dist/index.js"]

@@ -33,6 +33,23 @@ log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
+# Wait for a container to become healthy (used for recovery when compose up fails)
+wait_for_healthy() {
+  local container="$1"
+  local max_wait="${2:-90}"
+  local waited=0
+  while [ $waited -lt $max_wait ]; do
+    local status
+    status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "unknown")
+    if [ "$status" = "healthy" ]; then
+      return 0
+    fi
+    sleep 5
+    waited=$((waited + 5))
+  done
+  return 1
+}
+
 # Ensure source dir exists
 mkdir -p "$SOURCE_DIR"
 cd "$SOURCE_DIR"
@@ -98,14 +115,43 @@ write_status "4" "Images pulled"
 # Step 4: Recreate containers
 log "Recreating containers..."
 if ! docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" up -d --remove-orphans --force-recreate; then
-  log "Container startup failed. Collecting diagnostics..."
-  docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" ps || true
-  docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" logs --tail=120 \
-    docker-control tunnel-control api-gateway web || true
-  write_status "5" "Containers failed to start"
-  exit 1
+  log "Initial container startup failed. Attempting recovery..."
+  # Base services (docker-control, tunnel-control) may be running but marked unhealthy
+  # Wait for them to become healthy, then retry starting dependent containers
+  if docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'dockpilot-docker-control' && \
+     docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'dockpilot-tunnel-control'; then
+    log "Base containers are running. Waiting for them to become healthy (up to 90s)..."
+    if wait_for_healthy "dockpilot-docker-control" 90 && wait_for_healthy "dockpilot-tunnel-control" 90; then
+      log "Base containers are healthy. Starting dependent containers..."
+      if docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" up -d --no-recreate; then
+        write_status "5" "Containers recreated"
+      else
+        log "Recovery failed: could not start dependent containers."
+        docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" ps || true
+        docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" logs --tail=120 \
+          docker-control tunnel-control api-gateway web || true
+        write_status "5" "Containers failed to start"
+        exit 1
+      fi
+    else
+      log "Recovery failed: base containers did not become healthy in time."
+      docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" ps || true
+      docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" logs --tail=120 \
+        docker-control tunnel-control api-gateway web || true
+      write_status "5" "Containers failed to start"
+      exit 1
+    fi
+  else
+    log "Container startup failed. Collecting diagnostics..."
+    docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" ps || true
+    docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" logs --tail=120 \
+      docker-control tunnel-control api-gateway web || true
+    write_status "5" "Containers failed to start"
+    exit 1
+  fi
+else
+  write_status "5" "Containers recreated"
 fi
-write_status "5" "Containers recreated"
 
 # Step 5: Cleanup old images
 log "Cleaning up old images..."

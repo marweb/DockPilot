@@ -344,12 +344,22 @@ bash ./upgrade.sh "${LATEST_VERSION}" "ghcr.io" 2>&1 || {
 echo ""
 echo " - Waiting for DockPilot to be ready..."
 
-# Wait for web container to be healthy
-HEALTH_WAIT=120
+# Wait for all containers to be healthy (docker-control, tunnel-control, api-gateway, web)
+CONTAINERS="dockpilot-docker-control dockpilot-tunnel-control dockpilot-api-gateway dockpilot-web"
+HEALTH_WAIT=150
 HEALTH_WAITED=0
+ALL_HEALTHY=false
+
 while [ $HEALTH_WAITED -lt $HEALTH_WAIT ]; do
-  HEALTH=$(docker inspect --format='{{.State.Health.Status}}' dockpilot-web 2>/dev/null || echo "unknown")
-  if [ "$HEALTH" = "healthy" ]; then
+  ALL_HEALTHY=true
+  for c in $CONTAINERS; do
+    status=$(docker inspect --format='{{.State.Health.Status}}' "$c" 2>/dev/null || echo "unknown")
+    if [ "$status" != "healthy" ]; then
+      ALL_HEALTHY=false
+      break
+    fi
+  done
+  if [ "$ALL_HEALTHY" = true ]; then
     echo " - DockPilot is ready!"
     break
   fi
@@ -360,8 +370,13 @@ while [ $HEALTH_WAITED -lt $HEALTH_WAIT ]; do
   fi
 done
 
-if [ "$HEALTH" != "healthy" ]; then
-  echo " - WARNING: Container may still be starting. Check with: docker ps"
+if [ "$ALL_HEALTHY" != true ]; then
+  echo " - WARNING: Some containers may still be starting. Status:"
+  for c in $CONTAINERS; do
+    status=$(docker inspect --format='{{.State.Health.Status}}' "$c" 2>/dev/null || echo "unknown")
+    echo "   - $c: $status"
+  done
+  echo "   Check with: docker ps"
 fi
 
 # Get IPs

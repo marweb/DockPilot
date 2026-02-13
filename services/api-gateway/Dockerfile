@@ -42,15 +42,15 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/types/dist ./node_modules/@dockpilot/types/dist
 COPY --from=builder /app/packages/types/package.json ./node_modules/@dockpilot/types/
 
-# Create data directory and install sqlite3 for debugging/backup
-RUN mkdir -p /data && apk add --no-cache sqlite
+# Create data directory and install sqlite3 for debugging/backup, curl for health checks
+RUN mkdir -p /data && apk add --no-cache sqlite curl
 
 # Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget -q -O /dev/null http://localhost:3000/healthz || exit 1
+# Health check (curl -sf fails on HTTP errors; 127.0.0.1 avoids IPv6 resolution issues)
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
+  CMD curl -sf http://127.0.0.1:3000/healthz || exit 1
 
 # Start the service
 CMD ["node", "dist/index.js"]
