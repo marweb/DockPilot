@@ -50,9 +50,7 @@ export async function createApp(config: Config) {
 
   // Register plugins
   await fastify.register(cors, {
-    origin: config.corsOrigin
-      ? config.corsOrigin.split(',').map((o) => o.trim())
-      : true,
+    origin: config.corsOrigin ? config.corsOrigin.split(',').map((o) => o.trim()) : true,
     credentials: true,
   });
 
@@ -112,9 +110,19 @@ export async function createApp(config: Config) {
     await proxyRequest(request, reply, `${config.dockerControlUrl}${path}`);
   });
 
+  fastify.all('/api/containers', async (request, reply) => {
+    const queryString = request.url.includes('?') ? `?${request.url.split('?')[1]}` : '';
+    await proxyRequest(request, reply, `${config.dockerControlUrl}/api/containers${queryString}`);
+  });
+
   fastify.all('/api/images/*', async (request, reply) => {
     const path = request.url.replace('/api', '');
     await proxyRequest(request, reply, `${config.dockerControlUrl}${path}`);
+  });
+
+  fastify.all('/api/images', async (request, reply) => {
+    const queryString = request.url.includes('?') ? `?${request.url.split('?')[1]}` : '';
+    await proxyRequest(request, reply, `${config.dockerControlUrl}/api/images${queryString}`);
   });
 
   fastify.all('/api/volumes/*', async (request, reply) => {
@@ -122,9 +130,19 @@ export async function createApp(config: Config) {
     await proxyRequest(request, reply, `${config.dockerControlUrl}${path}`);
   });
 
+  fastify.all('/api/volumes', async (request, reply) => {
+    const queryString = request.url.includes('?') ? `?${request.url.split('?')[1]}` : '';
+    await proxyRequest(request, reply, `${config.dockerControlUrl}/api/volumes${queryString}`);
+  });
+
   fastify.all('/api/networks/*', async (request, reply) => {
     const path = request.url.replace('/api', '');
     await proxyRequest(request, reply, `${config.dockerControlUrl}${path}`);
+  });
+
+  fastify.all('/api/networks', async (request, reply) => {
+    const queryString = request.url.includes('?') ? `?${request.url.split('?')[1]}` : '';
+    await proxyRequest(request, reply, `${config.dockerControlUrl}/api/networks${queryString}`);
   });
 
   fastify.all('/api/builds/*', async (request, reply) => {
@@ -132,9 +150,19 @@ export async function createApp(config: Config) {
     await proxyRequest(request, reply, `${config.dockerControlUrl}${path}`);
   });
 
+  fastify.all('/api/builds', async (request, reply) => {
+    const queryString = request.url.includes('?') ? `?${request.url.split('?')[1]}` : '';
+    await proxyRequest(request, reply, `${config.dockerControlUrl}/api/builds${queryString}`);
+  });
+
   fastify.all('/api/compose/*', async (request, reply) => {
     const path = request.url.replace('/api', '');
     await proxyRequest(request, reply, `${config.dockerControlUrl}${path}`);
+  });
+
+  fastify.all('/api/compose', async (request, reply) => {
+    const queryString = request.url.includes('?') ? `?${request.url.split('?')[1]}` : '';
+    await proxyRequest(request, reply, `${config.dockerControlUrl}/api/compose${queryString}`);
   });
 
   fastify.all('/api/info', async (request, reply) => {
@@ -157,6 +185,11 @@ export async function createApp(config: Config) {
   fastify.all('/api/tunnels/*', async (request, reply) => {
     const path = request.url.replace('/api', '');
     await proxyRequest(request, reply, `${config.tunnelControlUrl}${path}`);
+  });
+
+  fastify.all('/api/tunnels', async (request, reply) => {
+    const queryString = request.url.includes('?') ? `?${request.url.split('?')[1]}` : '';
+    await proxyRequest(request, reply, `${config.tunnelControlUrl}/api/tunnels${queryString}`);
   });
 
   // Register WebSocket proxy with authentication

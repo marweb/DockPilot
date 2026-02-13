@@ -23,23 +23,32 @@ export async function proxyRequest(
   const url = new URL(targetUrl);
   const isHttps = url.protocol === 'https:';
 
+  const forwardedHeaders: Record<string, string | string[]> = {};
+  const hopByHopHeaders = new Set([
+    'connection',
+    'keep-alive',
+    'proxy-authenticate',
+    'proxy-authorization',
+    'te',
+    'trail',
+    'upgrade',
+    'transfer-encoding',
+  ]);
+
+  for (const [key, value] of Object.entries(request.headers)) {
+    if (value === undefined) continue;
+    if (hopByHopHeaders.has(key.toLowerCase())) continue;
+    forwardedHeaders[key] = value;
+  }
+
+  forwardedHeaders.host = url.host;
+
   const options = {
     hostname: url.hostname,
     port: url.port || (isHttps ? 443 : 80),
     path: url.pathname + url.search,
     method: request.method,
-    headers: {
-      ...request.headers,
-      host: url.host,
-      // Remove hop-by-hop headers
-      connection: undefined,
-      'keep-alive': undefined,
-      'proxy-authenticate': undefined,
-      'proxy-authorization': undefined,
-      te: undefined,
-      trail: undefined,
-      'upgrade': undefined,
-    },
+    headers: forwardedHeaders,
     agent: isHttps ? httpsAgent : httpAgent,
   };
 
@@ -47,19 +56,10 @@ export async function proxyRequest(
     const proxyReq = (isHttps ? httpsRequest : httpRequest)(options, (proxyRes) => {
       // Forward status code and headers
       reply.status(proxyRes.statusCode || 200);
-      
+
       // Forward headers (excluding hop-by-hop)
       for (const [key, value] of Object.entries(proxyRes.headers)) {
-        if (value !== undefined && ![
-          'connection',
-          'keep-alive',
-          'proxy-authenticate',
-          'proxy-authorization',
-          'te',
-          'trail',
-          'upgrade',
-          'transfer-encoding',
-        ].includes(key.toLowerCase())) {
+        if (value !== undefined && !hopByHopHeaders.has(key.toLowerCase())) {
           reply.header(key, value);
         }
       }
@@ -90,11 +90,7 @@ export async function proxyRequest(
 }
 
 // Create proxy routes for a service
-export function createProxyRoutes(
-  fastify: FastifyInstance,
-  prefix: string,
-  targetBaseUrl: string
-) {
+export function createProxyRoutes(fastify: FastifyInstance, prefix: string, targetBaseUrl: string) {
   // Catch-all route for proxying
   fastify.all(`${prefix}/*`, async (request, reply) => {
     const path = (request.params as { '*': string })['*'];
@@ -122,9 +118,12 @@ export function createWebSocketProxy(
 
       targetWs.on('open', () => {
         // Forward messages from client to target
-        (socket as { on: (e: string, h: (d: unknown) => void) => void }).on('message', (data: unknown) => {
-          targetWs.send(data as string);
-        });
+        (socket as { on: (e: string, h: (d: unknown) => void) => void }).on(
+          'message',
+          (data: unknown) => {
+            targetWs.send(data as string);
+          }
+        );
 
         // Forward messages from target to client
         targetWs.on('message', (data: unknown) => {

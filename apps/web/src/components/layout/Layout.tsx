@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/auth';
 import { useThemeStore } from '../../stores/theme';
+import api from '../../api/client';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -89,6 +90,8 @@ export default function Layout({ children }: LayoutProps) {
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [appVersion, setAppVersion] = useState('...');
+  const currentYear = new Date().getFullYear();
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -114,6 +117,17 @@ export default function Layout({ children }: LayoutProps) {
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    api
+      .get('/system/version')
+      .then((res) => {
+        setAppVersion(res.data?.data?.currentVersion || '...');
+      })
+      .catch(() => {
+        setAppVersion('...');
+      });
+  }, []);
 
   const isLoading = routerNavigation.state === 'loading';
 
@@ -167,7 +181,7 @@ export default function Layout({ children }: LayoutProps) {
             ))}
           </nav>
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="text-xs text-gray-400">DockPilot v1.0.0</div>
+            <div className="text-xs text-gray-400">DockPilot v{appVersion}</div>
           </div>
         </div>
       </div>
@@ -200,7 +214,7 @@ export default function Layout({ children }: LayoutProps) {
             ))}
           </nav>
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="text-xs text-gray-400">DockPilot v1.0.0</div>
+            <div className="text-xs text-gray-400">DockPilot v{appVersion}</div>
           </div>
         </div>
       </div>
@@ -393,7 +407,9 @@ export default function Layout({ children }: LayoutProps) {
         {/* Footer */}
         <footer className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 lg:px-6 py-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <p>© 2024 DockPilot. {t('footer.allRightsReserved')}</p>
+            <p>
+              © {currentYear} DockPilot. {t('footer.allRightsReserved')}
+            </p>
             <div className="flex items-center gap-4">
               <Link to="/settings" className="hover:text-primary-600 transition-colors">
                 {t('footer.documentation')}
@@ -401,7 +417,9 @@ export default function Layout({ children }: LayoutProps) {
               <Link to="/settings" className="hover:text-primary-600 transition-colors">
                 {t('footer.support')}
               </Link>
-              <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">v1.0.0</span>
+              <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
+                v{appVersion}
+              </span>
             </div>
           </div>
         </footer>

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { Search, RefreshCw, Trash2, Download, Plus, Image, Tag, Clock, Layers } from 'lucide-react';
-import type { Image } from '@dockpilot/types';
+import { Search, RefreshCw, Download } from 'lucide-react';
+import type { Image as DockerImage } from '@dockpilot/types';
 import api from '../api/client';
 import ImageList from '../components/images/ImageList';
 import ImagePull from '../components/images/ImagePull';
@@ -13,7 +13,7 @@ export default function Images() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showPullModal, setShowPullModal] = useState(false);
-  const [imageToDelete, setImageToDelete] = useState<Image | null>(null);
+  const [imageToDelete, setImageToDelete] = useState<DockerImage | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Fetch images
@@ -25,7 +25,7 @@ export default function Images() {
     queryKey: ['images'],
     queryFn: async () => {
       const response = await api.get('/images');
-      return response.data.data as Image[];
+      return response.data.data as DockerImage[];
     },
     refetchInterval: 10000,
   });
@@ -50,7 +50,7 @@ export default function Images() {
     );
   });
 
-  const handleDeleteClick = (image: Image) => {
+  const handleDeleteClick = (image: DockerImage) => {
     setImageToDelete(image);
     setShowDeleteModal(true);
   };
@@ -93,7 +93,7 @@ export default function Images() {
           </button>
           <button onClick={() => setShowPullModal(true)} className="btn btn-primary btn-sm">
             <Download className="h-4 w-4 mr-1" />
-            {t('images.pull')}
+            {t('images.pullButton')}
           </button>
         </div>
       </div>

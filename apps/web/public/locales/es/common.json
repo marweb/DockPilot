@@ -65,11 +65,146 @@
   },
   "containers": {
     "title": "Contenedores",
-    "comingSoon": "Gestión de contenedores próximamente..."
+    "create": "Crear",
+    "searchPlaceholder": "Buscar por nombre, imagen o id...",
+    "containers": "contenedores",
+    "filter": {
+      "all": "Todos"
+    },
+    "status": {
+      "running": "En ejecución",
+      "exited": "Detenido",
+      "paused": "Pausado",
+      "created": "Creado",
+      "restarting": "Reiniciando"
+    },
+    "tabs": {
+      "overview": "Resumen",
+      "logs": "Logs",
+      "exec": "Terminal",
+      "stats": "Estadísticas"
+    },
+    "actions": {
+      "start": "Iniciar",
+      "stop": "Detener",
+      "restart": "Reiniciar",
+      "remove": "Eliminar",
+      "view": "Ver"
+    },
+    "list": {
+      "name": "Nombre",
+      "image": "Imagen",
+      "status": "Estado",
+      "ports": "Puertos",
+      "created": "Creado",
+      "actions": "Acciones"
+    },
+    "empty": {
+      "title": "No se encontraron contenedores",
+      "description": "Crea un contenedor o ajusta los filtros"
+    },
+    "delete": {
+      "title": "Eliminar contenedor",
+      "message": "¿Seguro que quieres eliminar {{name}}?"
+    },
+    "stats": {
+      "comingSoon": "La vista de estadísticas estará disponible próximamente"
+    },
+    "logs": {
+      "title": "Logs del contenedor",
+      "pause": "Pausar",
+      "follow": "Seguir",
+      "following": "Siguiendo",
+      "timestamps": "Timestamps",
+      "clear": "Limpiar",
+      "download": "Descargar",
+      "filterPlaceholder": "Filtrar logs...",
+      "empty": "Sin logs aún",
+      "showing": "Mostrando {{count}} de {{total}} líneas",
+      "connected": "Conectado",
+      "disconnected": "Desconectado"
+    },
+    "exec": {
+      "title": "Terminal",
+      "connected": "Terminal conectada",
+      "disconnected": "Terminal desconectada",
+      "error": "Error de conexión en terminal",
+      "clear": "Limpiar",
+      "description": "Ejecuta comandos dentro del contenedor",
+      "welcome": "Conectado. Escribe un comando y pulsa Enter.",
+      "placeholder": "Escribe un comando...",
+      "ready": "Listo",
+      "shortcuts": "Atajos: Enter para ejecutar"
+    },
+    "details": {
+      "notFound": "No se encontraron detalles del contenedor",
+      "basicInfo": "Información básica",
+      "id": "ID",
+      "image": "Imagen",
+      "command": "Comando",
+      "created": "Creado",
+      "status": "Estado",
+      "state": "Estado interno",
+      "running": "En ejecución",
+      "pid": "PID",
+      "exitCode": "Código de salida",
+      "startedAt": "Iniciado en",
+      "configuration": "Configuración",
+      "hostname": "Hostname",
+      "workingDir": "Directorio de trabajo",
+      "user": "Usuario",
+      "tty": "TTY",
+      "environment": "Entorno",
+      "mounts": "Montajes",
+      "labels": "Etiquetas"
+    },
+    "mounts": {
+      "type": "Tipo",
+      "source": "Origen",
+      "destination": "Destino",
+      "mode": "Modo"
+    }
   },
   "images": {
     "title": "Imágenes",
-    "comingSoon": "Gestión de imágenes próximamente..."
+    "totalSize": "Tamaño total: {{size}}",
+    "pullButton": "Descargar imagen",
+    "searchPlaceholder": "Buscar por repositorio, tag o id...",
+    "containers": "contenedores",
+    "empty": {
+      "title": "No se encontraron imágenes",
+      "description": "Descarga una imagen para comenzar"
+    },
+    "list": {
+      "repository": "Repositorio",
+      "tag": "Tag",
+      "id": "ID",
+      "size": "Tamaño",
+      "created": "Creado",
+      "containers": "Contenedores",
+      "actions": "Acciones"
+    },
+    "actions": {
+      "remove": "Eliminar"
+    },
+    "delete": {
+      "title": "Eliminar imagen",
+      "message": "¿Seguro que quieres eliminar {{repository}}:{{tag}}?",
+      "warning": "Esta imagen está en uso por {{count}} contenedores"
+    },
+    "pull": {
+      "title": "Descargar imagen",
+      "imageName": "Imagen",
+      "imagePlaceholder": "ej: nginx",
+      "tag": "Tag",
+      "registry": "Registro",
+      "defaultRegistry": "Registro por defecto",
+      "button": "Descargar",
+      "pulling": "Descargando...",
+      "success": "Imagen descargada correctamente",
+      "redirecting": "Actualizando lista...",
+      "error": "No se pudo descargar la imagen"
+    }
   },
   "volumes": {
     "title": "Volúmenes",
@@ -77,19 +212,78 @@
   },
   "networks": {
     "title": "Redes",
-    "comingSoon": "Gestión de redes próximamente..."
+    "create": "Crear red",
+    "createTitle": "Crear nueva red",
+    "createButton": "Crear",
+    "searchPlaceholder": "Buscar por nombre o driver...",
+    "name": "Nombre",
+    "namePlaceholder": "mi-red",
+    "driver": "Driver",
+    "subnet": "Subnet",
+    "gateway": "Gateway",
+    "connect": "Conectar",
+    "disconnect": "Desconectar",
+    "disconnectConfirm": "¿Seguro que quieres desconectar este contenedor?",
+    "deleteInUseConfirm": "La red {{name}} tiene {{count}} contenedores conectados. ¿Eliminar de todas formas?",
+    "containerIdPlaceholder": "ID o nombre del contenedor",
+    "noContainers": "No hay contenedores conectados",
+    "noSubnet": "Sin configurar",
+    "empty": {
+      "title": "No se encontraron redes",
+      "description": "Crea una red para conectar tus contenedores"
+    },
+    "list": {
+      "name": "Nombre",
+      "id": "ID",
+      "driver": "Driver",
+      "scope": "Scope",
+      "subnet": "Subnet",
+      "containers": "Contenedores",
+      "actions": "Acciones"
+    },
+    "actions": {
+      "view": "Ver",
+      "remove": "Eliminar"
+    },
+    "details": {
+      "basicInfo": "Información básica",
+      "id": "ID",
+      "driver": "Driver",
+      "scope": "Scope",
+      "subnet": "Subnet",
+      "gateway": "Gateway",
+      "connectedContainers": "Contenedores conectados",
+      "labels": "Etiquetas"
+    }
   },
   "builds": {
     "title": "Construcciones",
-    "comingSoon": "Gestión de construcciones próximamente..."
+    "empty": "No hay builds activos",
+    "status": "Estado",
+    "tags": "Tags",
+    "startedAt": "Iniciado",
+    "actions": "Acciones",
+    "cancel": "Cancelar"
   },
   "compose": {
     "title": "Stacks Compose",
-    "comingSoon": "Gestión de compose próximamente..."
+    "empty": "No se encontraron stacks compose",
+    "name": "Nombre",
+    "status": "Estado",
+    "services": "Servicios",
+    "actions": "Acciones",
+    "stop": "Detener",
+    "delete": "Eliminar"
   },
   "tunnels": {
     "title": "Túneles Cloudflare",
-    "comingSoon": "Gestión de túneles próximamente..."
+    "empty": "No se encontraron túneles",
+    "name": "Nombre",
+    "status": "Estado",
+    "actions": "Acciones",
+    "start": "Iniciar",
+    "stop": "Detener",
+    "delete": "Eliminar"
   },
   "settings": {
     "title": "Configuración",
@@ -153,6 +347,16 @@
     "more": "Más",
     "moreOptions": "Más Opciones",
     "expand": "Expandir",
-    "collapse": "Colapsar"
+    "collapse": "Colapsar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "view": "Ver",
+    "back": "Volver",
+    "optional": "opcional",
+    "ok": "OK",
+    "yes": "Sí",
+    "no": "No",
+    "enabled": "Habilitado",
+    "disabled": "Deshabilitado"
   }
 }
