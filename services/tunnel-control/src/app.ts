@@ -83,6 +83,11 @@ export async function createApp(config: Config) {
     }
   }
 
+  // Simple liveness probe for Docker healthcheck (no prefix, accessible at /healthz)
+  fastify.get('/healthz', async (_request, reply) => {
+    return reply.send({ status: 'alive' });
+  });
+
   // Error handler
   fastify.setErrorHandler(errorHandler);
 

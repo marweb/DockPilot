@@ -3,8 +3,8 @@ import { getDocker, getDockerInfo, getDockerVersion, checkDockerConnection } fro
 import type { DockerInfo, DockerVersion, DiskUsage } from '@dockpilot/types';
 
 export async function systemRoutes(fastify: FastifyInstance) {
-  // Health check
-  fastify.get('/healthz', async (_request, reply) => {
+  // Detailed Docker health check (available at /health)
+  fastify.get('/health', async (_request, reply) => {
     const dockerConnected = await checkDockerConnection();
     
     if (!dockerConnected) {
