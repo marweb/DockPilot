@@ -130,7 +130,7 @@ Instala DockPilot con un solo comando. Soporta AMD64 y ARM64 (64-bit).
 curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts/install.sh | sudo bash
 ```
 
-El script instala Docker (si no está presente), descarga las imágenes y arranca los servicios. Al finalizar, abre `http://TU_IP:80` para crear tu cuenta de administrador.
+El script instala Docker (si no está presente), descarga las imágenes y arranca los servicios. Al finalizar, abre `http://TU_IP:8000` para crear tu cuenta de administrador.
 
 ### Método 2: Docker Compose (desarrollo)
 
@@ -157,7 +157,7 @@ Para una guía de instalación detallada, ver [docs/installation.md](docs/instal
 
 ### Primer Acceso
 
-1. Accede a `http://TU_IP:80` (o `http://localhost:80` si es local)
+1. Accede a `http://TU_IP:8000` (o `http://localhost:8000` si es local)
 2. Completa el setup creando tu usuario administrador (username + contraseña)
 3. ¡Empieza a gestionar tus contenedores!
 

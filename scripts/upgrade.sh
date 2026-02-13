@@ -114,7 +114,9 @@ write_status "4" "Images pulled"
 
 # Step 4: Recreate containers
 log "Recreating containers..."
-if ! docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" up -d --remove-orphans --force-recreate; then
+COMPOSE_OUTPUT=$(mktemp)
+trap 'rm -f "$COMPOSE_OUTPUT"' EXIT
+if ! docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" up -d --remove-orphans --force-recreate 2>&1 | tee "$COMPOSE_OUTPUT"; then
   log "Initial container startup failed. Attempting recovery..."
   # Base services (docker-control, tunnel-control) may be running but marked unhealthy
   # Wait for them to become healthy, then retry starting dependent containers
@@ -130,6 +132,9 @@ if ! docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" up -d --remove-orphans
         docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" ps || true
         docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" logs --tail=120 \
           docker-control tunnel-control api-gateway web || true
+        if grep -q "address already in use" "$COMPOSE_OUTPUT" 2>/dev/null; then
+          log "Hint: dockpilot-web could not bind. Check: ss -tulpn | grep :8000"
+        fi
         write_status "5" "Containers failed to start"
         exit 1
       fi
@@ -146,6 +151,9 @@ if ! docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" up -d --remove-orphans
     docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" ps || true
     docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD" logs --tail=120 \
       docker-control tunnel-control api-gateway web || true
+    if grep -q "address already in use" "$COMPOSE_OUTPUT" 2>/dev/null; then
+      log "Hint: dockpilot-web could not bind. Check: ss -tulpn | grep :8000"
+    fi
     write_status "5" "Containers failed to start"
     exit 1
   fi

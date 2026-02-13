@@ -130,7 +130,7 @@ services:
     container_name: dockpilot-web
     restart: unless-stopped
     ports:
-      - '${WEB_PORT:-80}:80'
+      - '${WEB_PORT:-8000}:80'
     environment:
       - NODE_ENV=production
     networks:

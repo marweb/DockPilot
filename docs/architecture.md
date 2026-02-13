@@ -40,7 +40,7 @@ DockPilot sigue una arquitectura de microservicios con los siguientes principios
 ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
 │  Docker       │   │   Tunnel      │   │   Web         │
 │  Control      │   │   Control     │   │   Server      │
-│  (Port 3001)  │   │  (Port 3002)  │   │  (Port 80)    │
+│  (Port 3001)  │   │  (Port 3002)  │   │  (Port 8000)  │
 └───────┬───────┘   └───────┬───────┘   └───────────────┘
         │                   │
         │            ┌──────┴──────┐
@@ -236,7 +236,7 @@ POST   /tunnels/:id/stop
 GET    /tunnels/:id/status
 ```
 
-### Web Server (Puerto 80/443)
+### Web Server (Puerto 8000)
 
 Servidor de archivos estáticos para el frontend.
 

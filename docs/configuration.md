@@ -163,7 +163,7 @@ Variables para el frontend.
 
 | Variable     | Descripción                  | Default                 | Ejemplo               |
 | ------------ | ---------------------------- | ----------------------- | --------------------- |
-| `WEB_PORT`   | Puerto HTTP                  | 80                      | 3000                  |
+| `WEB_PORT`   | Puerto HTTP                  | 8000                    | 3000                  |
 | `API_URL`    | URL de la API                | http://api-gateway:3000 | http://localhost:3001 |
 | `WS_URL`     | URL de WebSocket             | ws://api-gateway:3000   | wss://api.example.com |
 | `ENABLE_HMR` | Hot Module Replacement (dev) | false                   | true                  |
@@ -510,7 +510,7 @@ CLOUDFLARED_PATH=/usr/bin/cloudflared
 TUNNEL_MAX_PER_USER=5
 
 # Web
-WEB_PORT=80
+WEB_PORT=8000
 API_URL=http://api-gateway:3000
 ```
 

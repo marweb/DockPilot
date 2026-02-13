@@ -107,7 +107,7 @@ curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts/i
 
 ### Después de la instalación
 
-1. Abre `http://TU_IP:80` en el navegador
+1. Abre `http://TU_IP:8000` en el navegador
 2. Crea tu cuenta de administrador (username + contraseña)
 3. ¡Listo! Ya puedes gestionar Docker
 
@@ -223,7 +223,7 @@ services:
     container_name: dockpilot-web
     restart: unless-stopped
     ports:
-      - '80:80'
+      - '8000:80'
     environment:
       - API_URL=http://api-gateway:3000
     networks:
@@ -421,9 +421,9 @@ CLOUDFLARED_PATH=/usr/bin/cloudflared
 1. **Abrir DockPilot**
 
    ```
-   http://localhost:80
+   http://localhost:8000
    # o
-   http://<tu-ip>:80
+   http://<tu-ip>:8000
    ```
 
 2. **Configuración Inicial**
@@ -650,10 +650,10 @@ Si todo está correcto, verás:
 ✅ API Gateway: Running on port 3000
 ✅ Docker Control: Connected to Docker socket
 ✅ Tunnel Control: Ready
-✅ Web UI: Serving on port 80
+✅ Web UI: Serving on port 8000
 
 DockPilot está listo!
-Accede a: http://localhost:3000
+Accede a: http://localhost:8000
 ```
 
 ---

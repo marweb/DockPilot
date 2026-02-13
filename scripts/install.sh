@@ -295,6 +295,15 @@ if grep -q "^DOCKPILOT_VERSION=" "$ENV_FILE" 2>/dev/null; then
 else
   echo "DOCKPILOT_VERSION=${LATEST_VERSION}" >> "$ENV_FILE"
 fi
+
+# Allow WEB_PORT override from environment (e.g. WEB_PORT=8080 for port conflict)
+if [ -n "${WEB_PORT:-}" ]; then
+  if grep -q "^WEB_PORT=" "$ENV_FILE" 2>/dev/null; then
+    sed -i "s|^WEB_PORT=.*|WEB_PORT=${WEB_PORT}|" "$ENV_FILE"
+  else
+    echo "WEB_PORT=${WEB_PORT}" >> "$ENV_FILE"
+  fi
+fi
 echo " Done."
 
 # Step 8/9: SSH keys
@@ -325,6 +334,32 @@ fi
 chown -R 9999:root /data/dockpilot 2>/dev/null || true
 chmod -R 700 /data/dockpilot 2>/dev/null || true
 echo " Done."
+
+# Check if WEB_PORT is available before starting containers
+# Only dockpilot-web uses WEB_PORT (default 8000); other services use 3000, 3001, 3002 (internal)
+WEB_PORT="${WEB_PORT:-8000}"
+if [ -f "$ENV_FILE" ] && grep -q "^WEB_PORT=" "$ENV_FILE" 2>/dev/null; then
+  WEB_PORT=$(grep "^WEB_PORT=" "$ENV_FILE" | cut -d'=' -f2)
+fi
+if (ss -tuln 2>/dev/null || netstat -tuln 2>/dev/null || true) | grep -qE ":${WEB_PORT}[^0-9]|:${WEB_PORT}\$"; then
+  echo ""
+  echo -e "${RED}ERROR: Port ${WEB_PORT} is already in use.${NC}"
+  echo ""
+  echo "DockPilot web (the only service using port ${WEB_PORT}) cannot start."
+  echo ""
+  echo "What is using port ${WEB_PORT}:"
+  (ss -tulpn 2>/dev/null || netstat -tulpn 2>/dev/null || true) | grep -E ":${WEB_PORT}[^0-9]|:${WEB_PORT}\$" || echo "  (could not determine)"
+  echo ""
+  # Check if it might be a leftover from a previous DockPilot install
+  if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q 'dockpilot'; then
+    echo "DockPilot containers from a previous install were found."
+    echo "  Try cleaning up first: cd ${SOURCE_DIR} && docker compose -f docker-compose.yml -f docker-compose.prod.yml down"
+    echo ""
+  fi
+  echo "Then either free port ${WEB_PORT} or use: WEB_PORT=8888 bash install.sh"
+  echo ""
+  exit 1
+fi
 
 # Step 9/9: Install DockPilot
 log_section "Step 9/9: Installing DockPilot"
@@ -395,9 +430,13 @@ echo -e "\033[0m"
 echo ""
 echo "Congratulations! DockPilot is installed!"
 echo ""
-echo "Open http://${PRIVATE_IP:-localhost}:80 to create your admin account."
+FINAL_WEB_PORT="8000"
+if [ -f "$ENV_FILE" ] && grep -q "^WEB_PORT=" "$ENV_FILE" 2>/dev/null; then
+  FINAL_WEB_PORT=$(grep "^WEB_PORT=" "$ENV_FILE" | cut -d'=' -f2)
+fi
+echo "Open http://${PRIVATE_IP:-localhost}:${FINAL_WEB_PORT} to create your admin account."
 if [ -n "$PUBLIC_IP" ] && [ "$PUBLIC_IP" != "$PRIVATE_IP" ]; then
-  echo "Or http://${PUBLIC_IP}:80 if accessing from the internet."
+  echo "Or http://${PUBLIC_IP}:${FINAL_WEB_PORT} if accessing from the internet."
 fi
 echo ""
 echo "IMPORTANT: Create your admin account immediately!"

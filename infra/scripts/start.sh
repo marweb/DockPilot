@@ -210,7 +210,7 @@ print_access_info() {
         echo -e "${GREEN}Docker Control:${NC}    http://localhost:3001"
         echo -e "${GREEN}Tunnel Control:${NC}   http://localhost:3002"
     else
-        echo -e "${GREEN}Web Interface:${NC}     http://localhost:80"
+        echo -e "${GREEN}Web Interface:${NC}     http://localhost:8000"
         echo -e "${GREEN}API Gateway:${NC}       http://localhost:3000"
         echo -e "${GREEN}Docker Control:${NC}    http://localhost:3001 (internal)"
         echo -e "${GREEN}Tunnel Control:${NC}   http://localhost:3002 (internal)"
