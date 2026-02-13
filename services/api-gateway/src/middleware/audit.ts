@@ -121,8 +121,8 @@ export async function auditMiddleware(request: FastifyRequest, reply: FastifyRep
           : undefined;
 
       void logAuditEntry({
-        userId: request.user?.id || 'anonymous',
-        username: request.user?.username || 'anonymous',
+        userId: (request.user as { id?: string })?.id || 'anonymous',
+        username: (request.user as { username?: string })?.username || 'anonymous',
         action: `${resource}.${action}`,
         resource,
         resourceId: (request.params as Record<string, string> | undefined)?.id,
@@ -247,7 +247,7 @@ export async function auditRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get<{
     Querystring: z.infer<typeof auditLogsQuerySchema>;
   }>('/audit/logs', async (request, reply) => {
-    if (!request.user || request.user.role !== 'admin') {
+    if (!request.user || (request.user as { role?: string }).role !== 'admin') {
       return reply.status(403).send({
         success: false,
         error: {
@@ -273,7 +273,7 @@ export async function auditRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Get audit configuration (admin only)
   fastify.get('/audit/config', async (request, reply) => {
-    if (!request.user || request.user.role !== 'admin') {
+    if (!request.user || (request.user as { role?: string }).role !== 'admin') {
       return reply.status(403).send({
         success: false,
         error: {
@@ -293,7 +293,7 @@ export async function auditRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.patch<{
     Body: Partial<AuditConfig>;
   }>('/audit/config', async (request, reply) => {
-    if (!request.user || request.user.role !== 'admin') {
+    if (!request.user || (request.user as { role?: string }).role !== 'admin') {
       return reply.status(403).send({
         success: false,
         error: {

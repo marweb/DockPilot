@@ -116,12 +116,13 @@ JWT_EXPIRES_IN=86400  # 24 horas en segundos
 
 ```bash
 # Resetear contraseña de admin (requiere acceso a contenedor)
-docker exec -it dockpilot-api sqlite3 /data/dockpilot.db \
-  "UPDATE users SET password_hash = '\$2b\$10\$...' WHERE username = 'admin';"
+# Generar hash con: node -e "const argon2=require('argon2');argon2.hash('nueva-password').then(console.log)"
+docker exec -it dockpilot-api-gateway sqlite3 /data/dockpilot.db \
+  "UPDATE users SET password_hash = '\$argon2id\$v=19\$...' WHERE username = 'admin';"
 
 # O borrar DB y reconfigurar:
 docker-compose down
-rm -f data/dockpilot.db
+docker volume rm dockpilot_api-gateway-data 2>/dev/null || true
 docker-compose up -d
 # Volver a hacer setup inicial
 ```
@@ -290,13 +291,13 @@ sudo chown -R 1000:1000 data/
 
 ```bash
 # Verificar
-docker exec dockpilot-api ls -la /data/
+docker exec dockpilot-api-gateway ls -la /data/
 
 # Si está bloqueada, puede haber otra instancia corriendo
 fuser /data/dockpilot.db
 
 # Corregir permisos
-docker exec dockpilot-api chmod 644 /data/dockpilot.db
+docker exec dockpilot-api-gateway chmod 644 /data/dockpilot.db
 ```
 
 #### 3. Directorios no montados
@@ -439,14 +440,14 @@ docker run --rm -v /var/lib/docker/containers:/containers alpine sh -c \
 
 ```bash
 # Verificar tamaño de SQLite
-du -sh data/dockpilot.db
+docker exec dockpilot-api-gateway du -sh /data/dockpilot.db
 
-# Limpiar logs antiguos
-docker exec dockpilot-api sqlite3 /data/dockpilot.db \
+# Limpiar logs antiguos (máx 10000 se mantienen automáticamente, pero si necesitas más)
+docker exec dockpilot-api-gateway sqlite3 /data/dockpilot.db \
   "DELETE FROM audit_logs WHERE timestamp < datetime('now', '-30 days');"
 
 # Vaciar espacio
-docker exec dockpilot-api sqlite3 /data/dockpilot.db "VACUUM;"
+docker exec dockpilot-api-gateway sqlite3 /data/dockpilot.db "VACUUM;"
 ```
 
 ---
@@ -540,14 +541,14 @@ wscat -c ws://localhost:3000/ws/containers/abc123/logs \
 ### Inspeccionar Base de Datos
 
 ```bash
-# Conectar a SQLite
-docker exec -it dockpilot-api sqlite3 /data/dockpilot.db
+# Conectar a SQLite (el contenedor incluye sqlite3)
+docker exec -it dockpilot-api-gateway sqlite3 /data/dockpilot.db
 
 # Comandos SQLite
-.tables                    # Listar tablas
+.tables                    # Listar tablas (meta, users, audit_logs)
 .schema users             # Ver esquema
-SELECT * FROM users;      # Ver usuarios
-SELECT * FROM audit_logs LIMIT 10;  # Ver logs
+SELECT id, username, role FROM users;      # Ver usuarios
+SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 10;  # Ver logs
 .exit                     # Salir
 ```
 
@@ -600,14 +601,13 @@ docker stack deploy -c docker-compose.yml dockpilot
 tar -czf backup-$(date +%Y%m%d).tar.gz data/ config/ docker-compose.yml .env
 ```
 
+### ¿Cómo migro de db.json a SQLite?
+
+Si tienes una instalación anterior que usaba `db.json`, la migración es automática. Al arrancar, si existe `db.json` en `{DATA_DIR}` y no hay datos en SQLite, se importan usuarios y logs de auditoría. No hace falta hacer nada manualmente.
+
 ### ¿Puedo usar PostgreSQL en lugar de SQLite?
 
-```bash
-# Sí, configurar DATABASE_URL
-DATABASE_URL=postgresql://user:pass@postgres:5432/dockpilot
-
-# Agregar servicio PostgreSQL a docker-compose.yml
-```
+Actualmente DockPilot usa SQLite (`better-sqlite3`) para el API Gateway. No hay soporte para PostgreSQL en esta versión. Para volúmenes grandes o múltiples instancias, considera ejecutar una sola instancia del API Gateway.
 
 ### ¿Cómo desinstalo completamente?
 
@@ -617,7 +617,7 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/dockpilot
 
 # O manual
 docker-compose down -v  # -v elimina volúmenes
-rm -rf /opt/dockpilot
+rm -rf /data/dockpilot
 ```
 
 ### ¿DockPilot es seguro para producción?

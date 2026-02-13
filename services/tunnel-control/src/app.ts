@@ -2,7 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import type { Config } from './config/index.js';
-import { initLogger, getLogger } from './utils/logger.js';
+import { initLogger } from './utils/logger.js';
 import {
   initCloudflared,
   checkCloudflaredInstalled,
@@ -17,12 +17,23 @@ import { healthRoutes } from './routes/health.js';
 import { errorHandler } from './errors/index.js';
 
 export async function createApp(config: Config) {
-  // Initialize logger
   initLogger(config);
-  const logger = getLogger();
 
   const fastify = Fastify({
-    loggerInstance: logger,
+    logger: {
+      level: config.logLevel,
+      transport:
+        process.env.NODE_ENV !== 'production'
+          ? {
+              target: 'pino-pretty',
+              options: {
+                colorize: true,
+                translateTime: 'HH:MM:ss',
+                ignore: 'pid,hostname',
+              },
+            }
+          : undefined,
+    },
     requestIdHeader: 'x-request-id',
     genReqId: () => crypto.randomUUID(),
   });
@@ -87,7 +98,7 @@ export async function createApp(config: Config) {
   await fastify.register(tunnelRoutes, { prefix: '/api' });
   await fastify.register(ingressRoutes, { prefix: '/api' });
 
-  logger.info('All routes registered successfully');
+  fastify.log.info('All routes registered successfully');
 
   return fastify;
 }

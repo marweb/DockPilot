@@ -12,9 +12,9 @@ import {
   Unlink,
 } from 'lucide-react';
 import type { Network as NetworkType } from '@dockpilot/types';
-import api from '../../api/client';
-import NetworkList from '../../components/networks/NetworkList';
-import NetworkDetails from '../../components/networks/NetworkDetails';
+import api from '../api/client';
+import NetworkList from '../components/networks/NetworkList';
+import NetworkDetails from '../components/networks/NetworkDetails';
 
 export default function Networks() {
   const { t } = useTranslation();

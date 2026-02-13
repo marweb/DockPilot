@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { UserRole } from '@dockpilot/types';
-import '../types/fastify.js';
+import { getUser } from '../types/fastify.js';
 
 export type Resource =
   | 'containers'
@@ -40,9 +40,10 @@ export type Action =
   | 'tag'
   | 'change-role'
   | 'reset-password'
+  | 'change-password'
   | '*';
 
-export type Permission = `${Resource}:${Action}`;
+export type Permission = `${Resource}:${Action}` | '*:*';
 
 interface RolePermissions {
   [role: string]: Permission[];
@@ -133,7 +134,7 @@ export function checkPermission(role: UserRole, resource: Resource, action: Acti
   }
 
   // Check for global wildcard (admin)
-  if (permissions.includes('*:*')) {
+  if (permissions.includes('*:*' as Permission)) {
     return true;
   }
 
@@ -154,7 +155,7 @@ export function checkPermissionString(role: UserRole, permissionString: string):
  */
 export function requireRole(allowedRoles: UserRole[]) {
   return async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    if (!request.user) {
+    if (!getUser(request)) {
       reply.status(401).send({
         success: false,
         error: {
@@ -165,7 +166,7 @@ export function requireRole(allowedRoles: UserRole[]) {
       return;
     }
 
-    if (!allowedRoles.includes(request.user.role)) {
+    if (!allowedRoles.includes(getUser(request)!.role)) {
       reply.status(403).send({
         success: false,
         error: {
@@ -183,7 +184,7 @@ export function requireRole(allowedRoles: UserRole[]) {
  */
 export function requirePermission(resource: Resource, action: Action) {
   return async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    if (!request.user) {
+    if (!getUser(request)) {
       reply.status(401).send({
         success: false,
         error: {
@@ -194,7 +195,7 @@ export function requirePermission(resource: Resource, action: Action) {
       return;
     }
 
-    if (!checkPermission(request.user.role, resource, action)) {
+    if (!checkPermission(getUser(request)!.role, resource, action)) {
       reply.status(403).send({
         success: false,
         error: {

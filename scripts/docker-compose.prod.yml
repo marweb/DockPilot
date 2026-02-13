@@ -1,0 +1,22 @@
+# DockPilot - Production override
+#
+# Used together with docker-compose.yml for production deployments.
+# Adds pull policy and any production-specific overrides.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --pull always
+
+version: '3.8'
+
+services:
+  api-gateway:
+    pull_policy: always
+
+  docker-control:
+    pull_policy: always
+
+  tunnel-control:
+    pull_policy: always
+
+  web:
+    pull_policy: always

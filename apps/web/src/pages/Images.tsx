@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Search, RefreshCw, Trash2, Download, Plus, Image, Tag, Clock, Layers } from 'lucide-react';
 import type { Image } from '@dockpilot/types';
-import api from '../../api/client';
-import ImageList from '../../components/images/ImageList';
-import ImagePull from '../../components/images/ImagePull';
+import api from '../api/client';
+import ImageList from '../components/images/ImageList';
+import ImagePull from '../components/images/ImagePull';
 
 export default function Images() {
   const { t } = useTranslation();

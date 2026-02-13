@@ -13,7 +13,7 @@ const createVolumeBody = z.object({
 
 export async function volumeRoutes(fastify: FastifyInstance) {
   // List volumes
-  fastify.get('/volumes', async (request, reply) => {
+  fastify.get('/volumes', async (_request, reply) => {
     const docker = getDocker();
 
     const result = await docker.listVolumes();
@@ -22,10 +22,10 @@ export async function volumeRoutes(fastify: FastifyInstance) {
       name: v.Name,
       driver: v.Driver,
       mountpoint: v.Mountpoint,
-      createdAt: v.CreatedAt,
+      createdAt: (v as { CreatedAt?: string }).CreatedAt,
       labels: v.Labels || {},
       scope: v.Scope as 'local' | 'global',
-      options: v.Options,
+      options: v.Options ?? undefined,
       usageData: v.UsageData
         ? {
             size: v.UsageData.Size,
@@ -50,10 +50,10 @@ export async function volumeRoutes(fastify: FastifyInstance) {
         name: inspect.Name,
         driver: inspect.Driver,
         mountpoint: inspect.Mountpoint,
-        createdAt: inspect.CreatedAt,
+        createdAt: (inspect as { CreatedAt?: string }).CreatedAt,
         labels: inspect.Labels || {},
         scope: inspect.Scope as 'local' | 'global',
-        options: inspect.Options,
+        options: inspect.Options ?? undefined,
         status: inspect.Status,
         usageData: inspect.UsageData
           ? {
@@ -123,7 +123,7 @@ export async function volumeRoutes(fastify: FastifyInstance) {
   });
 
   // Prune volumes
-  fastify.post('/volumes/prune', async (request, reply) => {
+  fastify.post('/volumes/prune', async (_request, reply) => {
     const docker = getDocker();
 
     try {

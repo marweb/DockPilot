@@ -15,11 +15,11 @@ import {
   Terminal,
 } from 'lucide-react';
 import type { Container, ContainerStatus } from '@dockpilot/types';
-import api from '../../api/client';
-import ContainerList from '../../components/containers/ContainerList';
-import ContainerDetails from '../../components/containers/ContainerDetails';
-import ContainerLogs from '../../components/containers/ContainerLogs';
-import ContainerExec from '../../components/containers/ContainerExec';
+import api from '../api/client';
+import ContainerList from '../components/containers/ContainerList';
+import ContainerDetails from '../components/containers/ContainerDetails';
+import ContainerLogs from '../components/containers/ContainerLogs';
+import ContainerExec from '../components/containers/ContainerExec';
 
 export default function Containers() {
   const { t } = useTranslation();

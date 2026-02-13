@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { UserRole } from '@dockpilot/types';
-import '../types/fastify.js';
+import { getUser } from '../types/fastify.js';
 
 // Permission definitions by role
 const rolePermissions: Record<UserRole, string[]> = {
@@ -83,11 +83,14 @@ function hasPermission(role: UserRole, permission: string): boolean {
 // JWT authentication middleware
 export async function authMiddleware(request: FastifyRequest, reply: FastifyReply): Promise<void> {
   try {
-    // Skip auth for setup and login endpoints
+    // Skip auth for setup, login, refresh and logout endpoints
     const skipAuthPaths = [
       '/api/auth/setup',
       '/api/auth/login',
       '/api/auth/setup-status',
+      '/api/auth/refresh',
+      '/api/auth/logout',
+      '/api/health',
       '/healthz',
     ];
 
@@ -128,7 +131,7 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
 // RBAC middleware factory
 export function requirePermission(permission: string) {
   return async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    if (!request.user) {
+    if (!getUser(request)) {
       reply.status(401).send({
         success: false,
         error: 'Not authenticated',
@@ -136,7 +139,7 @@ export function requirePermission(permission: string) {
       return;
     }
 
-    if (!hasPermission(request.user.role, permission)) {
+    if (!hasPermission(getUser(request)!.role, permission)) {
       reply.status(403).send({
         success: false,
         error: 'Insufficient permissions',
@@ -156,7 +159,7 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
     return;
   }
 
-  if (request.user.role !== 'admin') {
+  if (getUser(request)!.role !== 'admin') {
     reply.status(403).send({
       success: false,
       error: 'Admin access required',
@@ -228,6 +231,15 @@ export const routePermissions: Record<string, string> = {
   'GET:/api/df': 'system:read',
   'GET:/api/ping': 'system:read',
 
+  // Users
+  'GET:/api/users': 'users:list',
+  'POST:/api/users': 'users:create',
+  'GET:/api/users/:id': 'users:get',
+  'PUT:/api/users/:id': 'users:update',
+  'DELETE:/api/users/:id': 'users:delete',
+  'POST:/api/users/:id/change-role': 'users:update',
+  'POST:/api/users/:id/reset-password': 'users:update',
+
   // Tunnels
   'GET:/api/tunnels': 'tunnels:list',
   'POST:/api/tunnels': 'tunnels:create',
@@ -245,7 +257,7 @@ export async function routePermissionMiddleware(
   reply: FastifyReply
 ): Promise<void> {
   // Skip for auth routes
-  if (request.url.startsWith('/api/auth') || request.url === '/healthz') {
+  if (request.url.startsWith('/api/auth') || request.url.startsWith('/api/health') || request.url === '/healthz') {
     return;
   }
 
@@ -279,7 +291,7 @@ export async function routePermissionMiddleware(
     }
   }
 
-  if (permission && !hasPermission(request.user.role, permission)) {
+    if (permission && !hasPermission(getUser(request)!.role, permission)) {
     reply.status(403).send({
       success: false,
       error: 'Insufficient permissions',

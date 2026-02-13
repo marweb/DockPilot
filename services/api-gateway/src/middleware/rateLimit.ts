@@ -141,7 +141,7 @@ function getRateLimitHeaders(entry: RateLimitEntry, maxRequests: number): Record
  */
 export function createRateLimitMiddleware(config?: Partial<RateLimitConfig>) {
   return async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    const role: UserRole = request.user?.role || 'viewer';
+    const role: UserRole = (request.user as { role?: UserRole })?.role || 'viewer';
     const roleConfig = defaultRoleLimits[role];
 
     const finalConfig: RateLimitConfig = {
@@ -150,7 +150,7 @@ export function createRateLimitMiddleware(config?: Partial<RateLimitConfig>) {
     };
 
     // Generate key based on user ID or IP
-    const identifier = request.user?.id || request.ip;
+    const identifier = (request.user as { id?: string })?.id || request.ip;
     const key = generateKey(identifier, request.user ? 'user' : 'ip');
 
     const entry = incrementCount(key, finalConfig.windowMs);
@@ -187,11 +187,11 @@ export async function rateLimitMiddleware(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
-  const role: UserRole = request.user?.role || 'viewer';
+  const role: UserRole = (request.user as { role?: UserRole })?.role || 'viewer';
   const config = defaultRoleLimits[role];
 
   // Generate key based on user ID or IP
-  const identifier = request.user?.id || request.ip;
+  const identifier = (request.user as { id?: string })?.id || request.ip;
   const key = generateKey(identifier, request.user ? 'user' : 'ip');
 
   const entry = incrementCount(key, config.windowMs);

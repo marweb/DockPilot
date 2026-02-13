@@ -3,6 +3,7 @@ import { z } from 'zod';
 const configSchema = z.object({
   port: z.number().default(3000),
   host: z.string().default('0.0.0.0'),
+  corsOrigin: z.string().optional(),
   jwtSecret: z.string().min(32),
   jwtExpiresIn: z.string().default('15m'),
   refreshTokenExpiresIn: z.string().default('7d'),
@@ -21,6 +22,7 @@ export function loadConfig(): Config {
   return configSchema.parse({
     port: process.env.PORT ? parseInt(process.env.PORT, 10) : undefined,
     host: process.env.HOST,
+    corsOrigin: process.env.CORS_ORIGIN,
     jwtSecret: process.env.JWT_SECRET,
     jwtExpiresIn: process.env.JWT_EXPIRES_IN,
     refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,

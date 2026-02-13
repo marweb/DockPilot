@@ -7,10 +7,6 @@ import {
   Image,
   HardDrive,
   Network,
-  Hammer,
-  Layers,
-  Globe,
-  Settings,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -23,16 +19,13 @@ interface SidebarProps {
   defaultCollapsed?: boolean;
 }
 
+// Navigation items - placeholder pages (builds, compose, tunnels, settings) hidden until implemented
 const navigation = [
   { name: 'dashboard', href: '/', icon: Home },
   { name: 'containers', href: '/containers', icon: Box },
   { name: 'images', href: '/images', icon: Image },
   { name: 'volumes', href: '/volumes', icon: HardDrive },
   { name: 'networks', href: '/networks', icon: Network },
-  { name: 'builds', href: '/builds', icon: Hammer },
-  { name: 'compose', href: '/compose', icon: Layers },
-  { name: 'tunnels', href: '/tunnels', icon: Globe },
-  { name: 'settings', href: '/settings', icon: Settings },
 ];
 
 export default function Sidebar({

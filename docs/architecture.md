@@ -123,10 +123,10 @@ El punto de entrada único para todas las peticiones.
 
 **Tecnologías:**
 
-- Express.js
+- Fastify
 - JWT (jsonwebtoken)
 - Helmet (seguridad)
-- Cors
+- better-sqlite3 (SQLite)
 
 **Endpoints expuestos:**
 
@@ -299,49 +299,47 @@ GET /health
 
 ## 🗄️ Base de Datos y Almacenamiento
 
-### SQLite (Por defecto)
+### SQLite (API Gateway)
 
-```
-/data/dockpilot.db
-├── users
-├── sessions
-├── tunnel_configs
-├── compose_projects
-└── audit_logs
-```
+El API Gateway usa SQLite (`better-sqlite3`) para usuarios, metadatos de setup y logs de auditoría. El archivo se guarda en el volumen montado.
 
-**Tablas principales:**
+**Ubicación:** `{DATA_DIR}/dockpilot.db` (por defecto `/data/dockpilot.db`)
+
+**Migración automática:** Si existe `db.json` en el mismo directorio, los datos se migran a SQLite al arrancar.
+
+**Tablas:**
 
 ```sql
+-- Metadatos (setup completado, etc.)
+CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
+
 -- Usuarios
 CREATE TABLE users (
-  id INTEGER PRIMARY KEY,
+  id TEXT PRIMARY KEY,
   username TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  role TEXT DEFAULT 'user',
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Configuraciones de túneles
-CREATE TABLE tunnel_configs (
-  id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL,
-  subdomain TEXT,
-  container_id TEXT,
-  port INTEGER,
-  status TEXT DEFAULT 'stopped'
+  role TEXT NOT NULL,
+  refresh_token TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
 );
 
 -- Logs de auditoría
 CREATE TABLE audit_logs (
-  id INTEGER PRIMARY KEY,
-  user_id INTEGER,
+  id TEXT PRIMARY KEY,
+  timestamp TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  username TEXT NOT NULL,
   action TEXT NOT NULL,
-  resource TEXT,
+  resource TEXT NOT NULL,
+  resource_id TEXT,
   details TEXT,
-  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+  ip TEXT NOT NULL,
+  user_agent TEXT NOT NULL
 );
 ```
+
+**Nota:** Las configuraciones de túneles y proyectos Compose se gestionan en el servicio tunnel-control y docker-control respectivamente, no en esta base de datos.
 
 ### Volúmenes Docker
 
@@ -358,9 +356,8 @@ volumes:
 ### Backup de Datos
 
 ```bash
-# Script de backup
-#!/bin/bash
-docker exec dockpilot-api sqlite3 /data/dockpilot.db ".backup /backup/dockpilot_$(date +%Y%m%d).db"
+# Backup de SQLite (API Gateway)
+docker exec dockpilot-api-gateway sqlite3 /data/dockpilot.db ".backup /backup/dockpilot_$(date +%Y%m%d).db"
 ```
 
 ## 🔒 Seguridad

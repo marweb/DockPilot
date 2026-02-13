@@ -1,6 +1,6 @@
 import { loadConfig } from './config/index.js';
 import { createApp } from './app.js';
-import { isSetupComplete, createUser, findUserByUsername } from './services/database.js';
+import { isSetupComplete, completeSetup, createUser, findUserByUsername } from './services/database.js';
 import * as argon2 from 'argon2';
 
 async function main() {
@@ -15,7 +15,7 @@ async function main() {
   const app = await createApp(config);
 
   // Check if setup is needed and create initial admin if password provided
-  const setupComplete = await isSetupComplete();
+  let setupComplete = await isSetupComplete();
   if (!setupComplete && config.initialAdminPassword) {
     app.log.info('Creating initial admin user...');
 
@@ -27,6 +27,8 @@ async function main() {
         passwordHash,
         role: 'admin',
       });
+      await completeSetup();
+      setupComplete = true;
       app.log.info('Initial admin user created with username: admin');
       app.log.warn('IMPORTANT: Please change the admin password after first login!');
     }

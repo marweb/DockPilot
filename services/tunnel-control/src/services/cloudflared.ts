@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, type ChildProcess } from 'child_process';
 import { readFile, writeFile, mkdir, rm, readdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
@@ -6,14 +6,6 @@ import EventEmitter from 'events';
 import type { Config } from '../config/index.js';
 import type { Tunnel, TunnelStatus, IngressRule } from '@dockpilot/types';
 import { getLogger } from '../utils/logger.js';
-import {
-  createTunnel as createCloudflareTunnel,
-  deleteTunnel as deleteCloudflareTunnel,
-  getTunnelToken,
-  isAuthenticated,
-  getCurrentAccountId,
-  CloudflareAPIError,
-} from './cloudflare-api.js';
 import { loadCredentials, getDefaultAccount } from './credentials.js';
 
 const logger = getLogger();
@@ -119,7 +111,7 @@ export async function listTunnels(): Promise<Tunnel[]> {
 
   const result: Tunnel[] = [];
 
-  for (const [id, tunnel] of tunnels) {
+  for (const [, tunnel] of tunnels) {
     result.push({
       id: tunnel.id,
       name: tunnel.name,
@@ -180,9 +172,9 @@ async function loadStoredTunnels(): Promise<void> {
           id: stored.id,
           name: stored.name,
           accountId: stored.accountId,
-          zoneId: stored.zoneId,
-          credentialsFile: stored.credentialsPath,
-          ingress: stored.ingress,
+          zoneId: stored.zoneId ?? '',
+          credentialsFile: stored.credentialsPath ?? '',
+          ingress: (stored.ingress ?? []).map((r) => ({ ...r, port: r.port ?? 80 })),
           status: 'inactive',
           logs: [],
           restartCount: 0,
@@ -295,8 +287,8 @@ export async function createTunnel(
     return {
       id: tunnelId,
       name,
-      accountId: useAccountId,
-      zoneId,
+      accountId: useAccountId ?? '',
+      zoneId: zoneId ?? undefined,
       status: 'inactive',
       createdAt: new Date(),
       ingressRules: [],

@@ -30,9 +30,11 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Install cloudflared
+# Install cloudflared (multi-arch: amd64, arm64)
+ARG TARGETARCH
 RUN apk add --no-cache curl && \
-    curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared && \
+    CLOUDFLARED_ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") && \
+    curl -L "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CLOUDFLARED_ARCH}" -o /usr/local/bin/cloudflared && \
     chmod +x /usr/local/bin/cloudflared
 
 # Install pnpm

@@ -35,7 +35,7 @@ export const IngressRuleSchema = z.object({
       /^(http|https|tcp|udp|unix|ssh):\/\/.+/,
       'Service must be a valid URL (http://, https://, tcp://, etc.)'
     ),
-  port: z.number().optional(),
+  port: z.number().default(80),
   originRequest: z
     .object({
       connectTimeout: z.number().optional(),

@@ -85,74 +85,52 @@ newgrp docker
 
 ## 🚀 Método 1: Instalador Automático (Recomendado)
 
-El método más rápido y fácil. Descarga e instala todo automáticamente.
+El método más rápido y fácil. Instala DockPilot con un solo comando. Soporta **AMD64** y **ARM64** (sistemas 64-bit).
 
 ### Instalación con One-Liner
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dockpilot/install/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/main/scripts/install.sh | sudo bash
 ```
-
-### Instalación con Opciones
-
-```bash
-# Con puerto personalizado
-curl -fsSL https://raw.githubusercontent.com/dockpilot/install/main/install.sh | sudo bash -s -- --port 8080
-
-# Con directorio de datos personalizado
-curl -fsSL https://raw.githubusercontent.com/dockpilot/install/main/install.sh | sudo bash -s -- --data-dir /mnt/dockpilot
-
-# Versión específica
-curl -fsSL https://raw.githubusercontent.com/dockpilot/install/main/install.sh | sudo bash -s -- --version 1.2.0
-
-# Desinstalar
-curl -fsSL https://raw.githubusercontent.com/dockpilot/install/main/install.sh | sudo bash -s -- --uninstall
-```
-
-### Opciones del Instalador
-
-| Opción        | Descripción                    | Default        |
-| ------------- | ------------------------------ | -------------- |
-| `--port`      | Puerto HTTP para DockPilot     | 3000           |
-| `--data-dir`  | Directorio de datos            | /opt/dockpilot |
-| `--version`   | Versión a instalar             | latest         |
-| `--channel`   | Canal (stable/beta/nightly)    | stable         |
-| `--no-start`  | No iniciar después de instalar | false          |
-| `--uninstall` | Desinstalar DockPilot          | false          |
-| `--help`      | Mostrar ayuda                  | -              |
 
 ### Qué hace el instalador
 
-1. ✅ Verifica requisitos del sistema
-2. ✅ Descarga última versión estable
-3. ✅ Crea directorio de instalación (`/opt/dockpilot`)
-4. ✅ Genera docker-compose.yml
-5. ✅ Crea archivos de configuración
-6. ✅ Configura systemd service (opcional)
-7. ✅ Inicia los servicios
-8. ✅ Muestra instrucciones de acceso
+1. ✅ Instala paquetes requeridos (curl, wget, git, jq, openssl)
+2. ✅ Verifica/instala OpenSSH server
+3. ✅ Verifica/instala Docker Engine
+4. ✅ Configura Docker daemon (logs, etc.)
+5. ✅ Crea directorio `/data/dockpilot/`
+6. ✅ Descarga docker-compose y configuración desde GitHub
+7. ✅ Genera JWT_SECRET automáticamente
+8. ✅ Descarga imágenes Docker de ghcr.io y arranca servicios
+9. ✅ Muestra URL de acceso
+
+### Después de la instalación
+
+1. Abre `http://TU_IP:80` en el navegador
+2. Crea tu cuenta de administrador (username + contraseña)
+3. ¡Listo! Ya puedes gestionar Docker
 
 ### Estructura de Instalación
 
 ```
-/opt/dockpilot/
-├── docker-compose.yml
-├── .env
-├── config/
-│   ├── api-gateway.conf
-│   ├── docker-control.conf
-│   └── tunnel-control.conf
-├── data/
-│   └── dockpilot.db
-├── logs/
-│   ├── api-gateway.log
-│   ├── docker-control.log
-│   └── tunnel-control.log
-├── backups/
-└── scripts/
-    ├── update.sh
-    ├── backup.sh
-    └── uninstall.sh
+/data/dockpilot/
+├── source/
+│   ├── docker-compose.yml
+│   ├── docker-compose.prod.yml
+│   ├── .env
+│   ├── upgrade.sh
+│   └── .upgrade-status
+├── ssh/
+│   └── keys/
+└── backups/
+```
+
+### Actualizar DockPilot
+
+```bash
+cd /data/dockpilot/source
+./upgrade.sh latest
 ```
 
 ---
@@ -186,7 +164,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - DOCKER_CONTROL_URL=http://docker-control:3001
       - TUNNEL_CONTROL_URL=http://tunnel-control:3002
-      - DB_PATH=/data/dockpilot.db
+      - DATA_DIR=/data
       - LOG_LEVEL=info
     volumes:
       - ./data:/data
@@ -268,8 +246,8 @@ cat > .env << 'EOF'
 # JWT Secret (generar uno seguro)
 JWT_SECRET=$(openssl rand -base64 32)
 
-# Base de datos
-DB_PATH=/data/dockpilot.db
+# Base de datos (SQLite en /data/dockpilot.db)
+DATA_DIR=/data
 
 # Configuración de logs
 LOG_LEVEL=info
@@ -414,7 +392,7 @@ API_PORT=3000
 JWT_SECRET=dev-secret-key
 DOCKER_CONTROL_URL=http://localhost:3001
 TUNNEL_CONTROL_URL=http://localhost:3002
-DB_PATH=./data/dev.db
+DATA_DIR=./data
 
 # Docker Control
 DOCKER_CONTROL_PORT=3001
@@ -443,15 +421,14 @@ CLOUDFLARED_PATH=/usr/bin/cloudflared
 1. **Abrir DockPilot**
 
    ```
-   http://localhost:3000
+   http://localhost:80
    # o
-   http://<tu-ip>:3000
+   http://<tu-ip>:80
    ```
 
 2. **Configuración Inicial**
-   - Seleccionar idioma
-   - Configurar zona horaria
-   - Revisar términos de servicio
+   - Crear usuario administrador (username + contraseña)
+   - La primera vez que accedas, serás redirigido automáticamente a `/setup`
 
 ### Crear Usuario Administrador
 
@@ -540,46 +517,36 @@ server {
 
 ### Configurar Backups Automáticos
 
-**Script de backup:**
+**Script de backup (instalación con curl):**
 
 ```bash
 #!/bin/bash
-# /opt/dockpilot/scripts/backup.sh
+# Backup para instalaciones en /data/dockpilot
 
-BACKUP_DIR="/opt/dockpilot/backups"
+BACKUP_DIR="/data/dockpilot/backups"
+SOURCE_DIR="/data/dockpilot/source"
 DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="dockpilot_backup_$DATE.tar.gz"
 
-# Crear directorio si no existe
 mkdir -p $BACKUP_DIR
+cd $SOURCE_DIR
 
-# Detener servicios temporalmente
-docker-compose down
-
-# Backup de datos
+# Backup de configuración (datos en volúmenes Docker requieren backup adicional)
 tar -czf "$BACKUP_DIR/$BACKUP_FILE" \
-  /opt/dockpilot/data \
-  /opt/dockpilot/config \
-  /opt/dockpilot/docker-compose.yml \
-  /opt/dockpilot/.env
+  $SOURCE_DIR/.env \
+  $SOURCE_DIR/docker-compose.yml \
+  $SOURCE_DIR/docker-compose.prod.yml
 
-# Iniciar servicios
-docker-compose up -d
-
-# Eliminar backups antiguos (mantener 7 días)
 find $BACKUP_DIR -name "dockpilot_backup_*.tar.gz" -mtime +7 -delete
-
 echo "Backup completado: $BACKUP_FILE"
 ```
 
-**Cron job para backups diarios:**
+**Cron job para backups diarios:** (guarda el script como `/usr/local/bin/dockpilot-backup.sh` y hazlo ejecutable)
 
 ```bash
-# Editar crontab
 sudo crontab -e
-
-# Agregar línea (backup diario a las 2 AM)
-0 2 * * * /opt/dockpilot/scripts/backup.sh >> /var/log/dockpilot-backup.log 2>&1
+# Backup diario a las 2 AM
+0 2 * * * /usr/local/bin/dockpilot-backup.sh >> /var/log/dockpilot-backup.log 2>&1
 ```
 
 ---

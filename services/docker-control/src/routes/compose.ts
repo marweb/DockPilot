@@ -67,7 +67,7 @@ async function executeCompose(
 
 export async function composeRoutes(fastify: FastifyInstance) {
   // List compose stacks
-  fastify.get('/compose/stacks', async (request, reply) => {
+  fastify.get('/compose/stacks', async (_request, reply) => {
     await ensureComposeDir();
 
     const stacks: ComposeStack[] = [];

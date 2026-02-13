@@ -40,8 +40,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/types/dist ./node_modules/@dockpilot/types/dist
 COPY --from=builder /app/packages/types/package.json ./node_modules/@dockpilot/types/
 
-# Create data directory
-RUN mkdir -p /data
+# Create data directory and install sqlite3 for debugging/backup
+RUN mkdir -p /data && apk add --no-cache sqlite
 
 # Expose port
 EXPOSE 3000

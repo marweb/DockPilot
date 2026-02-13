@@ -2,7 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import websocket from '@fastify/websocket';
-import pino from 'pino';
+import type { Duplex } from 'stream';
 import type { Config } from './config/index.js';
 import { initDocker } from './services/docker.js';
 import { containerRoutes } from './routes/containers.js';
@@ -20,23 +20,21 @@ import {
 } from './websocket/build.js';
 
 export async function createApp(config: Config) {
-  const logger = pino({
-    level: config.logLevel,
-    transport:
-      process.env.NODE_ENV !== 'production'
-        ? {
-            target: 'pino-pretty',
-            options: {
-              colorize: true,
-              translateTime: 'HH:MM:ss',
-              ignore: 'pid,hostname',
-            },
-          }
-        : undefined,
-  });
-
   const fastify = Fastify({
-    logger,
+    logger: {
+      level: config.logLevel,
+      transport:
+        process.env.NODE_ENV !== 'production'
+          ? {
+              target: 'pino-pretty',
+              options: {
+                colorize: true,
+                translateTime: 'HH:MM:ss',
+                ignore: 'pid,hostname',
+              },
+            }
+          : undefined,
+    },
     requestIdHeader: 'x-request-id',
     genReqId: () => crypto.randomUUID(),
   });
@@ -69,7 +67,7 @@ export async function createApp(config: Config) {
   initDocker(config);
 
   // Health check middleware
-  fastify.addHook('onRequest', async (request, reply) => {
+  fastify.addHook('onRequest', async (request, _reply) => {
     request.log.debug({ url: request.url, method: request.method }, 'Incoming request');
   });
 
@@ -115,7 +113,7 @@ export async function createApp(config: Config) {
 
   // Legacy WebSocket routes (for backward compatibility)
   fastify.register(async function (fastify) {
-    fastify.get('/ws/containers/:id/logs', { websocket: true }, async (connection, request) => {
+    fastify.get('/ws/containers/:id/logs', { websocket: true }, async (socket, request) => {
       const { id } = request.params as { id: string };
       const { tail = 100 } = request.query as { tail?: number };
 
@@ -124,35 +122,35 @@ export async function createApp(config: Config) {
         const docker = getDocker();
         const container = docker.getContainer(id);
 
-        const stream = await container.logs({
+        const logStream = (await container.logs({
           stdout: true,
           stderr: true,
           tail,
           follow: true,
           timestamps: true,
-        });
+        })) as unknown as Duplex;
 
-        stream.on('data', (chunk) => {
+        logStream.on('data', (chunk: Buffer) => {
           const message = chunk.toString('utf-8').replace(/\x00/g, '');
-          connection.socket.send(JSON.stringify({ type: 'log', data: message }));
+          socket.send(JSON.stringify({ type: 'log', data: message }));
         });
 
-        stream.on('error', (err) => {
-          connection.socket.send(JSON.stringify({ type: 'error', data: err.message }));
-          connection.socket.close();
+        logStream.on('error', (err: Error) => {
+          socket.send(JSON.stringify({ type: 'error', data: err.message }));
+          socket.close();
         });
 
-        connection.socket.on('close', () => {
-          stream.destroy();
+        socket.on('close', () => {
+          logStream.destroy();
         });
       } catch (error) {
         const err = error as Error;
-        connection.socket.send(JSON.stringify({ type: 'error', data: err.message }));
-        connection.socket.close();
+        socket.send(JSON.stringify({ type: 'error', data: err.message }));
+        socket.close();
       }
     });
 
-    fastify.get('/ws/containers/:id/exec', { websocket: true }, async (connection, request) => {
+    fastify.get('/ws/containers/:id/exec', { websocket: true }, async (socket, request) => {
       const { id } = request.params as { id: string };
       const { cmd = '/bin/sh' } = request.query as { cmd?: string };
 
@@ -169,40 +167,49 @@ export async function createApp(config: Config) {
           Tty: true,
         });
 
-        const stream = await exec.start({
+        const execStream = await (
+          exec as {
+            start: (opts: {
+              hijack: boolean;
+              stdin: boolean;
+              stdout: boolean;
+              stderr: boolean;
+            }) => Promise<Duplex>;
+          }
+        ).start({
           hijack: true,
           stdin: true,
           stdout: true,
           stderr: true,
         });
 
-        connection.socket.on('message', (data) => {
-          stream.write(data.toString());
+        socket.on('message', (data) => {
+          execStream.write((data as Buffer).toString());
         });
 
-        stream.on('data', (chunk) => {
-          connection.socket.send(chunk.toString());
+        execStream.on('data', (chunk: Buffer) => {
+          socket.send(chunk.toString());
         });
 
-        stream.on('error', (err) => {
-          connection.socket.send(JSON.stringify({ type: 'error', data: err.message }));
-          connection.socket.close();
+        execStream.on('error', (err: Error) => {
+          socket.send(JSON.stringify({ type: 'error', data: err.message }));
+          socket.close();
         });
 
-        connection.socket.on('close', () => {
-          stream.destroy();
+        socket.on('close', () => {
+          execStream.destroy();
         });
       } catch (error) {
         const err = error as Error;
-        connection.socket.send(JSON.stringify({ type: 'error', data: err.message }));
-        connection.socket.close();
+        socket.send(JSON.stringify({ type: 'error', data: err.message }));
+        socket.close();
       }
     });
 
-    fastify.get('/ws/builds/:id', { websocket: true }, async (connection, request) => {
+    fastify.get('/ws/builds/:id', { websocket: true }, async (socket, request) => {
       const { id } = request.params as { id: string };
 
-      connection.socket.send(JSON.stringify({ type: 'connected', buildId: id }));
+      socket.send(JSON.stringify({ type: 'connected', buildId: id }));
     });
   });
 

@@ -10,23 +10,16 @@ interface LogQueryParams {
   until?: string;
 }
 
-interface LogOptions {
-  stdout: boolean;
-  stderr: boolean;
-  follow: boolean;
-  tail: number;
-  timestamps: boolean;
-  since?: number;
-  until?: number;
+/** WebSocket-like interface - @fastify/websocket passes socket as first param */
+interface WebSocketLike {
+  send: (data: string) => void;
+  close: (code?: number, reason?: string) => void;
+  readyState: number;
+  on: (event: string, handler: (data?: unknown) => void) => void;
 }
 
-interface Connection {
-  socket: {
-    send: (data: string) => void;
-    close: () => void;
-    readyState: number;
-    on: (event: string, handler: (data?: unknown) => void) => void;
-  };
+function getSocket(conn: WebSocketLike | { socket: WebSocketLike }): WebSocketLike {
+  return 'socket' in conn ? conn.socket : conn;
 }
 
 /**
@@ -37,11 +30,12 @@ export async function registerContainerLogsWebSocket(fastify: FastifyInstance): 
   fastify.get(
     '/api/containers/:id/logs/stream',
     { websocket: true },
-    async (connection: Connection, request: FastifyRequest) => {
+    async (connection: WebSocketLike | { socket: WebSocketLike }, request: FastifyRequest) => {
+      const socket = getSocket(connection);
       const params = request.params as { id: string };
       const query = request.query as LogQueryParams;
       const { id } = params;
-      const { follow = 'true', tail = '100', timestamps = 'true', since, until } = query;
+      const { tail = '100', timestamps = 'true', since, until } = query;
 
       let stream: Duplex | null = null;
       let isClosed = false;
@@ -56,7 +50,7 @@ export async function registerContainerLogsWebSocket(fastify: FastifyInstance): 
         }
 
         try {
-          connection.socket.close();
+          socket.close();
         } catch {
           // Socket may already be closed
         }
@@ -71,29 +65,24 @@ export async function registerContainerLogsWebSocket(fastify: FastifyInstance): 
         // Verify container exists
         await container.inspect();
 
-        const options: LogOptions = {
+        const tailCount = parseInt(tail, 10) || 100;
+        const logsOptions = {
           stdout: true,
           stderr: true,
-          follow: follow !== 'false',
-          tail: parseInt(tail, 10) || 100,
+          follow: true as const,
+          tail: tailCount,
           timestamps: timestamps !== 'false',
+          ...(since && { since: parseInt(since, 10) }),
+          ...(until && { until: parseInt(until, 10) }),
         };
 
-        if (since) {
-          options.since = parseInt(since, 10);
-        }
+        request.log.info({ containerId: id, options: logsOptions }, 'Starting container logs stream');
 
-        if (until) {
-          options.until = parseInt(until, 10);
-        }
-
-        request.log.info({ containerId: id, options }, 'Starting container logs stream');
-
-        // Get logs stream
-        stream = (await container.logs(options)) as unknown as Duplex;
+        // Get logs stream - when follow: true, Dockerode returns a stream
+        stream = (await container.logs(logsOptions)) as unknown as Duplex;
 
         // Send connection established message
-        connection.socket.send(
+        socket.send(
           JSON.stringify({
             type: 'connected',
             containerId: id,
@@ -110,7 +99,7 @@ export async function registerContainerLogsWebSocket(fastify: FastifyInstance): 
             // Header: [streamType(1 byte)][padding(3 bytes)][length(4 bytes)]
             const message = parseDockerLogStream(chunk);
 
-            connection.socket.send(
+            socket.send(
               JSON.stringify({
                 type: 'log',
                 data: message,
@@ -127,7 +116,7 @@ export async function registerContainerLogsWebSocket(fastify: FastifyInstance): 
           request.log.error({ err, containerId: id }, 'Container logs stream error');
 
           if (!isClosed) {
-            connection.socket.send(
+            socket.send(
               JSON.stringify({
                 type: 'error',
                 error: err.message,
@@ -141,7 +130,7 @@ export async function registerContainerLogsWebSocket(fastify: FastifyInstance): 
         // Handle stream end
         stream.on('end', () => {
           if (!isClosed) {
-            connection.socket.send(
+            socket.send(
               JSON.stringify({
                 type: 'end',
                 message: 'Log stream ended',
@@ -153,25 +142,26 @@ export async function registerContainerLogsWebSocket(fastify: FastifyInstance): 
         });
 
         // Handle client disconnect
-        connection.socket.on('close', () => {
+        socket.on('close', () => {
           request.log.info({ containerId: id }, 'Client disconnected from logs stream');
           cleanup();
         });
 
-        // Handle client errors
-        connection.socket.on('error', (err: Error) => {
+        // Handle client errors - handler receives (data?: unknown)
+        socket.on('error', (data?: unknown) => {
+          const err = data instanceof Error ? data : new Error(String(data));
           request.log.error({ err, containerId: id }, 'WebSocket error');
           cleanup();
         });
 
         // Handle ping/pong to keep connection alive
         const pingInterval = setInterval(() => {
-          if (isClosed || connection.socket.readyState !== 1) {
+          if (isClosed || socket.readyState !== 1) {
             clearInterval(pingInterval);
             return;
           }
 
-          connection.socket.send(
+          socket.send(
             JSON.stringify({
               type: 'ping',
               timestamp: Date.now(),
@@ -179,7 +169,7 @@ export async function registerContainerLogsWebSocket(fastify: FastifyInstance): 
           );
         }, 30000);
 
-        connection.socket.on('close', () => {
+        socket.on('close', () => {
           clearInterval(pingInterval);
         });
       } catch (error) {
@@ -200,7 +190,7 @@ export async function registerContainerLogsWebSocket(fastify: FastifyInstance): 
           statusCode = 400;
         }
 
-        connection.socket.send(
+        socket.send(
           JSON.stringify({
             type: 'error',
             error: errorMessage,

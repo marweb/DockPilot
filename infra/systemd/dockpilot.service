@@ -1,25 +1,22 @@
 [Unit]
 Description=DockPilot - Web-based Docker Administration Platform
-Documentation=https://github.com/dockpilot/dockpilot
+Documentation=https://github.com/marweb/DockerPilot
 Requires=docker.service
 After=docker.service network.target
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-WorkingDirectory=/opt/dockpilot
+WorkingDirectory=/data/dockpilot/source
 
-# Load environment variables from file
-EnvironmentFile=-/opt/dockpilot/infra/.env
+# Load environment variables
+EnvironmentFile=-/data/dockpilot/source/.env
 
 # Start the stack
-ExecStart=/opt/dockpilot/infra/scripts/start.sh
+ExecStart=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # Stop the stack
-ExecStop=/opt/dockpilot/infra/scripts/stop.sh
-
-# Reload/restart the stack
-ExecReload=/opt/dockpilot/infra/scripts/update.sh
+ExecStop=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml down
 
 [Install]
 WantedBy=multi-user.target

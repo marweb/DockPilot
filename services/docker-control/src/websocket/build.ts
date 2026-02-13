@@ -19,13 +19,16 @@ interface BuildMessage {
   data?: unknown;
 }
 
-interface Connection {
-  socket: {
-    send: (data: string) => void;
-    close: () => void;
-    readyState: number;
-    on: (event: string, handler: (data?: unknown) => void) => void;
-  };
+/** WebSocket-like interface - @fastify/websocket passes socket as first param */
+interface WebSocketLike {
+  send: (data: string) => void;
+  close: (code?: number, reason?: string) => void;
+  readyState: number;
+  on: (event: string, handler: (data?: unknown) => void) => void;
+}
+
+function getSocket(conn: WebSocketLike | { socket: WebSocketLike }): WebSocketLike {
+  return 'socket' in conn ? conn.socket : conn;
 }
 
 // Store active builds with their logs and clients
@@ -272,7 +275,8 @@ export async function registerBuildStreamWebSocket(fastify: FastifyInstance): Pr
   fastify.get(
     '/api/builds/:id/stream',
     { websocket: true },
-    async (connection: Connection, request: FastifyRequest) => {
+    async (connection: WebSocketLike | { socket: WebSocketLike }, request: FastifyRequest) => {
+      const socket = getSocket(connection);
       const params = request.params as { id: string };
       const { id: buildId } = params;
       let isClosed = false;
@@ -288,7 +292,7 @@ export async function registerBuildStreamWebSocket(fastify: FastifyInstance): Pr
         }
 
         try {
-          connection.socket.close();
+          socket.close();
         } catch {
           // Socket may already be closed
         }
@@ -300,7 +304,7 @@ export async function registerBuildStreamWebSocket(fastify: FastifyInstance): Pr
         const build = activeBuilds.get(buildId);
 
         if (!build) {
-          connection.socket.send(
+          socket.send(
             JSON.stringify({
               type: 'error',
               error: 'Build not found',
@@ -314,7 +318,7 @@ export async function registerBuildStreamWebSocket(fastify: FastifyInstance): Pr
 
         // Register client
         client = {
-          socket: connection.socket,
+          socket,
           buildId,
           lastLogIndex: 0,
         };
@@ -323,7 +327,7 @@ export async function registerBuildStreamWebSocket(fastify: FastifyInstance): Pr
         request.log.info({ buildId }, 'Client connected to build stream');
 
         // Send connection established message
-        connection.socket.send(
+        socket.send(
           JSON.stringify({
             type: 'connected',
             buildId,
@@ -334,7 +338,7 @@ export async function registerBuildStreamWebSocket(fastify: FastifyInstance): Pr
 
         // Send existing logs to catch up
         if (build.logs.length > 0) {
-          connection.socket.send(
+          socket.send(
             JSON.stringify({
               type: 'logs',
               data: build.logs.join(''),
@@ -346,7 +350,7 @@ export async function registerBuildStreamWebSocket(fastify: FastifyInstance): Pr
 
         // If build already finished, send completion message
         if (build.status !== 'building') {
-          connection.socket.send(
+          socket.send(
             JSON.stringify({
               type: 'complete',
               status: build.status,
@@ -357,7 +361,7 @@ export async function registerBuildStreamWebSocket(fastify: FastifyInstance): Pr
         }
 
         // Handle messages from client
-        connection.socket.on('message', (rawData: unknown) => {
+        socket.on('message', (rawData: unknown) => {
           if (isClosed) return;
 
           try {
@@ -368,7 +372,7 @@ export async function registerBuildStreamWebSocket(fastify: FastifyInstance): Pr
               case 'cancel':
                 const cancelled = cancelBuild(buildId);
                 if (cancelled) {
-                  connection.socket.send(
+                  socket.send(
                     JSON.stringify({
                       type: 'cancelled',
                       message: 'Build cancelled',
@@ -379,7 +383,7 @@ export async function registerBuildStreamWebSocket(fastify: FastifyInstance): Pr
                 break;
 
               case 'ping':
-                connection.socket.send(
+                socket.send(
                   JSON.stringify({
                     type: 'pong',
                     timestamp: Date.now(),
@@ -393,25 +397,26 @@ export async function registerBuildStreamWebSocket(fastify: FastifyInstance): Pr
         });
 
         // Handle client disconnect
-        connection.socket.on('close', () => {
+        socket.on('close', () => {
           request.log.info({ buildId }, 'Client disconnected from build stream');
           cleanup();
         });
 
-        // Handle client errors
-        connection.socket.on('error', (err: Error) => {
+        // Handle client errors - handler receives (data?: unknown)
+        socket.on('error', (data?: unknown) => {
+          const err = data instanceof Error ? data : new Error(String(data));
           request.log.error({ err, buildId }, 'WebSocket error');
           cleanup();
         });
 
         // Handle ping/pong to keep connection alive
         const pingInterval = setInterval(() => {
-          if (isClosed || connection.socket.readyState !== 1) {
+          if (isClosed || socket.readyState !== 1) {
             clearInterval(pingInterval);
             return;
           }
 
-          connection.socket.send(
+          socket.send(
             JSON.stringify({
               type: 'ping',
               timestamp: Date.now(),
@@ -419,14 +424,14 @@ export async function registerBuildStreamWebSocket(fastify: FastifyInstance): Pr
           );
         }, 30000);
 
-        connection.socket.on('close', () => {
+        socket.on('close', () => {
           clearInterval(pingInterval);
         });
       } catch (error) {
         const err = error as Error;
         request.log.error({ err, buildId }, 'Error in build stream WebSocket');
 
-        connection.socket.send(
+        socket.send(
           JSON.stringify({
             type: 'error',
             error: err.message,
@@ -448,7 +453,8 @@ export async function registerBuildStreamJsonWebSocket(fastify: FastifyInstance)
   fastify.get(
     '/api/builds/:id/stream/json',
     { websocket: true },
-    async (connection: Connection, request: FastifyRequest) => {
+    async (connection: WebSocketLike | { socket: WebSocketLike }, request: FastifyRequest) => {
+      const socket = getSocket(connection);
       const params = request.params as { id: string };
       const { id: buildId } = params;
       let isClosed = false;
@@ -458,7 +464,7 @@ export async function registerBuildStreamJsonWebSocket(fastify: FastifyInstance)
         isClosed = true;
 
         try {
-          connection.socket.close();
+          socket.close();
         } catch {
           // Socket may already be closed
         }
@@ -470,7 +476,7 @@ export async function registerBuildStreamJsonWebSocket(fastify: FastifyInstance)
         const build = activeBuilds.get(buildId);
 
         if (!build) {
-          connection.socket.send(
+          socket.send(
             JSON.stringify({
               type: 'error',
               error: 'Build not found',
@@ -483,7 +489,7 @@ export async function registerBuildStreamJsonWebSocket(fastify: FastifyInstance)
         }
 
         // Send connection established
-        connection.socket.send(
+        socket.send(
           JSON.stringify({
             type: 'connected',
             buildId,
@@ -501,7 +507,7 @@ export async function registerBuildStreamJsonWebSocket(fastify: FastifyInstance)
 
           const currentBuild = activeBuilds.get(buildId);
           if (!currentBuild) {
-            connection.socket.send(
+            socket.send(
               JSON.stringify({
                 type: 'error',
                 error: 'Build not found',
@@ -516,7 +522,7 @@ export async function registerBuildStreamJsonWebSocket(fastify: FastifyInstance)
 
           // Send any new logs
           if (currentBuild.logs.length > 0) {
-            connection.socket.send(
+            socket.send(
               JSON.stringify({
                 type: 'log',
                 data: currentBuild.logs.join(''),
@@ -527,7 +533,7 @@ export async function registerBuildStreamJsonWebSocket(fastify: FastifyInstance)
 
           // Check if build finished
           if (currentBuild.status !== 'building') {
-            connection.socket.send(
+            socket.send(
               JSON.stringify({
                 type: 'complete',
                 status: currentBuild.status,
@@ -541,13 +547,13 @@ export async function registerBuildStreamJsonWebSocket(fastify: FastifyInstance)
         }, 1000);
 
         // Handle client disconnect
-        connection.socket.on('close', () => {
+        socket.on('close', () => {
           clearInterval(checkInterval);
           cleanup();
         });
 
         // Handle client errors
-        connection.socket.on('error', () => {
+        socket.on('error', () => {
           clearInterval(checkInterval);
           cleanup();
         });

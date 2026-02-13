@@ -98,8 +98,8 @@ dockpilot/
 │   ├── docker-control/# Gestión Docker
 │   └── tunnel-control/# Túneles Cloudflare
 ├── packages/types/    # Tipos TypeScript
-├── infra/             # Docker Compose + scripts
-├── installer/         # Scripts de instalación TUI
+├── infra/             # Docker Compose + scripts (desarrollo)
+├── scripts/           # Instalador curl | bash + upgrade
 ├── tests/             # E2E + Unit tests
 └── docs/              # Documentación
 ```
@@ -124,23 +124,29 @@ dockpilot/
 
 ### Método 1: One-liner (Recomendado)
 
+Instala DockPilot con un solo comando. Soporta AMD64 y ARM64 (64-bit).
+
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dockpilot/install/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/main/scripts/install.sh | sudo bash
 ```
 
-### Método 2: Docker Compose
+El script instala Docker (si no está presente), descarga las imágenes y arranca los servicios. Al finalizar, abre `http://TU_IP:80` para crear tu cuenta de administrador.
+
+### Método 2: Docker Compose (desarrollo)
 
 ```bash
-git clone https://github.com/dockpilot/dockpilot.git
-cd dockpilot
-docker-compose up -d
+git clone https://github.com/marweb/DockerPilot.git
+cd DockerPilot
+cp infra/.env.example infra/.env
+# Editar infra/.env y configurar JWT_SECRET
+docker compose -f infra/docker-compose.yml up -d --build
 ```
 
-### Método 3: Desarrollo
+### Método 3: Desarrollo local
 
 ```bash
-git clone https://github.com/dockpilot/dockpilot.git
-cd dockpilot
+git clone https://github.com/marweb/DockerPilot.git
+cd DockerPilot
 pnpm install        # Requiere pnpm >= 8.0.0
 pnpm dev            # Inicia en modo desarrollo
 ```
@@ -151,10 +157,9 @@ Para una guía de instalación detallada, ver [docs/installation.md](docs/instal
 
 ### Primer Acceso
 
-1. Accede a `http://localhost:3000`
-2. Completa la configuración inicial
-3. Crea tu usuario administrador
-4. ¡Empieza a gestionar tus contenedores!
+1. Accede a `http://TU_IP:80` (o `http://localhost:80` si es local)
+2. Completa el setup creando tu usuario administrador (username + contraseña)
+3. ¡Empieza a gestionar tus contenedores!
 
 ### Comandos Rápidos
 
@@ -216,8 +221,8 @@ ENABLE_SWAGGER=true
 LOG_LEVEL=info
 LOG_FORMAT=json
 
-# Base de datos
-DB_PATH=/data/dockpilot.db
+# Base de datos (SQLite en /data/dockpilot.db)
+DATA_DIR=/data
 ```
 
 Ver [docs/configuration.md](docs/configuration.md) para todas las opciones.
@@ -225,23 +230,26 @@ Ver [docs/configuration.md](docs/configuration.md) para todas las opciones.
 ## 🔄 Actualización
 
 ```bash
-# Actualizar automáticamente
-./scripts/update.sh
+# Instalación con curl (producción)
+cd /data/dockpilot/source
+./upgrade.sh latest
 
-# O manualmente
-docker-compose pull
-docker-compose up -d
+# O con Docker Compose manual
+cd /data/dockpilot/source
+docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ## ❌ Desinstalación
 
 ```bash
-# Desinstalador incluido
-./installer/uninstall.sh
+# Desinstalador para instalaciones con curl
+curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/main/scripts/uninstall.sh | sudo bash
 
 # O manualmente
-docker-compose down -v
-rm -rf /opt/dockpilot
+cd /data/dockpilot/source
+docker compose -f docker-compose.yml down
+rm -rf /data/dockpilot
 ```
 
 ## 🤝 Contribuir

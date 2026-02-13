@@ -6,7 +6,7 @@ import {
   getActiveBuild,
   getAllActiveBuilds,
 } from '../websocket/build.js';
-import type { BuildOptions, BuildProgress } from '@dockpilot/types';
+import type { BuildProgress } from '@dockpilot/types';
 
 // Schemas
 const buildBody = z.object({
@@ -135,7 +135,7 @@ export async function buildRoutes(fastify: FastifyInstance) {
 
       const result: BuildProgress = {
         id,
-        status: build.status,
+        status: build.status === 'cancelled' ? 'error' : build.status,
         message: build.error || undefined,
       };
 
@@ -290,8 +290,8 @@ export async function buildRoutes(fastify: FastifyInstance) {
     try {
       let cleared = 0;
 
-      for (const [id, build] of getAllActiveBuilds().entries()) {
-        const fullBuild = getActiveBuild(id);
+      for (const build of getAllActiveBuilds()) {
+        const fullBuild = getActiveBuild(build.id);
         if (fullBuild && fullBuild.status !== 'building') {
           // This will be cleaned up by the interval in websocket/build.ts
           // But we can mark it for immediate cleanup

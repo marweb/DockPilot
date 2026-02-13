@@ -1,0 +1,7 @@
+{
+  "version": "1.0.0",
+  "api-gateway": "1.0.0",
+  "docker-control": "1.0.0",
+  "tunnel-control": "1.0.0",
+  "web": "1.0.0"
+}

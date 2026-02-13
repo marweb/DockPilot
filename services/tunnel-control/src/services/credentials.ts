@@ -94,12 +94,10 @@ export async function listStoredAccounts(): Promise<string[]> {
     return [];
   }
 
-  const files = await readFile(credentialsDir, 'utf-8').catch(() => '');
-  // Use readdir to list files
   const { readdir } = await import('fs/promises');
   const entries = await readdir(credentialsDir);
 
-  return entries.filter((f) => f.endsWith('.json')).map((f) => f.replace('.json', ''));
+  return entries.filter((f: string) => f.endsWith('.json')).map((f: string) => f.replace('.json', ''));
 }
 
 export async function getDefaultAccount(): Promise<CredentialsData | null> {

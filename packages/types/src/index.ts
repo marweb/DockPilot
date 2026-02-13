@@ -314,7 +314,7 @@ export interface Tunnel {
   id: string;
   name: string;
   accountId: string;
-  zoneId: string;
+  zoneId?: string;
   status: TunnelStatus;
   createdAt: Date;
   publicUrl?: string;

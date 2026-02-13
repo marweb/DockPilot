@@ -4,7 +4,7 @@ import type { DockerInfo, DockerVersion, DiskUsage } from '@dockpilot/types';
 
 export async function systemRoutes(fastify: FastifyInstance) {
   // Health check
-  fastify.get('/healthz', async (request, reply) => {
+  fastify.get('/healthz', async (_request, reply) => {
     const dockerConnected = await checkDockerConnection();
     
     if (!dockerConnected) {
@@ -21,7 +21,7 @@ export async function systemRoutes(fastify: FastifyInstance) {
   });
 
   // Docker info
-  fastify.get('/info', async (request, reply) => {
+  fastify.get('/info', async (_request, reply) => {
     const info = await getDockerInfo();
 
     const result: DockerInfo = {
@@ -51,41 +51,42 @@ export async function systemRoutes(fastify: FastifyInstance) {
   });
 
   // Docker version
-  fastify.get('/version', async (request, reply) => {
+  fastify.get('/version', async (_request, reply) => {
     const version = await getDockerVersion();
+    const v = version as unknown as { Version?: string; ApiVersion?: string; GitCommit?: string; GoVersion?: string; Os?: string; Arch?: string; BuildTime?: string };
 
     const result: DockerVersion = {
-      version: version.Version,
-      apiVersion: version.ApiVersion,
-      gitCommit: version.GitCommit,
-      goVersion: version.GoVersion,
-      os: version.Os,
-      arch: version.Arch,
-      buildTime: version.BuildTime,
+      version: v.Version ?? '',
+      apiVersion: v.ApiVersion ?? '',
+      gitCommit: v.GitCommit ?? '',
+      goVersion: v.GoVersion ?? '',
+      os: v.Os ?? '',
+      arch: v.Arch ?? '',
+      buildTime: v.BuildTime ?? '',
     };
 
     return reply.send({ success: true, data: result });
   });
 
   // Disk usage
-  fastify.get('/df', async (request, reply) => {
+  fastify.get('/df', async (_request, reply) => {
     const docker = getDocker();
     const df = await docker.df();
 
     const result: DiskUsage = {
       layersSize: df.LayersSize,
-      images: (df.Images || []).map((img) => ({
-        id: img.Id.replace('sha256:', '').substring(0, 12),
+      images: (df.Images || []).map((img: { Id?: string; Size?: number; SharedSize?: number; VirtualSize?: number }) => ({
+        id: (img.Id ?? '').replace('sha256:', '').substring(0, 12),
         size: img.Size,
         sharedSize: img.SharedSize,
         virtualSize: img.VirtualSize,
       })),
-      containers: (df.Containers || []).map((c) => ({
-        id: c.Id.replace('sha256:', '').substring(0, 12),
+      containers: (df.Containers || []).map((c: { Id?: string; SizeRw?: number; SizeRootFs?: number }) => ({
+        id: (c.Id ?? '').replace('sha256:', '').substring(0, 12),
         sizeRw: c.SizeRw,
         sizeRootFs: c.SizeRootFs,
       })),
-      volumes: (df.Volumes || []).map((v) => ({
+      volumes: (df.Volumes || []).map((v: { Name?: string; UsageData?: { Size?: number } }) => ({
         name: v.Name,
         size: v.UsageData?.Size || 0,
       })),
@@ -95,7 +96,7 @@ export async function systemRoutes(fastify: FastifyInstance) {
   });
 
   // Ping Docker daemon
-  fastify.get('/ping', async (request, reply) => {
+  fastify.get('/ping', async (_request, reply) => {
     const docker = getDocker();
     const result = await docker.ping();
     return reply.send({ success: true, data: result.toString() });

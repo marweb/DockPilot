@@ -17,7 +17,7 @@ const tagImageBody = z.object({
 
 export async function imageRoutes(fastify: FastifyInstance) {
   // List images
-  fastify.get('/images', async (request, reply) => {
+  fastify.get('/images', async (_request, reply) => {
     const docker = getDocker();
 
     const images = await docker.listImages({ all: false });
@@ -105,7 +105,7 @@ export async function imageRoutes(fastify: FastifyInstance) {
       const docker = getDocker();
 
       try {
-        const stream = await docker.pullImage(`${fromImage}:${tag}`, {
+        const stream = await docker.pull(`${fromImage}:${tag}`, {
           platform,
         });
 
@@ -191,7 +191,7 @@ export async function imageRoutes(fastify: FastifyInstance) {
       const image = docker.getImage(id);
       const history = await image.history();
 
-      const result: ImageHistory[] = history.map((h) => ({
+      const result: ImageHistory[] = history.map((h: { Id: string; Created: number; CreatedBy?: string; Size: number; Comment?: string }) => ({
         id: h.Id.replace('sha256:', '').substring(0, 12),
         created: h.Created * 1000,
         createdBy: h.CreatedBy || '',
@@ -210,7 +210,7 @@ export async function imageRoutes(fastify: FastifyInstance) {
   });
 
   // Prune images
-  fastify.post('/images/prune', async (request, reply) => {
+  fastify.post('/images/prune', async (_request, reply) => {
     const docker = getDocker();
 
     try {

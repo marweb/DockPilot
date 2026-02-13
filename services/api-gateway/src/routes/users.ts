@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { getUser } from '../types/fastify.js';
 import { z } from 'zod';
 import type { UserRole } from '@dockpilot/types';
 import '../types/fastify.js';
@@ -71,8 +72,8 @@ export async function userRoutes(fastify: FastifyInstance): Promise<void> {
       const users = await listUsers();
 
       await logAuditEntry({
-        userId: request.user!.id,
-        username: request.user!.username,
+        userId: getUser(request)!.id,
+        username: getUser(request)!.username,
         action: 'users.list',
         resource: 'users',
         details: { count: users.length },
@@ -144,8 +145,8 @@ export async function userRoutes(fastify: FastifyInstance): Promise<void> {
       });
 
       await logAuditEntry({
-        userId: request.user!.id,
-        username: request.user!.username,
+        userId: getUser(request)!.id,
+        username: getUser(request)!.username,
         action: 'users.create',
         resource: 'users',
         resourceId: user.id,
@@ -184,7 +185,7 @@ export async function userRoutes(fastify: FastifyInstance): Promise<void> {
     const { id } = request.params;
 
     // Users can only view their own profile unless they're admin
-    if (request.user!.role !== 'admin' && request.user!.id !== id) {
+    if (getUser(request)!.role !== 'admin' && getUser(request)!.id !== id) {
       return reply.status(403).send({
         success: false,
         error: {
@@ -236,7 +237,7 @@ export async function userRoutes(fastify: FastifyInstance): Promise<void> {
       const { username, role, password } = request.body;
 
       // Prevent self-demotion from admin
-      if (id === request.user!.id && role && role !== 'admin') {
+      if (id === getUser(request)!.id && role && role !== 'admin') {
         return reply.status(400).send({
           success: false,
           error: {
@@ -294,8 +295,8 @@ export async function userRoutes(fastify: FastifyInstance): Promise<void> {
       const updatedUser = await updateUser(id, updates);
 
       await logAuditEntry({
-        userId: request.user!.id,
-        username: request.user!.username,
+        userId: getUser(request)!.id,
+        username: getUser(request)!.username,
         action: 'users.update',
         resource: 'users',
         resourceId: id,
@@ -333,7 +334,7 @@ export async function userRoutes(fastify: FastifyInstance): Promise<void> {
       const { id } = request.params;
 
       // Prevent self-deletion
-      if (id === request.user!.id) {
+      if (id === getUser(request)!.id) {
         return reply.status(400).send({
           success: false,
           error: {
@@ -367,8 +368,8 @@ export async function userRoutes(fastify: FastifyInstance): Promise<void> {
       }
 
       await logAuditEntry({
-        userId: request.user!.id,
-        username: request.user!.username,
+        userId: getUser(request)!.id,
+        username: getUser(request)!.username,
         action: 'users.delete',
         resource: 'users',
         resourceId: id,
@@ -403,7 +404,7 @@ export async function userRoutes(fastify: FastifyInstance): Promise<void> {
       const { role } = request.body;
 
       // Prevent self-demotion
-      if (id === request.user!.id && role !== 'admin') {
+      if (id === getUser(request)!.id && role !== 'admin') {
         return reply.status(400).send({
           success: false,
           error: {
@@ -428,8 +429,8 @@ export async function userRoutes(fastify: FastifyInstance): Promise<void> {
       const updatedUser = await updateUser(id, { role });
 
       await logAuditEntry({
-        userId: request.user!.id,
-        username: request.user!.username,
+        userId: getUser(request)!.id,
+        username: getUser(request)!.username,
         action: 'users.change-role',
         resource: 'users',
         resourceId: id,
@@ -491,8 +492,8 @@ export async function userRoutes(fastify: FastifyInstance): Promise<void> {
       });
 
       await logAuditEntry({
-        userId: request.user!.id,
-        username: request.user!.username,
+        userId: getUser(request)!.id,
+        username: getUser(request)!.username,
         action: 'users.reset-password',
         resource: 'users',
         resourceId: id,

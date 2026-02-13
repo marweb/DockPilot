@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/auth';
-import api from '../api/client';
 
 export default function Login() {
   const { t } = useTranslation();

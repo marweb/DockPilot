@@ -46,12 +46,12 @@ export async function checkDockerConnection(): Promise<boolean> {
   }
 }
 
-export async function getDockerInfo(): Promise<Docker.Info> {
+export async function getDockerInfo(): Promise<Awaited<ReturnType<Docker['info']>>> {
   const d = getDocker();
   return d.info();
 }
 
-export async function getDockerVersion(): Promise<Docker.Version> {
+export async function getDockerVersion(): Promise<Awaited<ReturnType<Docker['version']>>> {
   const d = getDocker();
   return d.version();
 }

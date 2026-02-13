@@ -79,12 +79,13 @@ export async function proxyRequest(
       resolve();
     });
 
-    // Forward request body
-    if (request.body) {
+    // Forward request body - use parsed body or pipe raw stream, never both
+    if (request.body !== undefined && request.body !== null) {
       proxyReq.write(JSON.stringify(request.body));
+      proxyReq.end();
+    } else {
+      request.raw.pipe(proxyReq);
     }
-    
-    request.raw.pipe(proxyReq);
   });
 }
 
@@ -96,7 +97,7 @@ export function createProxyRoutes(
 ) {
   // Catch-all route for proxying
   fastify.all(`${prefix}/*`, async (request, reply) => {
-    const path = request.params['*'] as string;
+    const path = (request.params as { '*': string })['*'];
     const queryString = request.url.split('?')[1] || '';
     const targetUrl = `${targetBaseUrl}/${path}${queryString ? '?' + queryString : ''}`;
 
@@ -111,7 +112,7 @@ export function createWebSocketProxy(
   targetBaseUrl: string
 ) {
   fastify.register(async function (fastify) {
-    fastify.get(`${prefix}/ws/*`, { websocket: true }, (connection, request) => {
+    fastify.get(`${prefix}/ws/*`, { websocket: true }, (socket, request) => {
       const path = (request.params as { '*': string })['*'];
       const targetUrl = `${targetBaseUrl}/ws/${path}`;
 
@@ -121,22 +122,22 @@ export function createWebSocketProxy(
 
       targetWs.on('open', () => {
         // Forward messages from client to target
-        connection.socket.on('message', (data) => {
-          targetWs.send(data);
+        (socket as { on: (e: string, h: (d: unknown) => void) => void }).on('message', (data: unknown) => {
+          targetWs.send(data as string);
         });
 
         // Forward messages from target to client
-        targetWs.on('message', (data) => {
-          connection.socket.send(data);
+        targetWs.on('message', (data: unknown) => {
+          (socket as { send: (d: unknown) => void }).send(data);
         });
       });
 
       targetWs.on('error', (err: Error) => {
         request.log.error({ err }, 'WebSocket proxy error');
-        connection.socket.close();
+        (socket as { close: () => void }).close();
       });
 
-      connection.socket.on('close', () => {
+      (socket as { on: (e: string, h: () => void) => void }).on('close', () => {
         targetWs.close();
       });
     });

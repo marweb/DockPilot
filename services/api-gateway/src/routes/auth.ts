@@ -1,6 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import type { User, UserRole } from '@dockpilot/types';
 import '../types/fastify.js';
 import {
   isSetupComplete,
@@ -9,23 +8,18 @@ import {
   findUserById,
   createUser,
   updateUser,
-  listUsers,
-  deleteUser,
 } from '../services/database.js';
 import { logAuditEntry } from '../middleware/audit.js';
 import { strictRateLimitMiddleware } from '../middleware/rateLimit.js';
-import { requireRole } from '../middleware/rbac.js';
 import {
   hashPassword,
   verifyPassword,
   validatePasswordStrength,
-  generateRandomPassword,
 } from '../utils/password.js';
 import {
   generateTokenPair,
   verifyRefreshToken,
   rotateRefreshToken,
-  JWTErrors,
 } from '../utils/jwt.js';
 
 // Validation schemas
@@ -46,21 +40,6 @@ const setupSchema = z.object({
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
   newPassword: z.string().min(8, 'New password must be at least 8 characters'),
-});
-
-const createUserSchema = z.object({
-  username: z
-    .string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(50, 'Username must be at most 50 characters')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.enum(['admin', 'operator', 'viewer']),
-});
-
-const updateUserSchema = z.object({
-  role: z.enum(['admin', 'operator', 'viewer']).optional(),
-  password: z.string().min(8, 'Password must be at least 8 characters').optional(),
 });
 
 const refreshTokenSchema = z.object({
@@ -285,11 +264,11 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post('/auth/logout', async (request, reply) => {
     try {
       if (request.user) {
-        await updateUser(request.user.id, { refreshToken: undefined });
+        await updateUser((request.user as { id: string }).id, { refreshToken: undefined });
 
         await logAuditEntry({
-          userId: request.user.id,
-          username: request.user.username,
+          userId: (request.user as { id: string }).id,
+          username: (request.user as { username: string }).username,
           action: 'auth.logout',
           resource: 'auth',
           ip: request.ip,
@@ -398,7 +377,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
         return handleAuthError(reply, 401, 'UNAUTHORIZED', 'Not authenticated');
       }
 
-      const user = await findUserById(request.user.id);
+      const user = await findUserById((request.user as { id: string }).id);
 
       if (!user) {
         return handleAuthError(reply, 404, 'USER_NOT_FOUND', 'User not found');
@@ -436,7 +415,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
         const { currentPassword, newPassword } = request.body;
 
-        const user = await findUserById(request.user.id);
+        const user = await findUserById((request.user as { id: string }).id);
 
         if (!user) {
           return handleAuthError(reply, 404, 'USER_NOT_FOUND', 'User not found');
@@ -447,8 +426,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
         if (!validPassword) {
           await logAuditEntry({
-            userId: request.user.id,
-            username: request.user.username,
+            userId: (request.user as { id: string }).id,
+            username: (request.user as { username: string }).username,
             action: 'auth.change-password.failed',
             resource: 'auth',
             details: { reason: 'invalid_current_password' },
@@ -480,8 +459,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
         await updateUser(user.id, { passwordHash, refreshToken: undefined });
 
         await logAuditEntry({
-          userId: request.user.id,
-          username: request.user.username,
+          userId: (request.user as { id: string }).id,
+          username: (request.user as { username: string }).username,
           action: 'auth.change-password.success',
           resource: 'auth',
           ip: request.ip,
@@ -500,236 +479,4 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
-  // List users (admin only) - Using RBAC middleware
-  fastify.get(
-    '/users',
-    {
-      preHandler: requireRole(['admin']),
-    },
-    async (request, reply) => {
-      try {
-        const users = await listUsers();
-
-        await logAuditEntry({
-          userId: request.user!.id,
-          username: request.user!.username,
-          action: 'users.list',
-          resource: 'users',
-          details: { count: users.length },
-          ip: request.ip,
-          userAgent: request.headers['user-agent'] || 'unknown',
-          success: true,
-        });
-
-        return reply.send({
-          success: true,
-          data: users,
-        });
-      } catch (error) {
-        fastify.log.error(error, 'Failed to list users');
-        return handleAuthError(reply, 500, 'LIST_ERROR', 'Failed to retrieve users');
-      }
-    }
-  );
-
-  // Create user (admin only) - Using RBAC middleware
-  fastify.post<{ Body: z.infer<typeof createUserSchema> }>(
-    '/users',
-    {
-      preHandler: requireRole(['admin']),
-      schema: {
-        body: createUserSchema,
-      },
-    },
-    async (request, reply) => {
-      try {
-        const { username, password, role } = request.body;
-
-        // Check if username already exists
-        const existingUser = await findUserByUsername(username);
-        if (existingUser) {
-          return handleAuthError(reply, 409, 'USERNAME_EXISTS', 'Username already exists');
-        }
-
-        // Validate password strength
-        const strengthCheck = validatePasswordStrength(password);
-        if (!strengthCheck.isValid) {
-          return handleAuthError(
-            reply,
-            400,
-            'WEAK_PASSWORD',
-            'Password does not meet security requirements',
-            strengthCheck.errors
-          );
-        }
-
-        // Hash password using utility
-        const passwordHash = await hashPassword(password);
-
-        // Create user
-        const user = await createUser({
-          username,
-          passwordHash,
-          role,
-        });
-
-        await logAuditEntry({
-          userId: request.user!.id,
-          username: request.user!.username,
-          action: 'users.create',
-          resource: 'users',
-          resourceId: user.id,
-          details: { role, username },
-          ip: request.ip,
-          userAgent: request.headers['user-agent'] || 'unknown',
-          success: true,
-        });
-
-        return reply.status(201).send({
-          success: true,
-          data: {
-            id: user.id,
-            username: user.username,
-            role: user.role,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-          },
-        });
-      } catch (error) {
-        fastify.log.error(error, 'Failed to create user');
-        return handleAuthError(reply, 500, 'CREATE_ERROR', 'Failed to create user');
-      }
-    }
-  );
-
-  // Update user (admin only) - Using RBAC middleware
-  fastify.patch<{ Params: { id: string }; Body: z.infer<typeof updateUserSchema> }>(
-    '/users/:id',
-    {
-      preHandler: requireRole(['admin']),
-      schema: {
-        body: updateUserSchema,
-      },
-    },
-    async (request, reply) => {
-      try {
-        const { id } = request.params;
-        const { role, password } = request.body;
-
-        // Prevent self-demotion from admin
-        if (id === request.user!.id && role && role !== 'admin') {
-          return handleAuthError(
-            reply,
-            400,
-            'SELF_DEMOTION',
-            'You cannot demote yourself from admin'
-          );
-        }
-
-        const user = await findUserById(id);
-
-        if (!user) {
-          return handleAuthError(reply, 404, 'USER_NOT_FOUND', 'User not found');
-        }
-
-        const updates: Parameters<typeof updateUser>[1] = {};
-
-        if (role) {
-          updates.role = role;
-        }
-
-        if (password) {
-          // Validate password strength
-          const strengthCheck = validatePasswordStrength(password);
-          if (!strengthCheck.isValid) {
-            return handleAuthError(
-              reply,
-              400,
-              'WEAK_PASSWORD',
-              'Password does not meet security requirements',
-              strengthCheck.errors
-            );
-          }
-          updates.passwordHash = await hashPassword(password);
-        }
-
-        const updatedUser = await updateUser(id, updates);
-
-        await logAuditEntry({
-          userId: request.user!.id,
-          username: request.user!.username,
-          action: 'users.update',
-          resource: 'users',
-          resourceId: id,
-          details: { updates: Object.keys(updates) },
-          ip: request.ip,
-          userAgent: request.headers['user-agent'] || 'unknown',
-          success: true,
-        });
-
-        return reply.send({
-          success: true,
-          data: {
-            id: updatedUser!.id,
-            username: updatedUser!.username,
-            role: updatedUser!.role,
-            createdAt: updatedUser!.createdAt,
-            updatedAt: updatedUser!.updatedAt,
-          },
-        });
-      } catch (error) {
-        fastify.log.error(error, 'Failed to update user');
-        return handleAuthError(reply, 500, 'UPDATE_ERROR', 'Failed to update user');
-      }
-    }
-  );
-
-  // Delete user (admin only) - Using RBAC middleware
-  fastify.delete<{ Params: { id: string } }>(
-    '/users/:id',
-    {
-      preHandler: requireRole(['admin']),
-    },
-    async (request, reply) => {
-      try {
-        const { id } = request.params;
-
-        // Prevent deleting yourself
-        if (id === request.user!.id) {
-          return handleAuthError(reply, 400, 'SELF_DELETION', 'You cannot delete your own account');
-        }
-
-        const user = await findUserById(id);
-        if (!user) {
-          return handleAuthError(reply, 404, 'USER_NOT_FOUND', 'User not found');
-        }
-
-        const deleted = await deleteUser(id);
-
-        if (!deleted) {
-          return handleAuthError(reply, 500, 'DELETE_ERROR', 'Failed to delete user');
-        }
-
-        await logAuditEntry({
-          userId: request.user!.id,
-          username: request.user!.username,
-          action: 'users.delete',
-          resource: 'users',
-          resourceId: id,
-          details: { deletedUsername: user.username },
-          ip: request.ip,
-          userAgent: request.headers['user-agent'] || 'unknown',
-          success: true,
-        });
-
-        return reply.send({
-          success: true,
-          message: 'User deleted successfully',
-        });
-      } catch (error) {
-        fastify.log.error(error, 'Failed to delete user');
-        return handleAuthError(reply, 500, 'DELETE_ERROR', 'Failed to delete user');
-      }
-    }
-  );
 }

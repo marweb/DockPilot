@@ -19,7 +19,7 @@ const connectContainerBody = z.object({
 
 export async function networkRoutes(fastify: FastifyInstance) {
   // List networks
-  fastify.get('/networks', async (request, reply) => {
+  fastify.get('/networks', async (_request, reply) => {
     const docker = getDocker();
 
     const networks = await docker.listNetworks();
@@ -33,10 +33,10 @@ export async function networkRoutes(fastify: FastifyInstance) {
       gateway: n.IPAM?.Config?.[0]?.Gateway,
       ipam: {
         driver: n.IPAM?.Driver || 'default',
-        config: n.IPAM?.Config?.map((c) => ({
-          subnet: c.Subnet,
+        config: (n.IPAM?.Config ?? []).map((c) => ({
+          subnet: c.Subnet ?? '',
           gateway: c.Gateway,
-        })) || [],
+        })),
       },
       labels: n.Labels || {},
     }));
@@ -77,10 +77,10 @@ export async function networkRoutes(fastify: FastifyInstance) {
         gateway: inspect.IPAM?.Config?.[0]?.Gateway,
         ipam: {
           driver: inspect.IPAM?.Driver || 'default',
-          config: inspect.IPAM?.Config?.map((c) => ({
-            subnet: c.Subnet,
+          config: (inspect.IPAM?.Config ?? []).map((c) => ({
+            subnet: c.Subnet ?? '',
             gateway: c.Gateway,
-          })) || [],
+          })),
         },
         containers,
         labels: inspect.Labels || {},
@@ -230,7 +230,7 @@ export async function networkRoutes(fastify: FastifyInstance) {
   );
 
   // Prune networks
-  fastify.post('/networks/prune', async (request, reply) => {
+  fastify.post('/networks/prune', async (_request, reply) => {
     const docker = getDocker();
 
     try {

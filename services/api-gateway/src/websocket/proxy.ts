@@ -14,13 +14,16 @@ interface WebSocketClient {
   pingInterval?: NodeJS.Timeout;
 }
 
-interface Connection {
-  socket: {
-    send: (data: string | WebSocket.RawData) => void;
-    close: (code?: number, reason?: string) => void;
-    readyState: number;
-    on: (event: string, handler: (data?: unknown) => void) => void;
-  };
+/** @fastify/websocket passes socket as first param - normalize to { socket } */
+interface WebSocketLike {
+  send: (data: string | WebSocket.RawData) => void;
+  close: (code?: number, reason?: string) => void;
+  readyState: number;
+  on: (event: string, handler: (data?: unknown) => void) => void;
+}
+
+function getSocket(conn: WebSocketLike | { socket: WebSocketLike }): WebSocketLike {
+  return 'socket' in conn ? conn.socket : conn;
 }
 
 /**
@@ -35,12 +38,12 @@ export async function registerWebSocketProxy(
   fastify.get(
     '/ws/containers/:id/logs',
     { websocket: true },
-    async (connection: Connection, request: FastifyRequest) => {
+    async (socketOrConn, request: FastifyRequest) => {
+      const connection = { socket: getSocket(socketOrConn) };
       const params = request.params as { id: string };
       const { id } = params;
       const query = new URLSearchParams(request.url.split('?')[1] || '');
 
-      // Authenticate WebSocket connection
       const authenticated = await authenticateWebSocket(connection, request, fastify);
       if (!authenticated) return;
 
@@ -54,12 +57,12 @@ export async function registerWebSocketProxy(
   fastify.get(
     '/ws/containers/:id/exec',
     { websocket: true },
-    async (connection: Connection, request: FastifyRequest) => {
+    async (socketOrConn, request: FastifyRequest) => {
+      const connection = { socket: getSocket(socketOrConn) };
       const params = request.params as { id: string };
       const { id } = params;
       const query = new URLSearchParams(request.url.split('?')[1] || '');
 
-      // Authenticate WebSocket connection
       const authenticated = await authenticateWebSocket(connection, request, fastify);
       if (!authenticated) return;
 
@@ -73,11 +76,11 @@ export async function registerWebSocketProxy(
   fastify.get(
     '/ws/builds/:id',
     { websocket: true },
-    async (connection: Connection, request: FastifyRequest) => {
+    async (socketOrConn, request: FastifyRequest) => {
+      const connection = { socket: getSocket(socketOrConn) };
       const params = request.params as { id: string };
       const { id } = params;
 
-      // Authenticate WebSocket connection
       const authenticated = await authenticateWebSocket(connection, request, fastify);
       if (!authenticated) return;
 
@@ -87,15 +90,14 @@ export async function registerWebSocketProxy(
     }
   );
 
-  // Build stream JSON WebSocket proxy
   fastify.get(
     '/ws/builds/:id/json',
     { websocket: true },
-    async (connection: Connection, request: FastifyRequest) => {
+    async (socketOrConn, request: FastifyRequest) => {
+      const connection = { socket: getSocket(socketOrConn) };
       const params = request.params as { id: string };
       const { id } = params;
 
-      // Authenticate WebSocket connection
       const authenticated = await authenticateWebSocket(connection, request, fastify);
       if (!authenticated) return;
 
@@ -105,11 +107,11 @@ export async function registerWebSocketProxy(
     }
   );
 
-  // Generic WebSocket proxy for docker-control
   fastify.get(
     '/ws/*',
     { websocket: true },
-    async (connection: Connection, request: FastifyRequest) => {
+    async (socketOrConn, request: FastifyRequest) => {
+      const connection = { socket: getSocket(socketOrConn) };
       // Authenticate WebSocket connection
       const authenticated = await authenticateWebSocket(connection, request, fastify);
       if (!authenticated) return;
@@ -126,7 +128,7 @@ export async function registerWebSocketProxy(
  * Authenticate WebSocket connection using JWT
  */
 async function authenticateWebSocket(
-  connection: Connection,
+  connection: { socket: WebSocketLike },
   request: FastifyRequest,
   fastify: FastifyInstance
 ): Promise<boolean> {
@@ -273,7 +275,7 @@ function hasPermission(role: string, permission: string): boolean {
  * Proxy WebSocket connection to target service
  */
 async function proxyWebSocket(
-  connection: Connection,
+  connection: { socket: WebSocketLike },
   request: FastifyRequest,
   targetUrl: string,
   fastify: FastifyInstance
@@ -378,7 +380,8 @@ async function proxyWebSocket(
     });
 
     // Handle client errors
-    connection.socket.on('error', (err: Error) => {
+    connection.socket.on('error', (data?: unknown) => {
+      const err = data instanceof Error ? data : new Error(String(data));
       request.log.error({ err }, 'Client WebSocket error');
       cleanup();
     });

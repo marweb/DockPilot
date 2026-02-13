@@ -4,7 +4,6 @@ import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import websocket from '@fastify/websocket';
-import pino from 'pino';
 import type { Config } from './config/index.js';
 import { initDatabase } from './services/database.js';
 import { authRoutes } from './routes/auth.js';
@@ -18,23 +17,21 @@ import { registerWebSocketProxy } from './websocket/proxy.js';
 import './types/fastify.js';
 
 export async function createApp(config: Config) {
-  const logger = pino({
-    level: config.logLevel,
-    transport:
-      process.env.NODE_ENV !== 'production'
-        ? {
-            target: 'pino-pretty',
-            options: {
-              colorize: true,
-              translateTime: 'HH:MM:ss',
-              ignore: 'pid,hostname',
-            },
-          }
-        : undefined,
-  });
-
   const fastify = Fastify({
-    logger,
+    logger: {
+      level: config.logLevel,
+      transport:
+        process.env.NODE_ENV !== 'production'
+          ? {
+              target: 'pino-pretty',
+              options: {
+                colorize: true,
+                translateTime: 'HH:MM:ss',
+                ignore: 'pid,hostname',
+              },
+            }
+          : undefined,
+    },
     requestIdHeader: 'x-request-id',
     genReqId: () => crypto.randomUUID(),
   });
@@ -47,7 +44,9 @@ export async function createApp(config: Config) {
 
   // Register plugins
   await fastify.register(cors, {
-    origin: true,
+    origin: config.corsOrigin
+      ? config.corsOrigin.split(',').map((o) => o.trim())
+      : true,
     credentials: true,
   });
 
@@ -82,7 +81,7 @@ export async function createApp(config: Config) {
   await fastify.register(websocket);
 
   // Health check endpoint
-  fastify.get('/healthz', async (request, reply) => {
+  fastify.get('/healthz', async (_request, reply) => {
     return reply.send({
       status: 'healthy',
       version: '1.0.0',
@@ -163,10 +162,10 @@ export async function createApp(config: Config) {
   startRateLimitCleanup();
 
   // Register user routes
-  await fastify.register(userRoutes, { prefix: '/api' });
+  await fastify.register(userRoutes, { prefix: '/api/users' });
 
   // Register health routes
-  await fastify.register(healthRoutes, { prefix: '/api' });
+  await fastify.register(healthRoutes, { prefix: '/api/health' });
 
   // Error handler
   fastify.setErrorHandler((error, request, reply) => {

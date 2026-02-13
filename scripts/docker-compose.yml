@@ -1,23 +1,18 @@
-# DockPilot - Production Docker Compose
+# DockPilot - Production Docker Compose (pre-built images from ghcr.io)
 #
-# This compose file is optimized for production deployments.
-# It uses pre-built images and persistent volumes for data.
+# This file is used by the install.sh and upgrade.sh scripts.
+# Images are pulled from ghcr.io/marweb/dockpilot-*
 #
 # Usage:
-#   docker compose -f infra/docker-compose.yml up -d
-#   docker compose -f infra/docker-compose.yml logs -f
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 #
-# Environment variables should be defined in infra/.env
+# Environment variables are loaded from .env in the same directory.
 
 version: '3.8'
 
 services:
-  # API Gateway - Authentication, RBAC, and routing
   api-gateway:
-    build:
-      context: ..
-      dockerfile: services/api-gateway/Dockerfile
-      target: production
+    image: ghcr.io/marweb/dockpilot-api-gateway:${DOCKPILOT_VERSION:-latest}
     container_name: dockpilot-api-gateway
     restart: unless-stopped
     ports:
@@ -31,7 +26,6 @@ services:
       - REFRESH_TOKEN_EXPIRES_IN=${REFRESH_TOKEN_EXPIRES_IN:-7d}
       - DOCKER_CONTROL_URL=${DOCKER_CONTROL_URL:-http://docker-control:3001}
       - TUNNEL_CONTROL_URL=${TUNNEL_CONTROL_URL:-http://tunnel-control:3002}
-      - INITIAL_ADMIN_PASSWORD=${INITIAL_ADMIN_PASSWORD}
       - DATA_DIR=/data
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-100}
@@ -58,12 +52,8 @@ services:
         max-size: '10m'
         max-file: '3'
 
-  # Docker Control Service - Manages Docker containers and compose files
   docker-control:
-    build:
-      context: ..
-      dockerfile: services/docker-control/Dockerfile
-      target: production
+    image: ghcr.io/marweb/dockpilot-docker-control:${DOCKPILOT_VERSION:-latest}
     container_name: dockpilot-docker-control
     restart: unless-stopped
     environment:
@@ -92,12 +82,8 @@ services:
         max-size: '10m'
         max-file: '3'
 
-  # Tunnel Control Service - Manages Cloudflare Tunnels
   tunnel-control:
-    build:
-      context: ..
-      dockerfile: services/tunnel-control/Dockerfile
-      target: production
+    image: ghcr.io/marweb/dockpilot-tunnel-control:${DOCKPILOT_VERSION:-latest}
     container_name: dockpilot-tunnel-control
     restart: unless-stopped
     environment:
@@ -118,7 +104,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    # Required for running cloudflared tunnels
     cap_add:
       - NET_BIND_SERVICE
     logging:
@@ -127,11 +112,8 @@ services:
         max-size: '10m'
         max-file: '3'
 
-  # Web Frontend - React SPA served by Nginx
   web:
-    build:
-      context: ..
-      dockerfile: infra/web.Dockerfile
+    image: ghcr.io/marweb/dockpilot-web:${DOCKPILOT_VERSION:-latest}
     container_name: dockpilot-web
     restart: unless-stopped
     ports:

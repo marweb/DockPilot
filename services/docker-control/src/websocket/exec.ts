@@ -21,13 +21,16 @@ interface ExecMessage {
   data?: string | ResizeMessage;
 }
 
-interface Connection {
-  socket: {
-    send: (data: string) => void;
-    close: () => void;
-    readyState: number;
-    on: (event: string, handler: (data?: unknown) => void) => void;
-  };
+/** WebSocket-like interface - @fastify/websocket passes socket as first param */
+interface WebSocketLike {
+  send: (data: string) => void;
+  close: (code?: number, reason?: string) => void;
+  readyState: number;
+  on: (event: string, handler: (data?: unknown) => void) => void;
+}
+
+function getSocket(conn: WebSocketLike | { socket: WebSocketLike }): WebSocketLike {
+  return 'socket' in conn ? conn.socket : conn;
 }
 
 /**
@@ -40,7 +43,8 @@ export async function registerContainerExecWebSocket(fastify: FastifyInstance): 
   fastify.get(
     '/api/containers/:id/exec',
     { websocket: true },
-    async (connection: Connection, request: FastifyRequest) => {
+    async (connection: WebSocketLike | { socket: WebSocketLike }, request: FastifyRequest) => {
+      const socket = getSocket(connection);
       const params = request.params as { id: string };
       const query = request.query as ExecQueryParams;
       const { id } = params;
@@ -61,7 +65,7 @@ export async function registerContainerExecWebSocket(fastify: FastifyInstance): 
         }
 
         try {
-          connection.socket.close();
+          socket.close();
         } catch {
           // Socket may already be closed
         }
@@ -80,7 +84,7 @@ export async function registerContainerExecWebSocket(fastify: FastifyInstance): 
         const containerInfo = await container.inspect();
 
         if (!containerInfo.State.Running) {
-          connection.socket.send(
+          socket.send(
             JSON.stringify({
               type: 'error',
               error: 'Container is not running. Start the container first.',
@@ -147,7 +151,7 @@ export async function registerContainerExecWebSocket(fastify: FastifyInstance): 
         stream = execResult;
 
         // Send connection established message
-        connection.socket.send(
+        socket.send(
           JSON.stringify({
             type: 'connected',
             containerId: id,
@@ -172,7 +176,7 @@ export async function registerContainerExecWebSocket(fastify: FastifyInstance): 
               data = parseDockerStream(chunk);
             }
 
-            connection.socket.send(
+            socket.send(
               JSON.stringify({
                 type: 'output',
                 data,
@@ -189,7 +193,7 @@ export async function registerContainerExecWebSocket(fastify: FastifyInstance): 
           request.log.error({ err, containerId: id, execId: currentExecId }, 'Exec stream error');
 
           if (!isClosed) {
-            connection.socket.send(
+            socket.send(
               JSON.stringify({
                 type: 'error',
                 error: err.message,
@@ -203,7 +207,7 @@ export async function registerContainerExecWebSocket(fastify: FastifyInstance): 
         // Handle stream end
         stream.on('end', () => {
           if (!isClosed) {
-            connection.socket.send(
+            socket.send(
               JSON.stringify({
                 type: 'end',
                 message: 'Exec session ended',
@@ -215,7 +219,7 @@ export async function registerContainerExecWebSocket(fastify: FastifyInstance): 
         });
 
         // Handle messages from client
-        connection.socket.on('message', async (rawData: unknown) => {
+        socket.on('message', async (rawData: unknown) => {
           if (isClosed) return;
 
           try {
@@ -272,7 +276,7 @@ export async function registerContainerExecWebSocket(fastify: FastifyInstance): 
         });
 
         // Handle client disconnect
-        connection.socket.on('close', () => {
+        socket.on('close', () => {
           request.log.info(
             { containerId: id, execId: currentExecId },
             'Client disconnected from exec session'
@@ -280,20 +284,21 @@ export async function registerContainerExecWebSocket(fastify: FastifyInstance): 
           cleanup();
         });
 
-        // Handle client errors
-        connection.socket.on('error', (err: Error) => {
+        // Handle client errors - handler receives (data?: unknown)
+        socket.on('error', (data?: unknown) => {
+          const err = data instanceof Error ? data : new Error(String(data));
           request.log.error({ err, containerId: id, execId: currentExecId }, 'WebSocket error');
           cleanup();
         });
 
         // Handle ping/pong to keep connection alive
         const pingInterval = setInterval(() => {
-          if (isClosed || connection.socket.readyState !== 1) {
+          if (isClosed || socket.readyState !== 1) {
             clearInterval(pingInterval);
             return;
           }
 
-          connection.socket.send(
+          socket.send(
             JSON.stringify({
               type: 'ping',
               timestamp: Date.now(),
@@ -301,7 +306,7 @@ export async function registerContainerExecWebSocket(fastify: FastifyInstance): 
           );
         }, 30000);
 
-        connection.socket.on('close', () => {
+        socket.on('close', () => {
           clearInterval(pingInterval);
         });
       } catch (error) {
@@ -316,7 +321,7 @@ export async function registerContainerExecWebSocket(fastify: FastifyInstance): 
           statusCode = 404;
         }
 
-        connection.socket.send(
+        socket.send(
           JSON.stringify({
             type: 'error',
             error: errorMessage,

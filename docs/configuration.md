@@ -50,12 +50,15 @@ Variables para el servicio de API Gateway.
 | `TUNNEL_CONTROL_URL` | URL del servicio Tunnels | http://tunnel-control:3002 | http://localhost:3003 |
 | `WEB_URL`            | URL del frontend         | http://web:80              | http://localhost:3000 |
 
-### Base de Datos
+### Base de Datos (SQLite)
 
-| Variable       | Descripción                    | Default            | Ejemplo               |
-| -------------- | ------------------------------ | ------------------ | --------------------- |
-| `DB_PATH`      | Ruta a la base de datos SQLite | /data/dockpilot.db | /var/lib/dockpilot.db |
-| `DB_POOL_SIZE` | Tamaño del pool de conexiones  | 5                  | 10                    |
+El API Gateway usa SQLite (`better-sqlite3`) para usuarios y logs de auditoría. El archivo se almacena en el volumen montado.
+
+| Variable     | Descripción                           | Default | Ejemplo               |
+| ------------ | ------------------------------------- | ------- | --------------------- |
+| `DATA_DIR`   | Directorio para datos (incluye la DB) | /data   | /var/lib/dockpilot    |
+
+El archivo SQLite se crea en `{DATA_DIR}/dockpilot.db`. Si existe `db.json` en el mismo directorio, se migra automáticamente a SQLite al arrancar.
 
 ### CORS
 
@@ -466,7 +469,7 @@ API_HOST=0.0.0.0
 JWT_SECRET=CHANGE_THIS_TO_A_RANDOM_32_CHAR_STRING
 JWT_EXPIRES_IN=3600
 JWT_REFRESH_DAYS=7
-DB_PATH=/data/dockpilot.db
+DATA_DIR=/data
 
 # URLs de servicios
 DOCKER_CONTROL_URL=http://docker-control:3001
@@ -538,7 +541,7 @@ curl -X POST http://localhost:3000/api/v1/admin/reload-config \
 
 - `API_PORT`
 - `JWT_SECRET`
-- `DB_PATH`
+- `DATA_DIR`
 - `DOCKER_SOCKET`
 
 ---

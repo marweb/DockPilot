@@ -32,8 +32,8 @@ FROM nginx:1.25-alpine
 # Copy built files to nginx html directory
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 
-# Copy custom nginx configuration
-COPY infra/nginx.conf /etc/nginx/conf.d/default.conf
+# Copy custom nginx configuration for SPA + API proxy
+COPY infra/nginx-spa.conf /etc/nginx/conf.d/default.conf
 
 # Create a simple health check endpoint
 RUN echo '<!DOCTYPE html><html><body>OK</body></html>' > /usr/share/nginx/html/healthz

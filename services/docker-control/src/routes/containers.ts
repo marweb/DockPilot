@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { getDocker } from '../services/docker.js';
 import type { Container, ContainerInspect, ContainerStats } from '@dockpilot/types';
@@ -8,10 +8,6 @@ const listContainersQuery = z.object({
   all: z.coerce.boolean().default(false),
   limit: z.coerce.number().optional(),
   filters: z.string().optional(),
-});
-
-const containerActionParams = z.object({
-  id: z.string(),
 });
 
 const containerActionBody = z.object({
@@ -45,29 +41,29 @@ export async function containerRoutes(fastify: FastifyInstance) {
       const { all, limit, filters } = request.query;
       const docker = getDocker();
 
-      let parsedFilters: Record<string, unknown> | undefined;
+      let parsedFilters: Record<string, string[]> | undefined;
       if (filters) {
         try {
-          parsedFilters = JSON.parse(filters);
+          parsedFilters = JSON.parse(filters) as Record<string, string[]>;
         } catch {
           return reply.status(400).send({ error: 'Invalid filters JSON' });
         }
       }
 
       const containers = await docker.listContainers({
-        all,
+        all: all ?? false,
         limit,
         filters: parsedFilters,
       });
 
-      const result: Container[] = containers.map((c) => ({
+      const result: Container[] = containers.map((c: { Id: string; Names: string[]; Image: string; State: string; Created: number; Ports: Array<{ PrivatePort: number; PublicPort?: number; IP?: string; Type: string }>; Labels?: Record<string, string>; NetworkSettings?: { Networks?: Record<string, unknown> }; Command?: string }) => ({
         id: c.Id,
         name: c.Names[0]?.replace(/^\//, '') || '',
         image: c.Image,
         status: c.State as Container['status'],
         state: c.State,
         created: c.Created * 1000,
-        ports: c.Ports.map((p) => ({
+        ports: c.Ports.map((p: { PrivatePort: number; PublicPort?: number; IP?: string; Type: string }) => ({
           containerPort: p.PrivatePort,
           hostPort: p.PublicPort,
           hostIp: p.IP,
@@ -103,7 +99,7 @@ export async function containerRoutes(fastify: FastifyInstance) {
             running: inspect.State.Running,
             paused: inspect.State.Paused,
             restarting: inspect.State.Restarting,
-            oomKilled: inspect.State.OomKilled,
+            oomKilled: inspect.State.OOMKilled,
             dead: inspect.State.Dead,
             pid: inspect.State.Pid,
             exitCode: inspect.State.ExitCode,
@@ -387,32 +383,33 @@ export async function containerRoutes(fastify: FastifyInstance) {
       try {
         const container = docker.getContainer(id);
         const stats = await container.stats({ stream: false });
+        const statsData = stats as { id?: string; name?: string; cpu_stats: { cpu_usage: { total_usage: number }; system_cpu_usage: number }; precpu_stats: { cpu_usage: { total_usage: number }; system_cpu_usage: number }; memory_stats: { usage?: number; limit?: number }; networks?: Record<string, { rx_bytes?: number; tx_bytes?: number }>; blkio_stats?: { io_service_bytes_recursive?: Array<{ op: string; value: number }> }; };
 
         // Calculate CPU percentage
-        const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
-        const systemDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
-        const cpuPercent = systemDelta > 0 ? (cpuDelta / systemDelta) * (stats.cpu_stats.cpu_usage.percpu_usage?.length || 1) * 100 : 0;
+        const cpuDelta = statsData.cpu_stats.cpu_usage.total_usage - statsData.precpu_stats.cpu_usage.total_usage;
+        const systemDelta = statsData.cpu_stats.system_cpu_usage - statsData.precpu_stats.system_cpu_usage;
+        const cpuPercent = systemDelta > 0 ? (cpuDelta / systemDelta) * 100 : 0;
 
         // Calculate memory percentage
-        const memoryUsage = stats.memory_stats.usage || 0;
-        const memoryLimit = stats.memory_stats.limit || 1;
+        const memoryUsage = statsData.memory_stats.usage || 0;
+        const memoryLimit = statsData.memory_stats.limit || 1;
         const memoryPercent = (memoryUsage / memoryLimit) * 100;
 
         // Network stats
         let networkRx = 0;
         let networkTx = 0;
-        if (stats.networks) {
-          for (const network of Object.values(stats.networks)) {
-            networkRx += (network as { rx_bytes: number }).rx_bytes;
-            networkTx += (network as { tx_bytes: number }).tx_bytes;
+        if (statsData.networks) {
+          for (const network of Object.values(statsData.networks)) {
+            networkRx += (network as { rx_bytes: number }).rx_bytes ?? 0;
+            networkTx += (network as { tx_bytes: number }).tx_bytes ?? 0;
           }
         }
 
         // Block I/O
         let blockRead = 0;
         let blockWrite = 0;
-        if (stats.blkio_stats?.io_service_bytes_recursive) {
-          for (const entry of stats.blkio_stats.io_service_bytes_recursive) {
+        if (statsData.blkio_stats?.io_service_bytes_recursive) {
+          for (const entry of statsData.blkio_stats.io_service_bytes_recursive) {
             if (entry.op === 'read') {
               blockRead += entry.value;
             } else if (entry.op === 'write') {
@@ -422,8 +419,8 @@ export async function containerRoutes(fastify: FastifyInstance) {
         }
 
         const result: ContainerStats = {
-          id: stats.id,
-          name: stats.name.replace(/^\//, ''),
+          id: statsData.id ?? id,
+          name: (statsData.name ?? '').replace(/^\//, ''),
           cpuPercent: Math.round(cpuPercent * 100) / 100,
           memoryUsage,
           memoryLimit,
@@ -448,7 +445,7 @@ export async function containerRoutes(fastify: FastifyInstance) {
   // Prune containers
   fastify.post(
     '/containers/prune',
-    async (request, reply) => {
+    async (_request, reply) => {
       const docker = getDocker();
 
       try {
@@ -490,13 +487,13 @@ export async function containerRoutes(fastify: FastifyInstance) {
           AttachStdin: !detach,
           AttachStdout: true,
           AttachStderr: true,
-          Detach: detach,
         });
 
+        const execInspect = await exec.inspect();
         return reply.send({
           success: true,
           data: {
-            execId: exec.id,
+            execId: execInspect.ID,
             message: 'Exec created. Connect via WebSocket to interact.',
           },
         });

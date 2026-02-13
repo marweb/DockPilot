@@ -40,7 +40,6 @@ interface TunnelCredentials {
   TunnelName: string;
 }
 
-let config: Config;
 let currentToken: string | null = null;
 let currentAccountId: string | null = null;
 
@@ -51,8 +50,8 @@ const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_REQUESTS = 100;
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 
-export function initCloudflareAPI(cfg: Config): void {
-  config = cfg;
+export function initCloudflareAPI(_cfg: Config): void {
+  // Config stored for future use (e.g. custom API URL)
 }
 
 export async function authenticate(token: string, accountId: string): Promise<void> {
