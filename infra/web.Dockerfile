@@ -11,14 +11,13 @@ COPY package.json pnpm-lock.yaml* ./
 COPY packages/types/package.json ./packages/types/
 COPY apps/web/package.json ./apps/web/
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
 # Copy source code
 COPY packages/types ./packages/types
 COPY apps/web ./apps/web
 COPY tsconfig.json ./
 COPY turbo.json ./
+
+# Install dependencies after source copy to preserve workspace node_modules links
 RUN pnpm install --frozen-lockfile
 
 # Build types package first

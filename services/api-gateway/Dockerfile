@@ -11,13 +11,12 @@ COPY package.json pnpm-lock.yaml* ./
 COPY packages/types/package.json ./packages/types/
 COPY services/api-gateway/package.json ./services/api-gateway/
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
 # Copy source code
 COPY packages/types ./packages/types
 COPY services/api-gateway ./services/api-gateway
 COPY tsconfig.json ./
+
+# Install dependencies after source copy to preserve workspace node_modules links
 RUN pnpm install --frozen-lockfile
 
 # Build types package first

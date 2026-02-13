@@ -11,13 +11,12 @@ COPY package.json pnpm-lock.yaml* ./
 COPY packages/types/package.json ./packages/types/
 COPY services/tunnel-control/package.json ./services/tunnel-control/
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
 # Copy source code
 COPY packages/types ./packages/types
 COPY services/tunnel-control ./services/tunnel-control
 COPY tsconfig.json ./
+
+# Install dependencies after source copy to preserve workspace node_modules links
 RUN pnpm install --frozen-lockfile
 
 # Build types package first
