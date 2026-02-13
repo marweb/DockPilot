@@ -38,6 +38,12 @@
     "passwordNeedsNumber": "数字を少なくとも1つ含める必要があります",
     "passwordNeedsSpecial": "特殊文字を少なくとも1つ含める必要があります",
     "passwordRequirements": "8文字以上、大文字・小文字・数字・特殊文字を含むこと",
+    "reqMinLength": "8文字以上",
+    "reqUppercase": "大文字1文字",
+    "reqLowercase": "小文字1文字",
+    "reqNumber": "数字1文字",
+    "reqSpecial": "特殊文字1文字 (!@#$...)",
+    "passwordsMatch": "パスワードが一致しています",
     "error": "アカウントの作成に失敗しました"
   },
   "dashboard": {

@@ -30,13 +30,12 @@ export async function hashPassword(
   const config = { ...DEFAULT_OPTIONS, ...options };
 
   try {
+    // Keep options minimal for broad runtime compatibility across native argon2 builds.
     const hash = await argon2.hash(password, {
       type: argon2.argon2id,
       memoryCost: config.memoryCost,
       timeCost: config.timeCost,
       parallelism: config.parallelism,
-      hashLength: config.hashLength,
-      saltLength: config.saltLength,
     });
 
     return hash;

@@ -16,6 +16,9 @@ COPY packages/types ./packages/types
 COPY services/api-gateway ./services/api-gateway
 COPY tsconfig.json ./
 
+# Install build tools needed for native modules (argon2, better-sqlite3)
+RUN apk add --no-cache python3 make g++
+
 # Install only service + workspace dependencies
 RUN pnpm install --frozen-lockfile --config.node-linker=hoisted \
   --filter @dockpilot/api-gateway... \

@@ -38,6 +38,12 @@
     "passwordNeedsNumber": "Doit contenir au moins un chiffre",
     "passwordNeedsSpecial": "Doit contenir au moins un caractère spécial",
     "passwordRequirements": "Minimum 8 caractères, avec majuscule, minuscule, chiffre et caractère spécial",
+    "reqMinLength": "Au moins 8 caractères",
+    "reqUppercase": "Une lettre majuscule",
+    "reqLowercase": "Une lettre minuscule",
+    "reqNumber": "Un chiffre",
+    "reqSpecial": "Un caractère spécial (!@#$...)",
+    "passwordsMatch": "Les mots de passe correspondent",
     "error": "Échec de la création du compte"
   },
   "dashboard": {

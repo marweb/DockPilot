@@ -1,10 +1,21 @@
 import { loadConfig } from './config/index.js';
 import { createApp } from './app.js';
 import { isSetupComplete, completeSetup, createUser, findUserByUsername } from './services/database.js';
-import * as argon2 from 'argon2';
+import { hashPassword } from './utils/password.js';
 
 async function main() {
   const config = loadConfig();
+
+  // Verify argon2 works at startup
+  try {
+    await hashPassword('startup-check');
+    console.log('[startup] argon2 password hashing: OK');
+  } catch (err) {
+    console.error('[startup] FATAL: argon2 password hashing failed:', err);
+    console.error('[startup] This usually means the native argon2 module was not compiled correctly.');
+    console.error('[startup] Ensure build tools (python3, make, g++) are available during docker build.');
+    process.exit(1);
+  }
 
   // Validate required config
   if (!config.jwtSecret) {
@@ -21,7 +32,7 @@ async function main() {
 
     const existingAdmin = await findUserByUsername('admin');
     if (!existingAdmin) {
-      const passwordHash = await argon2.hash(config.initialAdminPassword);
+      const passwordHash = await hashPassword(config.initialAdminPassword);
       await createUser({
         username: 'admin',
         passwordHash,

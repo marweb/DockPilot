@@ -91,6 +91,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       try {
+        fastify.log.info('Setup: checking if setup is complete...');
         const setupComplete = await isSetupComplete();
 
         if (setupComplete) {
@@ -98,6 +99,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
         }
 
         const { username, password } = request.body;
+        fastify.log.info({ username }, 'Setup: validating password strength...');
 
         // Validate password strength
         const strengthCheck = validatePasswordStrength(password);
@@ -111,32 +113,41 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
           );
         }
 
+        fastify.log.info('Setup: checking if username exists...');
         // Check if username already exists
         const existingUser = await findUserByUsername(username);
         if (existingUser) {
           return handleAuthError(reply, 409, 'USERNAME_EXISTS', 'Username already exists');
         }
 
+        fastify.log.info('Setup: hashing password...');
         // Hash password using utility
         const passwordHash = await hashPassword(password);
+        fastify.log.info('Setup: password hashed successfully');
 
+        fastify.log.info('Setup: creating user...');
         // Create admin user
         const user = await createUser({
           username,
           passwordHash,
           role: 'admin',
         });
+        fastify.log.info({ userId: user.id }, 'Setup: user created');
 
+        fastify.log.info('Setup: completing setup...');
         await completeSetup();
 
+        fastify.log.info('Setup: generating tokens...');
         // Generate tokens using utility
         const tokens = generateTokenPair(fastify, {
           id: user.id,
           username: user.username,
           role: user.role,
         });
+        fastify.log.info('Setup: tokens generated');
 
         // Store refresh token
+        fastify.log.info('Setup: storing refresh token...');
         await updateUser(user.id, { refreshToken: tokens.refreshToken });
 
         await logAuditEntry({
@@ -150,6 +161,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
           success: true,
         });
 
+        fastify.log.info('Setup: complete!');
         return reply.status(201).send({
           success: true,
           data: {
@@ -164,8 +176,14 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
           },
         });
       } catch (error) {
-        fastify.log.error(error, 'Setup failed');
-        return handleAuthError(reply, 500, 'SETUP_ERROR', 'Failed to complete setup');
+        const err = error instanceof Error ? error : new Error(String(error));
+        fastify.log.error({ err: err.message, stack: err.stack }, 'Setup failed');
+        return handleAuthError(
+          reply,
+          500,
+          'SETUP_ERROR',
+          err.message || 'Failed to complete setup'
+        );
       }
     }
   );

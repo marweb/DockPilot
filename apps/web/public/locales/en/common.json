@@ -38,6 +38,12 @@
     "passwordNeedsNumber": "Must contain at least one number",
     "passwordNeedsSpecial": "Must contain at least one special character",
     "passwordRequirements": "Minimum 8 characters, with uppercase, lowercase, number and special character",
+    "reqMinLength": "At least 8 characters",
+    "reqUppercase": "One uppercase letter",
+    "reqLowercase": "One lowercase letter",
+    "reqNumber": "One number",
+    "reqSpecial": "One special character (!@#$...)",
+    "passwordsMatch": "Passwords match",
     "error": "Failed to create account"
   },
   "dashboard": {

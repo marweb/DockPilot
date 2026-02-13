@@ -38,6 +38,12 @@
     "passwordNeedsNumber": "Muss mindestens eine Zahl enthalten",
     "passwordNeedsSpecial": "Muss mindestens ein Sonderzeichen enthalten",
     "passwordRequirements": "Mindestens 8 Zeichen, mit Groß-, Kleinbuchstabe, Zahl und Sonderzeichen",
+    "reqMinLength": "Mindestens 8 Zeichen",
+    "reqUppercase": "Ein Großbuchstabe",
+    "reqLowercase": "Ein Kleinbuchstabe",
+    "reqNumber": "Eine Zahl",
+    "reqSpecial": "Ein Sonderzeichen (!@#$...)",
+    "passwordsMatch": "Passwörter stimmen überein",
     "error": "Kontoerstellung fehlgeschlagen"
   },
   "dashboard": {

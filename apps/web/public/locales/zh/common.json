@@ -38,6 +38,12 @@
     "passwordNeedsNumber": "必须包含至少一个数字",
     "passwordNeedsSpecial": "必须包含至少一个特殊字符",
     "passwordRequirements": "至少8个字符，包含大写、小写字母、数字和特殊字符",
+    "reqMinLength": "至少8个字符",
+    "reqUppercase": "一个大写字母",
+    "reqLowercase": "一个小写字母",
+    "reqNumber": "一个数字",
+    "reqSpecial": "一个特殊字符 (!@#$...)",
+    "passwordsMatch": "密码匹配",
     "error": "创建账户失败"
   },
   "dashboard": {
