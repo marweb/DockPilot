@@ -101,9 +101,8 @@ export default function Setup() {
           <img
             src="/logo.png"
             alt="DockPilot"
-            className="mx-auto mb-4 h-16 w-16 rounded-2xl object-cover shadow-lg"
+            className="mx-auto h-28 w-auto max-w-[240px] object-contain"
           />
-          <h1 className="text-3xl font-bold text-primary-600 dark:text-primary-400">DockPilot</h1>
         </div>
 
         {/* Card */}

@@ -151,9 +151,12 @@ export default function Layout({ children }: LayoutProps) {
           }`}
         >
           <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700">
-            <Link to="/" className="flex items-center gap-2">
-              <Box className="h-8 w-8 text-primary-600" />
-              <span className="text-xl font-bold text-primary-600">DockPilot</span>
+            <Link to="/" className="flex items-center">
+              <img
+                src="/logo.png"
+                alt="DockPilot"
+                className="h-10 w-auto max-w-[160px] object-contain"
+              />
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -190,9 +193,12 @@ export default function Layout({ children }: LayoutProps) {
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex flex-col flex-1 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
           <div className="flex h-16 items-center px-4 border-b border-gray-200 dark:border-gray-700">
-            <Link to="/" className="flex items-center gap-2">
-              <Box className="h-8 w-8 text-primary-600" />
-              <span className="text-xl font-bold text-primary-600">DockPilot</span>
+            <Link to="/" className="flex items-center">
+              <img
+                src="/logo.png"
+                alt="DockPilot"
+                className="h-10 w-auto max-w-[180px] object-contain"
+              />
             </Link>
           </div>
           <nav className="flex-1 overflow-y-auto py-4">
