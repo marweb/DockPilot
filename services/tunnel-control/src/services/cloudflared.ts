@@ -278,16 +278,37 @@ async function resolveZoneIdForHostname(
   explicitZoneId?: string
 ): Promise<string> {
   if (explicitZoneId) {
-    return explicitZoneId;
+    return explicitZoneId.trim();
   }
 
-  const zones = await listZones(getCurrentAccountIdSafe());
-  const sorted = [...zones].sort((a, b) => b.name.length - a.name.length);
+  const normalizedHostname = hostname.trim().toLowerCase().replace(/\.$/, '');
 
-  const match = sorted.find((zone) => hostname === zone.name || hostname.endsWith(`.${zone.name}`));
+  const accountId = getCurrentAccountIdSafe();
+  const accountZones = await listZones(accountId);
+  const sortedAccountZones = [...accountZones].sort((a, b) => b.name.length - a.name.length);
+
+  const accountMatch = sortedAccountZones.find(
+    (zone) =>
+      normalizedHostname === zone.name.toLowerCase() ||
+      normalizedHostname.endsWith(`.${zone.name.toLowerCase()}`)
+  );
+
+  if (accountMatch) {
+    return accountMatch.id;
+  }
+
+  // Fallback: some tokens can access zones that are not returned with account.id filter
+  const allZones = await listZones();
+  const sortedAllZones = [...allZones].sort((a, b) => b.name.length - a.name.length);
+
+  const match = sortedAllZones.find(
+    (zone) =>
+      normalizedHostname === zone.name.toLowerCase() ||
+      normalizedHostname.endsWith(`.${zone.name.toLowerCase()}`)
+  );
   if (!match) {
     throw new Error(
-      `No se encontro una zona de Cloudflare para ${hostname}. Proporciona Zone ID o usa un dominio dentro de una zona del token.`
+      `No se encontro una zona de Cloudflare para ${hostname}. Verifica que el token tenga permisos de DNS (Zone:Read y Zone:DNS:Edit), que la cuenta seleccionada sea correcta, o proporciona Zone ID manualmente.`
     );
   }
 
