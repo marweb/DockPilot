@@ -311,6 +311,23 @@ function sanitizeTunnelName(name: string): string {
     .slice(0, 63);
 }
 
+function buildCloudflareIngressPayload(ingress: IngressRule[]): Array<Record<string, unknown>> {
+  const userRules = ingress.map((rule) => {
+    const payloadRule: Record<string, unknown> = {
+      hostname: rule.hostname,
+      service: rule.service,
+    };
+
+    if (rule.path) {
+      payloadRule.path = rule.path;
+    }
+
+    return payloadRule;
+  });
+
+  return [...userRules, { service: 'http_status:404' }];
+}
+
 export async function provisionTunnelForService(
   options: ProvisionTunnelOptions
 ): Promise<ProvisionTunnelResult> {
@@ -786,17 +803,24 @@ export async function updateIngressRules(id: string, ingress: IngressRule[]): Pr
   logger.info({ tunnelId: id, rulesCount: ingress.length }, 'Updating ingress rules');
 
   await ensureCloudflareSession(tunnel.accountId);
+  const ingressPayload = buildCloudflareIngressPayload(ingress);
   await updateTunnelConfiguration(id, tunnel.accountId, {
     config: {
-      ingress,
+      ingress: ingressPayload,
     },
   });
 
   const remoteConfig = await getTunnelConfiguration(id, tunnel.accountId);
 
   tunnel.ingress = ingress;
-  if (Array.isArray(remoteConfig.ingress)) {
-    tunnel.ingress = remoteConfig.ingress
+  const remoteIngress = Array.isArray(remoteConfig.ingress)
+    ? remoteConfig.ingress
+    : Array.isArray(remoteConfig.config?.ingress)
+      ? remoteConfig.config.ingress
+      : undefined;
+
+  if (Array.isArray(remoteIngress)) {
+    tunnel.ingress = remoteIngress
       .filter(
         (rule): rule is { hostname: string; service: string; path?: string; port?: number } =>
           typeof rule === 'object' &&
@@ -847,9 +871,10 @@ export async function deleteIngressRule(id: string, hostname: string): Promise<v
   }
 
   await ensureCloudflareSession(tunnel.accountId);
+  const ingressPayload = buildCloudflareIngressPayload(tunnel.ingress);
   await updateTunnelConfiguration(id, tunnel.accountId, {
     config: {
-      ingress: tunnel.ingress,
+      ingress: ingressPayload,
     },
   });
 

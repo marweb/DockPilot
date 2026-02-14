@@ -22,6 +22,29 @@ interface WebSocketLike {
   on: (event: string, handler: (data?: unknown) => void) => void;
 }
 
+function normalizeTargetMessage(
+  data: WebSocket.RawData,
+  isBinary: boolean
+): string | WebSocket.RawData {
+  if (isBinary) {
+    return data;
+  }
+
+  if (typeof data === 'string') {
+    return data;
+  }
+
+  if (Buffer.isBuffer(data)) {
+    return data.toString('utf-8');
+  }
+
+  if (Array.isArray(data)) {
+    return Buffer.concat(data).toString('utf-8');
+  }
+
+  return Buffer.from(data).toString('utf-8');
+}
+
 function getSocket(conn: WebSocketLike | { socket: WebSocketLike }): WebSocketLike {
   return 'socket' in conn ? conn.socket : conn;
 }
@@ -107,21 +130,17 @@ export async function registerWebSocketProxy(
     }
   );
 
-  fastify.get(
-    '/ws/*',
-    { websocket: true },
-    async (socketOrConn, request: FastifyRequest) => {
-      const connection = { socket: getSocket(socketOrConn) };
-      // Authenticate WebSocket connection
-      const authenticated = await authenticateWebSocket(connection, request, fastify);
-      if (!authenticated) return;
+  fastify.get('/ws/*', { websocket: true }, async (socketOrConn, request: FastifyRequest) => {
+    const connection = { socket: getSocket(socketOrConn) };
+    // Authenticate WebSocket connection
+    const authenticated = await authenticateWebSocket(connection, request, fastify);
+    if (!authenticated) return;
 
-      const path = request.url.replace('/ws/', '');
-      const targetUrl = `${config.dockerControlUrl}/ws/${path}`;
+    const path = request.url.replace('/ws/', '');
+    const targetUrl = `${config.dockerControlUrl}/ws/${path}`;
 
-      await proxyWebSocket(connection, request, targetUrl, fastify);
-    }
-  );
+    await proxyWebSocket(connection, request, targetUrl, fastify);
+  });
 }
 
 /**
@@ -326,7 +345,7 @@ async function proxyWebSocket(
 
         try {
           if (targetWs.readyState === WebSocket.OPEN) {
-            targetWs.send(data as string);
+            targetWs.send(data as WebSocket.RawData);
           }
         } catch (err) {
           request.log.error({ err }, 'Error forwarding message to target');
@@ -334,12 +353,12 @@ async function proxyWebSocket(
       });
 
       // Forward messages from target to client
-      targetWs.on('message', (data: WebSocket.RawData) => {
+      targetWs.on('message', (data: WebSocket.RawData, isBinary: boolean) => {
         if (client.isClosed) return;
 
         try {
           if (connection.socket.readyState === 1) {
-            connection.socket.send(data);
+            connection.socket.send(normalizeTargetMessage(data, isBinary));
           }
         } catch (err) {
           request.log.error({ err }, 'Error forwarding message to client');

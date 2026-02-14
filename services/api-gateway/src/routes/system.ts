@@ -3,7 +3,8 @@ import { z } from 'zod';
 import '../types/fastify.js';
 import { getSystemSetting, setSystemSetting, getSystemSettings } from '../services/database.js';
 
-const CDN_VERSIONS_URL = 'https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts/versions.json';
+const CDN_VERSIONS_URL =
+  'https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts/versions.json';
 
 // Cache for version check (avoid hammering CDN)
 let versionCache: { latest: string; checkedAt: number } | null = null;
@@ -14,6 +15,18 @@ const VERSION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  */
 function getCurrentVersion(): string {
   return process.env.DOCKPILOT_VERSION || '0.0.0';
+}
+
+function isNumericVersion(version: string): boolean {
+  return /^v?\d+(?:\.\d+)*$/.test(version.trim());
+}
+
+function normalizeCurrentVersion(currentVersion: string, latestVersion: string): string {
+  const normalized = currentVersion.trim().toLowerCase();
+  if (normalized === 'latest') {
+    return latestVersion;
+  }
+  return currentVersion;
 }
 
 /**
@@ -91,9 +104,14 @@ export async function systemRoutes(fastify: FastifyInstance): Promise<void> {
   // GET /system/check-update - Check if a new version is available
   fastify.get('/system/check-update', async (_request, reply) => {
     try {
-      const currentVersion = getCurrentVersion();
+      const rawCurrentVersion = getCurrentVersion();
       const latestVersion = await fetchLatestVersion();
-      const updateAvailable = compareVersions(latestVersion, currentVersion) > 0;
+      const currentVersion = normalizeCurrentVersion(rawCurrentVersion, latestVersion);
+
+      const updateAvailable =
+        isNumericVersion(latestVersion) && isNumericVersion(currentVersion)
+          ? compareVersions(latestVersion, currentVersion) > 0
+          : false;
 
       return reply.send({
         success: true,

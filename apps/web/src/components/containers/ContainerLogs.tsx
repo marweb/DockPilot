@@ -7,6 +7,26 @@ interface ContainerLogsProps {
   containerId: string;
 }
 
+async function readWebSocketMessage(data: unknown): Promise<string> {
+  if (typeof data === 'string') {
+    return data;
+  }
+
+  if (data instanceof Blob) {
+    return data.text();
+  }
+
+  if (data instanceof ArrayBuffer) {
+    return new TextDecoder().decode(data);
+  }
+
+  if (ArrayBuffer.isView(data)) {
+    return new TextDecoder().decode(data);
+  }
+
+  return String(data);
+}
+
 export default function ContainerLogs({ containerId }: ContainerLogsProps) {
   const { t } = useTranslation();
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -38,9 +58,11 @@ export default function ContainerLogs({ containerId }: ContainerLogsProps) {
       setIsConnected(true);
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = async (event) => {
+      const payload = await readWebSocketMessage(event.data);
+
       try {
-        const data = JSON.parse(event.data as string) as {
+        const data = JSON.parse(payload) as {
           type?: string;
           data?: string;
           message?: string;
@@ -51,7 +73,9 @@ export default function ContainerLogs({ containerId }: ContainerLogsProps) {
           setLogs((prev) => [...prev, data.data || data.message || '']);
         }
       } catch {
-        setLogs((prev) => [...prev, String(event.data)]);
+        if (payload.trim()) {
+          setLogs((prev) => [...prev, payload]);
+        }
       }
     };
 

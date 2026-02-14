@@ -26,15 +26,15 @@ export const IngressRuleSchema = z.object({
     .string()
     .min(1, 'Hostname is required')
     .regex(
-      /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9])*$/,
+      /^(?:\*\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)(?:\.(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?))*$/,
       'Invalid hostname format'
     ),
   service: z
     .string()
     .min(1, 'Service is required')
     .regex(
-      /^(http|https|tcp|udp|unix|ssh):\/\/.+/,
-      'Service must be a valid URL (http://, https://, tcp://, etc.)'
+      /^(?:(?:http|https|tcp|udp|ssh):\/\/.+|unix:.+|hello_world|http_status:\d{3})$/,
+      'Service must be a valid Cloudflare service target'
     ),
   port: z.number().default(80),
   originRequest: z

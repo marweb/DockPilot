@@ -37,6 +37,10 @@ export interface CloudflareTunnel {
 
 interface CloudflareTunnelConfig {
   ingress?: Array<Record<string, unknown>>;
+  config?: {
+    ingress?: Array<Record<string, unknown>>;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 }
 

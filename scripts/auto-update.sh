@@ -112,6 +112,11 @@ fi
 
 log "Latest version: ${LATEST_VERSION}"
 
+if [ "${CURRENT_VERSION}" = "latest" ]; then
+  log "Current version is alias 'latest'; treating it as ${LATEST_VERSION}."
+  CURRENT_VERSION="${LATEST_VERSION}"
+fi
+
 # Step 4: Compare versions
 version_gt() {
   # Returns 0 (true) if $1 > $2

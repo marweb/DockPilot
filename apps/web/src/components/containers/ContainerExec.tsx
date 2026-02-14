@@ -13,6 +13,26 @@ interface ExecMessage {
   timestamp: number;
 }
 
+async function readWebSocketMessage(data: unknown): Promise<string> {
+  if (typeof data === 'string') {
+    return data;
+  }
+
+  if (data instanceof Blob) {
+    return data.text();
+  }
+
+  if (data instanceof ArrayBuffer) {
+    return new TextDecoder().decode(data);
+  }
+
+  if (ArrayBuffer.isView(data)) {
+    return new TextDecoder().decode(data);
+  }
+
+  return String(data);
+}
+
 export default function ContainerExec({ containerId }: ContainerExecProps) {
   const { t } = useTranslation();
   const terminalRef = useRef<HTMLDivElement>(null);
@@ -42,12 +62,20 @@ export default function ContainerExec({ containerId }: ContainerExecProps) {
       addMessage('status', t('containers.exec.connected'));
     };
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'output') {
-        addMessage('output', data.data);
-      } else if (data.type === 'error') {
-        addMessage('error', data.error || data.data || t('containers.exec.error'));
+    ws.onmessage = async (event) => {
+      const payload = await readWebSocketMessage(event.data);
+
+      try {
+        const data = JSON.parse(payload) as { type?: string; data?: string; error?: string };
+        if (data.type === 'output') {
+          addMessage('output', data.data || '');
+        } else if (data.type === 'error') {
+          addMessage('error', data.error || data.data || t('containers.exec.error'));
+        }
+      } catch {
+        if (payload.trim()) {
+          addMessage('output', payload);
+        }
       }
     };
 

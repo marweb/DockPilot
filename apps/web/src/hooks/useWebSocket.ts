@@ -66,6 +66,26 @@ function getWebSocketBaseUrl(): string {
   return `${protocol}//${host}`;
 }
 
+async function readWebSocketMessageData(data: unknown): Promise<unknown> {
+  if (typeof data === 'string') {
+    return data;
+  }
+
+  if (data instanceof Blob) {
+    return data.text();
+  }
+
+  if (data instanceof ArrayBuffer) {
+    return new TextDecoder().decode(data);
+  }
+
+  if (ArrayBuffer.isView(data)) {
+    return new TextDecoder().decode(data);
+  }
+
+  return data;
+}
+
 /**
  * Generic WebSocket hook with auto-reconnection
  *
@@ -174,15 +194,17 @@ export function useWebSocket<T = unknown>({
         onOpen?.();
       };
 
-      ws.onmessage = (event) => {
+      ws.onmessage = async (event) => {
+        const payload = await readWebSocketMessageData(event.data);
+
         try {
-          const data = JSON.parse(event.data) as T;
+          const data = typeof payload === 'string' ? (JSON.parse(payload) as T) : (payload as T);
           setLastMessage(data);
           onMessage?.(data);
         } catch {
           // Handle non-JSON messages
-          setLastMessage(event.data as unknown as T);
-          onMessage?.(event.data as unknown as T);
+          setLastMessage(payload as T);
+          onMessage?.(payload as T);
         }
       };
 

@@ -36,6 +36,26 @@ interface PullProgress {
   id?: string;
 }
 
+async function readWebSocketMessage(data: unknown): Promise<string> {
+  if (typeof data === 'string') {
+    return data;
+  }
+
+  if (data instanceof Blob) {
+    return data.text();
+  }
+
+  if (data instanceof ArrayBuffer) {
+    return new TextDecoder().decode(data);
+  }
+
+  if (ArrayBuffer.isView(data)) {
+    return new TextDecoder().decode(data);
+  }
+
+  return String(data);
+}
+
 export default function ImagePull({ onClose, onSuccess }: ImagePullProps) {
   const { t } = useTranslation();
   const { token } = useAuthStore();
@@ -80,13 +100,36 @@ export default function ImagePull({ onClose, onSuccess }: ImagePullProps) {
       );
     };
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+    ws.onmessage = async (event) => {
+      const payload = await readWebSocketMessage(event.data);
+      let data: {
+        type?: string;
+        status?: string;
+        progress?: string;
+        id?: string;
+        message?: string;
+      };
+
+      try {
+        data = JSON.parse(payload) as {
+          type?: string;
+          status?: string;
+          progress?: string;
+          id?: string;
+          message?: string;
+        };
+      } catch {
+        setProgress((prev) => [...prev, { status: payload }]);
+        return;
+      }
 
       if (data.type === 'progress') {
-        setProgress((prev) => [...prev, data]);
+        setProgress((prev) => [
+          ...prev,
+          { status: data.status || '', progress: data.progress, id: data.id },
+        ]);
       } else if (data.type === 'error') {
-        setError(data.message);
+        setError(data.message || t('images.pull.error'));
         setIsPulling(false);
         ws.close();
       } else if (data.type === 'success') {
