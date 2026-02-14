@@ -94,6 +94,9 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
     volumes:
       - tunnel-control-data:/data
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
     networks:
       - dockpilot-network
     healthcheck:

@@ -710,6 +710,13 @@ export async function startTunnel(id: string, restartOnCrash = true): Promise<vo
     proc.on('exit', (code) => {
       if (code !== 0) {
         clearTimeout(timeout);
+        const lastStderr = [...logs].reverse().find((entry) => entry.startsWith('[STDERR]'));
+        if (lastStderr) {
+          const detail = lastStderr.replace(/^\[STDERR\]\s+[^\s]+\s*/, '').trim();
+          reject(new Error(`Tunnel process exited with code ${code}: ${detail}`));
+          return;
+        }
+
         reject(new Error(`Tunnel process exited with code ${code}`));
       }
     });
