@@ -54,7 +54,22 @@ export async function authRoutes(fastify: FastifyInstance) {
         // Validate token with Cloudflare API and auto-select account if not provided
         const authResult = await authenticate(apiToken, accountId);
         const selectedAccountId = authResult.accountId;
-        const accountInfo = await getAccountInfo(selectedAccountId);
+        let accountName = authResult.accountName;
+        try {
+          // Optional enrichment: some tokens can list accounts but cannot read account details.
+          // Do not fail login if this call is forbidden.
+          const accountInfo = await getAccountInfo(selectedAccountId);
+          accountName = accountInfo.name;
+        } catch (error) {
+          if (error instanceof CloudflareAPIError && error.statusCode === 403) {
+            logger.debug(
+              { accountId: selectedAccountId, cloudflareCode: error.code },
+              'Skipping account detail fetch due to insufficient token scope'
+            );
+          } else {
+            throw error;
+          }
+        }
 
         // Save credentials securely
         await saveCredentials(selectedAccountId, {
@@ -66,7 +81,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         });
 
         logger.info(
-          { accountId: selectedAccountId, accountName: accountInfo.name },
+          { accountId: selectedAccountId, accountName },
           'Cloudflare authentication successful'
         );
 
@@ -77,7 +92,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           message: 'Cloudflare API token login successful',
           details: {
             accountId: selectedAccountId,
-            accountName: accountInfo.name,
+            accountName,
             accountsFound: authResult.accounts.length,
           },
         });
@@ -88,7 +103,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           data: {
             authenticated: true,
             accountId: selectedAccountId,
-            accountName: accountInfo.name,
+            accountName,
             accounts: authResult.accounts,
           },
         });
