@@ -24,6 +24,7 @@ COMPOSE_FILE="${SOURCE_DIR}/docker-compose.yml"
 COMPOSE_PROD="${SOURCE_DIR}/docker-compose.prod.yml"
 ENV_FILE="${SOURCE_DIR}/.env"
 BACKUP_DIR="${SOURCE_DIR}/.upgrade-backup"
+KEEP_DOCKPILOT_IMAGES="${KEEP_DOCKPILOT_IMAGES:-2}"
 
 write_status() {
   local step="$1"
@@ -33,6 +34,38 @@ write_status() {
 
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
+
+prune_old_dockpilot_images() {
+  local keep_count="$KEEP_DOCKPILOT_IMAGES"
+
+  if ! [[ "$keep_count" =~ ^[0-9]+$ ]] || [ "$keep_count" -lt 1 ]; then
+    keep_count=2
+  fi
+
+  local prefix="${REGISTRY_URL}/marweb/dockpilot-"
+  local repos
+
+  repos=$(docker image ls --format '{{.Repository}}' | awk -v prefix="$prefix" 'index($0, prefix) == 1 { print $0 }' | sort -u)
+
+  if [ -z "$repos" ]; then
+    log "No DockPilot images found for cleanup with prefix ${prefix}"
+    return 0
+  fi
+
+  while IFS= read -r repo; do
+    [ -z "$repo" ] && continue
+
+    docker image ls "$repo" --format '{{.ID}}' \
+      | awk '!seen[$0]++' \
+      | awk -v keep_count="$keep_count" 'NR > keep_count { print $0 }' \
+      | while IFS= read -r image_id; do
+          [ -z "$image_id" ] && continue
+          if docker image rm "$image_id" >/dev/null 2>&1; then
+            log "Removed old image ${repo} (${image_id})"
+          fi
+        done
+  done <<< "$repos"
 }
 
 # Wait for a container to become healthy (used for recovery when compose up fails)
@@ -254,6 +287,7 @@ fi
 
 # Step 7: Cleanup old images
 log "Cleaning up old images..."
+prune_old_dockpilot_images || true
 docker image prune -f 2>/dev/null || true
 write_status "6" "Upgrade complete"
 
