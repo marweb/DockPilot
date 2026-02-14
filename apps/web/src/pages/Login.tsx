@@ -66,7 +66,7 @@ export default function Login() {
           <img
             src="/logo.png"
             alt="DockPilot"
-            className="mx-auto h-28 w-auto max-w-[240px] object-contain"
+            className="mx-auto w-full max-w-[360px] h-auto object-contain"
           />
         </div>
 
