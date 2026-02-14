@@ -21,9 +21,6 @@ ENV_FILE="${SOURCE_DIR}/.env"
 
 # Colors
 RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
 NC='\033[0m'
 
 log() {
@@ -159,7 +156,9 @@ if [ "$ssh_detected" = false ]; then
       service sshd start 2>/dev/null || true
       ;;
     ubuntu|debian|raspbian)
-      [ "$apt_updated" = false ] && apt-get update -y 2>/dev/null || true
+      if [ "$apt_updated" = false ]; then
+        apt-get update -y 2>/dev/null || true
+      fi
       apt-get install -y openssh-server 2>/dev/null || true
       systemctl enable ssh 2>/dev/null || true
       systemctl start ssh 2>/dev/null || true
@@ -199,7 +198,7 @@ if ! command -v docker >/dev/null 2>&1; then
     systemctl enable docker 2>/dev/null || true
     systemctl start docker 2>/dev/null || true
   elif [ "$OS_TYPE" = "centos" ] || [ "$OS_TYPE" = "fedora" ] || [ "$OS_TYPE" = "rhel" ] || [ "$OS_TYPE" = "rocky" ] || [ "$OS_TYPE" = "almalinux" ]; then
-    dnf config-manager --add-repo https://download.docker.com/linux/$OS_TYPE/docker-ce.repo 2>/dev/null || true
+    dnf config-manager --add-repo "https://download.docker.com/linux/${OS_TYPE}/docker-ce.repo" 2>/dev/null || true
     dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin 2>/dev/null || true
     systemctl start docker 2>/dev/null || true
     systemctl enable docker 2>/dev/null || true
@@ -233,7 +232,7 @@ log_section "Step 4/9: Configuring Docker daemon"
 echo "4/9 Configuring Docker daemon..."
 mkdir -p /etc/docker
 if [ -f /etc/docker/daemon.json ]; then
-  cp /etc/docker/daemon.json /etc/docker/daemon.json.bak-${DATE} 2>/dev/null || true
+  cp /etc/docker/daemon.json "/etc/docker/daemon.json.bak-${DATE}" 2>/dev/null || true
 fi
 
 # Merge or create daemon.json with log limits
@@ -401,7 +400,7 @@ ALL_HEALTHY=false
 FAILED_CONTAINER=""
 FAILED_REASON=""
 
-while [ $HEALTH_WAITED -lt $HEALTH_WAIT ]; do
+while [ "$HEALTH_WAITED" -lt "$HEALTH_WAIT" ]; do
   ALL_HEALTHY=true
   for c in $CONTAINERS; do
     health_status=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$c" 2>/dev/null || echo "unknown")

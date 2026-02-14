@@ -50,7 +50,6 @@ trap 'rm -f "$LOCK_FILE"' EXIT
 log "=== DockPilot Auto-Update Check ==="
 
 # Step 1: Check if auto-update is enabled via the API
-API_PORT="${API_GATEWAY_PORT:-3000}"
 AUTO_UPDATE_ENABLED=false
 
 # Try to get the setting from the API
@@ -116,8 +115,10 @@ log "Latest version: ${LATEST_VERSION}"
 # Step 4: Compare versions
 version_gt() {
   # Returns 0 (true) if $1 > $2
-  local IFS=.
-  local i ver1=($1) ver2=($2)
+  local i
+  local -a ver1 ver2
+  IFS='.' read -r -a ver1 <<< "$1"
+  IFS='.' read -r -a ver2 <<< "$2"
   for ((i=0; i<${#ver1[@]} || i<${#ver2[@]}; i++)); do
     local v1=${ver1[i]:-0}
     local v2=${ver2[i]:-0}
@@ -147,7 +148,7 @@ if [ -f "${SOURCE_DIR}/upgrade.sh" ]; then
   bash "${SOURCE_DIR}/upgrade.sh" "${LATEST_VERSION}" 2>&1
   UPGRADE_EXIT=$?
 
-  if [ $UPGRADE_EXIT -eq 0 ]; then
+  if [ "$UPGRADE_EXIT" -eq 0 ]; then
     log "Auto-upgrade to ${LATEST_VERSION} completed successfully."
   else
     log "Auto-upgrade failed with exit code ${UPGRADE_EXIT}."

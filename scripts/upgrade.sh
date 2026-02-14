@@ -73,7 +73,7 @@ wait_for_healthy() {
   local container="$1"
   local max_wait="${2:-90}"
   local waited=0
-  while [ $waited -lt $max_wait ]; do
+  while [ "$waited" -lt "$max_wait" ]; do
     local status
     status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "unknown")
     if [ "$status" = "healthy" ]; then
@@ -90,7 +90,7 @@ wait_for_required_containers() {
   local waited=0
   local containers="dockpilot-docker-control dockpilot-tunnel-control dockpilot-api-gateway dockpilot-web"
 
-  while [ $waited -lt $max_wait ]; do
+  while [ "$waited" -lt "$max_wait" ]; do
     local all_healthy=true
 
     for c in $containers; do
@@ -135,9 +135,15 @@ write_status "1" "Starting upgrade to ${VERSION}"
 log "Backing up current configuration..."
 rm -rf "$BACKUP_DIR"
 mkdir -p "$BACKUP_DIR"
-[ -f "$COMPOSE_FILE" ] && cp "$COMPOSE_FILE" "${BACKUP_DIR}/docker-compose.yml" 2>/dev/null || true
-[ -f "$COMPOSE_PROD" ] && cp "$COMPOSE_PROD" "${BACKUP_DIR}/docker-compose.prod.yml" 2>/dev/null || true
-[ -f "$ENV_FILE" ] && cp "$ENV_FILE" "${BACKUP_DIR}/.env" 2>/dev/null || true
+if [ -f "$COMPOSE_FILE" ]; then
+  cp "$COMPOSE_FILE" "${BACKUP_DIR}/docker-compose.yml" 2>/dev/null || true
+fi
+if [ -f "$COMPOSE_PROD" ]; then
+  cp "$COMPOSE_PROD" "${BACKUP_DIR}/docker-compose.prod.yml" 2>/dev/null || true
+fi
+if [ -f "$ENV_FILE" ]; then
+  cp "$ENV_FILE" "${BACKUP_DIR}/.env" 2>/dev/null || true
+fi
 
 # Step 2: Download docker-compose files
 log "Downloading docker-compose.yml..."
