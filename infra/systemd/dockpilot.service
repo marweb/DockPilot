@@ -1,6 +1,6 @@
 [Unit]
 Description=DockPilot - Web-based Docker Administration Platform
-Documentation=https://github.com/marweb/DockerPilot
+Documentation=https://github.com/marweb/DockPilot
 Requires=docker.service
 After=docker.service network.target
 

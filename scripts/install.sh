@@ -5,14 +5,14 @@
 # Installs DockPilot with a single command.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts/install.sh | sudo bash
+#   curl -fsSL https://raw.githubusercontent.com/marweb/DockPilot/master/scripts/install.sh | sudo bash
 #
-# Source: https://github.com/marweb/DockerPilot
+# Source: https://github.com/marweb/DockPilot
 
 set -e
 set -o pipefail
 
-CDN="https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts"
+CDN="https://raw.githubusercontent.com/marweb/DockPilot/master/scripts"
 DATE=$(date +"%Y%m%d-%H%M%S")
 DOCKER_VERSION="27.0"
 DOCKPILOT_HOME="/data/dockpilot"
@@ -48,7 +48,7 @@ echo "=========================================="
 echo ""
 echo "Welcome to DockPilot Installer!"
 echo "This script will install everything for you. Sit back and relax."
-echo "Source: https://github.com/marweb/DockerPilot"
+echo "Source: https://github.com/marweb/DockPilot"
 echo ""
 
 # Detect OS

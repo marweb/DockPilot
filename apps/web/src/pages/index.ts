@@ -8,6 +8,7 @@ export { default as Volumes } from './Volumes';
 export { default as Networks } from './Networks';
 export { default as Builds } from './Builds';
 export { default as Compose } from './Compose';
+export { default as Repositories } from './Repositories';
 export { default as Tunnels } from './Tunnels';
 export { default as Settings } from './Settings';
 export { default as Documentation } from './Documentation';

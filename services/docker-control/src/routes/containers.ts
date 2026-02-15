@@ -28,6 +28,13 @@ const execBody = z.object({
   detach: z.boolean().default(false),
 });
 
+const updateContainerEnvBody = z.object({
+  env: z.record(z.string()),
+  recreate: z.boolean().default(true),
+  rollbackOnFailure: z.boolean().default(true),
+  keepRollbackContainer: z.boolean().default(true),
+});
+
 export async function containerRoutes(fastify: FastifyInstance) {
   // List containers
   fastify.get<{ Querystring: z.infer<typeof listContainersQuery> }>(
@@ -56,117 +63,125 @@ export async function containerRoutes(fastify: FastifyInstance) {
         filters: parsedFilters,
       });
 
-      const result: Container[] = containers.map((c: { Id: string; Names: string[]; Image: string; State: string; Created: number; Ports: Array<{ PrivatePort: number; PublicPort?: number; IP?: string; Type: string }>; Labels?: Record<string, string>; NetworkSettings?: { Networks?: Record<string, unknown> }; Command?: string }) => ({
-        id: c.Id,
-        name: c.Names[0]?.replace(/^\//, '') || '',
-        image: c.Image,
-        status: c.State as Container['status'],
-        state: c.State,
-        created: c.Created * 1000,
-        ports: c.Ports.map((p: { PrivatePort: number; PublicPort?: number; IP?: string; Type: string }) => ({
-          containerPort: p.PrivatePort,
-          hostPort: p.PublicPort,
-          hostIp: p.IP,
-          protocol: p.Type as 'tcp' | 'udp',
-        })),
-        labels: c.Labels || {},
-        networks: Object.keys(c.NetworkSettings?.Networks || {}),
-        command: c.Command,
-      }));
+      const result: Container[] = containers.map(
+        (c: {
+          Id: string;
+          Names: string[];
+          Image: string;
+          State: string;
+          Created: number;
+          Ports: Array<{ PrivatePort: number; PublicPort?: number; IP?: string; Type: string }>;
+          Labels?: Record<string, string>;
+          NetworkSettings?: { Networks?: Record<string, unknown> };
+          Command?: string;
+        }) => ({
+          id: c.Id,
+          name: c.Names[0]?.replace(/^\//, '') || '',
+          image: c.Image,
+          status: c.State as Container['status'],
+          state: c.State,
+          created: c.Created * 1000,
+          ports: c.Ports.map(
+            (p: { PrivatePort: number; PublicPort?: number; IP?: string; Type: string }) => ({
+              containerPort: p.PrivatePort,
+              hostPort: p.PublicPort,
+              hostIp: p.IP,
+              protocol: p.Type as 'tcp' | 'udp',
+            })
+          ),
+          labels: c.Labels || {},
+          networks: Object.keys(c.NetworkSettings?.Networks || {}),
+          command: c.Command,
+        })
+      );
 
       return reply.send({ success: true, data: result });
     }
   );
 
   // Get container details
-  fastify.get<{ Params: { id: string } }>(
-    '/containers/:id',
-    async (request, reply) => {
-      const { id } = request.params;
-      const docker = getDocker();
+  fastify.get<{ Params: { id: string } }>('/containers/:id', async (request, reply) => {
+    const { id } = request.params;
+    const docker = getDocker();
 
-      try {
-        const container = docker.getContainer(id);
-        const inspect = await container.inspect();
+    try {
+      const container = docker.getContainer(id);
+      const inspect = await container.inspect();
 
-        const result: ContainerInspect = {
-          id: inspect.Id,
-          created: inspect.Created,
-          path: inspect.Path,
-          args: inspect.Args || [],
-          state: {
-            status: inspect.State.Status,
-            running: inspect.State.Running,
-            paused: inspect.State.Paused,
-            restarting: inspect.State.Restarting,
-            oomKilled: inspect.State.OOMKilled,
-            dead: inspect.State.Dead,
-            pid: inspect.State.Pid,
-            exitCode: inspect.State.ExitCode,
-            error: inspect.State.Error,
-            startedAt: inspect.State.StartedAt,
-            finishedAt: inspect.State.FinishedAt,
-          },
-          image: inspect.Image,
-          networkSettings: inspect.NetworkSettings as Record<string, unknown>,
-          mounts: inspect.Mounts.map((m) => ({
-            type: m.Type,
-            name: m.Name,
-            source: m.Source,
-            destination: m.Destination,
-            mode: m.Mode,
-            rw: m.RW,
-          })),
-          config: {
-            hostname: inspect.Config.Hostname,
-            domainname: inspect.Config.Domainname,
-            user: inspect.Config.User,
-            attachStdin: inspect.Config.AttachStdin,
-            attachStdout: inspect.Config.AttachStdout,
-            attachStderr: inspect.Config.AttachStderr,
-            exposedPorts: inspect.Config.ExposedPorts,
-            tty: inspect.Config.Tty,
-            openStdin: inspect.Config.OpenStdin,
-            stdinOnce: inspect.Config.StdinOnce,
-            env: inspect.Config.Env,
-            cmd: inspect.Config.Cmd,
-            image: inspect.Config.Image,
-            workingDir: inspect.Config.WorkingDir,
-            labels: inspect.Config.Labels || {},
-          },
-        };
+      const result: ContainerInspect = {
+        id: inspect.Id,
+        created: inspect.Created,
+        path: inspect.Path,
+        args: inspect.Args || [],
+        state: {
+          status: inspect.State.Status,
+          running: inspect.State.Running,
+          paused: inspect.State.Paused,
+          restarting: inspect.State.Restarting,
+          oomKilled: inspect.State.OOMKilled,
+          dead: inspect.State.Dead,
+          pid: inspect.State.Pid,
+          exitCode: inspect.State.ExitCode,
+          error: inspect.State.Error,
+          startedAt: inspect.State.StartedAt,
+          finishedAt: inspect.State.FinishedAt,
+        },
+        image: inspect.Image,
+        networkSettings: inspect.NetworkSettings as Record<string, unknown>,
+        mounts: inspect.Mounts.map((m) => ({
+          type: m.Type,
+          name: m.Name,
+          source: m.Source,
+          destination: m.Destination,
+          mode: m.Mode,
+          rw: m.RW,
+        })),
+        config: {
+          hostname: inspect.Config.Hostname,
+          domainname: inspect.Config.Domainname,
+          user: inspect.Config.User,
+          attachStdin: inspect.Config.AttachStdin,
+          attachStdout: inspect.Config.AttachStdout,
+          attachStderr: inspect.Config.AttachStderr,
+          exposedPorts: inspect.Config.ExposedPorts,
+          tty: inspect.Config.Tty,
+          openStdin: inspect.Config.OpenStdin,
+          stdinOnce: inspect.Config.StdinOnce,
+          env: inspect.Config.Env,
+          cmd: inspect.Config.Cmd,
+          image: inspect.Config.Image,
+          workingDir: inspect.Config.WorkingDir,
+          labels: inspect.Config.Labels || {},
+        },
+      };
 
-        return reply.send({ success: true, data: result });
-      } catch (error) {
-        const err = error as Error;
-        if (err.message.includes('No such container')) {
-          return reply.status(404).send({ error: 'Container not found' });
-        }
-        throw error;
+      return reply.send({ success: true, data: result });
+    } catch (error) {
+      const err = error as Error;
+      if (err.message.includes('No such container')) {
+        return reply.status(404).send({ error: 'Container not found' });
       }
+      throw error;
     }
-  );
+  });
 
   // Start container
-  fastify.post<{ Params: { id: string } }>(
-    '/containers/:id/start',
-    async (request, reply) => {
-      const { id } = request.params;
-      const docker = getDocker();
+  fastify.post<{ Params: { id: string } }>('/containers/:id/start', async (request, reply) => {
+    const { id } = request.params;
+    const docker = getDocker();
 
-      try {
-        const container = docker.getContainer(id);
-        await container.start();
-        return reply.send({ success: true, message: 'Container started' });
-      } catch (error) {
-        const err = error as Error;
-        if (err.message.includes('No such container')) {
-          return reply.status(404).send({ error: 'Container not found' });
-        }
-        throw error;
+    try {
+      const container = docker.getContainer(id);
+      await container.start();
+      return reply.send({ success: true, message: 'Container started' });
+    } catch (error) {
+      const err = error as Error;
+      if (err.message.includes('No such container')) {
+        return reply.status(404).send({ error: 'Container not found' });
       }
+      throw error;
     }
-  );
+  });
 
   // Stop container
   fastify.post<{ Params: { id: string }; Body: z.infer<typeof containerActionBody> }>(
@@ -253,67 +268,58 @@ export async function containerRoutes(fastify: FastifyInstance) {
   );
 
   // Pause container
-  fastify.post<{ Params: { id: string } }>(
-    '/containers/:id/pause',
-    async (request, reply) => {
-      const { id } = request.params;
-      const docker = getDocker();
+  fastify.post<{ Params: { id: string } }>('/containers/:id/pause', async (request, reply) => {
+    const { id } = request.params;
+    const docker = getDocker();
 
-      try {
-        const container = docker.getContainer(id);
-        await container.pause();
-        return reply.send({ success: true, message: 'Container paused' });
-      } catch (error) {
-        const err = error as Error;
-        if (err.message.includes('No such container')) {
-          return reply.status(404).send({ error: 'Container not found' });
-        }
-        throw error;
+    try {
+      const container = docker.getContainer(id);
+      await container.pause();
+      return reply.send({ success: true, message: 'Container paused' });
+    } catch (error) {
+      const err = error as Error;
+      if (err.message.includes('No such container')) {
+        return reply.status(404).send({ error: 'Container not found' });
       }
+      throw error;
     }
-  );
+  });
 
   // Unpause container
-  fastify.post<{ Params: { id: string } }>(
-    '/containers/:id/unpause',
-    async (request, reply) => {
-      const { id } = request.params;
-      const docker = getDocker();
+  fastify.post<{ Params: { id: string } }>('/containers/:id/unpause', async (request, reply) => {
+    const { id } = request.params;
+    const docker = getDocker();
 
-      try {
-        const container = docker.getContainer(id);
-        await container.unpause();
-        return reply.send({ success: true, message: 'Container unpaused' });
-      } catch (error) {
-        const err = error as Error;
-        if (err.message.includes('No such container')) {
-          return reply.status(404).send({ error: 'Container not found' });
-        }
-        throw error;
+    try {
+      const container = docker.getContainer(id);
+      await container.unpause();
+      return reply.send({ success: true, message: 'Container unpaused' });
+    } catch (error) {
+      const err = error as Error;
+      if (err.message.includes('No such container')) {
+        return reply.status(404).send({ error: 'Container not found' });
       }
+      throw error;
     }
-  );
+  });
 
   // Remove container
-  fastify.delete<{ Params: { id: string } }>(
-    '/containers/:id',
-    async (request, reply) => {
-      const { id } = request.params;
-      const docker = getDocker();
+  fastify.delete<{ Params: { id: string } }>('/containers/:id', async (request, reply) => {
+    const { id } = request.params;
+    const docker = getDocker();
 
-      try {
-        const container = docker.getContainer(id);
-        await container.remove({ force: true });
-        return reply.send({ success: true, message: 'Container removed' });
-      } catch (error) {
-        const err = error as Error;
-        if (err.message.includes('No such container')) {
-          return reply.status(404).send({ error: 'Container not found' });
-        }
-        throw error;
+    try {
+      const container = docker.getContainer(id);
+      await container.remove({ force: true });
+      return reply.send({ success: true, message: 'Container removed' });
+    } catch (error) {
+      const err = error as Error;
+      if (err.message.includes('No such container')) {
+        return reply.status(404).send({ error: 'Container not found' });
       }
+      throw error;
     }
-  );
+  });
 
   // Rename container
   fastify.post<{ Params: { id: string }; Body: z.infer<typeof renameBody> }>(
@@ -343,125 +349,129 @@ export async function containerRoutes(fastify: FastifyInstance) {
   );
 
   // Get container logs
-  fastify.get<{ Params: { id: string }; Querystring: { tail?: number; follow?: boolean; since?: number } }>(
-    '/containers/:id/logs',
-    async (request, reply) => {
-      const { id } = request.params;
-      const { tail = 100, since } = request.query;
-      const docker = getDocker();
+  fastify.get<{
+    Params: { id: string };
+    Querystring: { tail?: number; follow?: boolean; since?: number };
+  }>('/containers/:id/logs', async (request, reply) => {
+    const { id } = request.params;
+    const { tail = 100, since } = request.query;
+    const docker = getDocker();
 
-      try {
-        const container = docker.getContainer(id);
-        const logs = await container.logs({
-          stdout: true,
-          stderr: true,
-          tail,
-          since,
-          timestamps: true,
-        });
+    try {
+      const container = docker.getContainer(id);
+      const logs = await container.logs({
+        stdout: true,
+        stderr: true,
+        tail,
+        since,
+        timestamps: true,
+      });
 
-        // Docker logs are multiplexed with 8-byte headers
-        const logString = logs.toString('utf-8').replace(/\x00/g, '');
-        return reply.send({ success: true, data: logString });
-      } catch (error) {
-        const err = error as Error;
-        if (err.message.includes('No such container')) {
-          return reply.status(404).send({ error: 'Container not found' });
-        }
-        throw error;
+      // Docker logs are multiplexed with 8-byte headers
+      const logString = logs.toString('utf-8').replace(/\x00/g, '');
+      return reply.send({ success: true, data: logString });
+    } catch (error) {
+      const err = error as Error;
+      if (err.message.includes('No such container')) {
+        return reply.status(404).send({ error: 'Container not found' });
       }
+      throw error;
     }
-  );
+  });
 
   // Get container stats
-  fastify.get<{ Params: { id: string } }>(
-    '/containers/:id/stats',
-    async (request, reply) => {
-      const { id } = request.params;
-      const docker = getDocker();
+  fastify.get<{ Params: { id: string } }>('/containers/:id/stats', async (request, reply) => {
+    const { id } = request.params;
+    const docker = getDocker();
 
-      try {
-        const container = docker.getContainer(id);
-        const stats = await container.stats({ stream: false });
-        const statsData = stats as { id?: string; name?: string; cpu_stats: { cpu_usage: { total_usage: number }; system_cpu_usage: number }; precpu_stats: { cpu_usage: { total_usage: number }; system_cpu_usage: number }; memory_stats: { usage?: number; limit?: number }; networks?: Record<string, { rx_bytes?: number; tx_bytes?: number }>; blkio_stats?: { io_service_bytes_recursive?: Array<{ op: string; value: number }> }; };
+    try {
+      const container = docker.getContainer(id);
+      const stats = await container.stats({ stream: false });
+      const statsData = stats as {
+        id?: string;
+        name?: string;
+        cpu_stats: { cpu_usage: { total_usage: number }; system_cpu_usage: number };
+        precpu_stats: { cpu_usage: { total_usage: number }; system_cpu_usage: number };
+        memory_stats: { usage?: number; limit?: number };
+        networks?: Record<string, { rx_bytes?: number; tx_bytes?: number }>;
+        blkio_stats?: { io_service_bytes_recursive?: Array<{ op: string; value: number }> };
+      };
 
-        // Calculate CPU percentage
-        const cpuDelta = statsData.cpu_stats.cpu_usage.total_usage - statsData.precpu_stats.cpu_usage.total_usage;
-        const systemDelta = statsData.cpu_stats.system_cpu_usage - statsData.precpu_stats.system_cpu_usage;
-        const cpuPercent = systemDelta > 0 ? (cpuDelta / systemDelta) * 100 : 0;
+      // Calculate CPU percentage
+      const cpuDelta =
+        statsData.cpu_stats.cpu_usage.total_usage - statsData.precpu_stats.cpu_usage.total_usage;
+      const systemDelta =
+        statsData.cpu_stats.system_cpu_usage - statsData.precpu_stats.system_cpu_usage;
+      const cpuPercent = systemDelta > 0 ? (cpuDelta / systemDelta) * 100 : 0;
 
-        // Calculate memory percentage
-        const memoryUsage = statsData.memory_stats.usage || 0;
-        const memoryLimit = statsData.memory_stats.limit || 1;
-        const memoryPercent = (memoryUsage / memoryLimit) * 100;
+      // Calculate memory percentage
+      const memoryUsage = statsData.memory_stats.usage || 0;
+      const memoryLimit = statsData.memory_stats.limit || 1;
+      const memoryPercent = (memoryUsage / memoryLimit) * 100;
 
-        // Network stats
-        let networkRx = 0;
-        let networkTx = 0;
-        if (statsData.networks) {
-          for (const network of Object.values(statsData.networks)) {
-            networkRx += (network as { rx_bytes: number }).rx_bytes ?? 0;
-            networkTx += (network as { tx_bytes: number }).tx_bytes ?? 0;
-          }
+      // Network stats
+      let networkRx = 0;
+      let networkTx = 0;
+      if (statsData.networks) {
+        for (const network of Object.values(statsData.networks)) {
+          networkRx += (network as { rx_bytes: number }).rx_bytes ?? 0;
+          networkTx += (network as { tx_bytes: number }).tx_bytes ?? 0;
         }
-
-        // Block I/O
-        let blockRead = 0;
-        let blockWrite = 0;
-        if (statsData.blkio_stats?.io_service_bytes_recursive) {
-          for (const entry of statsData.blkio_stats.io_service_bytes_recursive) {
-            if (entry.op === 'read') {
-              blockRead += entry.value;
-            } else if (entry.op === 'write') {
-              blockWrite += entry.value;
-            }
-          }
-        }
-
-        const result: ContainerStats = {
-          id: statsData.id ?? id,
-          name: (statsData.name ?? '').replace(/^\//, ''),
-          cpuPercent: Math.round(cpuPercent * 100) / 100,
-          memoryUsage,
-          memoryLimit,
-          memoryPercent: Math.round(memoryPercent * 100) / 100,
-          networkRx,
-          networkTx,
-          blockRead,
-          blockWrite,
-        };
-
-        return reply.send({ success: true, data: result });
-      } catch (error) {
-        const err = error as Error;
-        if (err.message.includes('No such container')) {
-          return reply.status(404).send({ error: 'Container not found' });
-        }
-        throw error;
       }
+
+      // Block I/O
+      let blockRead = 0;
+      let blockWrite = 0;
+      if (statsData.blkio_stats?.io_service_bytes_recursive) {
+        for (const entry of statsData.blkio_stats.io_service_bytes_recursive) {
+          if (entry.op === 'read') {
+            blockRead += entry.value;
+          } else if (entry.op === 'write') {
+            blockWrite += entry.value;
+          }
+        }
+      }
+
+      const result: ContainerStats = {
+        id: statsData.id ?? id,
+        name: (statsData.name ?? '').replace(/^\//, ''),
+        cpuPercent: Math.round(cpuPercent * 100) / 100,
+        memoryUsage,
+        memoryLimit,
+        memoryPercent: Math.round(memoryPercent * 100) / 100,
+        networkRx,
+        networkTx,
+        blockRead,
+        blockWrite,
+      };
+
+      return reply.send({ success: true, data: result });
+    } catch (error) {
+      const err = error as Error;
+      if (err.message.includes('No such container')) {
+        return reply.status(404).send({ error: 'Container not found' });
+      }
+      throw error;
     }
-  );
+  });
 
   // Prune containers
-  fastify.post(
-    '/containers/prune',
-    async (_request, reply) => {
-      const docker = getDocker();
+  fastify.post('/containers/prune', async (_request, reply) => {
+    const docker = getDocker();
 
-      try {
-        const result = await docker.pruneContainers();
-        return reply.send({
-          success: true,
-          data: {
-            containersDeleted: result.ContainersDeleted || [],
-            spaceReclaimed: result.SpaceReclaimed || 0,
-          },
-        });
-      } catch (error) {
-        throw error;
-      }
+    try {
+      const result = await docker.pruneContainers();
+      return reply.send({
+        success: true,
+        data: {
+          containersDeleted: result.ContainersDeleted || [],
+          spaceReclaimed: result.SpaceReclaimed || 0,
+        },
+      });
+    } catch (error) {
+      throw error;
     }
-  );
+  });
 
   // Exec endpoint (returns exec ID for WebSocket connection)
   fastify.post<{ Params: { id: string }; Body: z.infer<typeof execBody> }>(
@@ -503,6 +513,160 @@ export async function containerRoutes(fastify: FastifyInstance) {
           return reply.status(404).send({ error: 'Container not found' });
         }
         throw error;
+      }
+    }
+  );
+
+  // Get container environment variables
+  fastify.get<{ Params: { id: string } }>('/containers/:id/env', async (request, reply) => {
+    const { id } = request.params;
+    const docker = getDocker();
+
+    try {
+      const container = docker.getContainer(id);
+      const inspect = await container.inspect();
+      const env = (inspect.Config.Env || []).reduce<Record<string, string>>((acc, entry) => {
+        const separatorIndex = entry.indexOf('=');
+        if (separatorIndex === -1) {
+          acc[entry] = '';
+        } else {
+          acc[entry.slice(0, separatorIndex)] = entry.slice(separatorIndex + 1);
+        }
+        return acc;
+      }, {});
+
+      return reply.send({
+        success: true,
+        data: {
+          env,
+          containerName: inspect.Name.replace(/^\//, ''),
+          image: inspect.Config.Image,
+          running: inspect.State.Running,
+        },
+      });
+    } catch (error) {
+      const err = error as Error;
+      if (err.message.includes('No such container')) {
+        return reply.status(404).send({ error: 'Container not found' });
+      }
+      throw error;
+    }
+  });
+
+  // Update container environment variables by safe recreate
+  fastify.put<{ Params: { id: string }; Body: z.infer<typeof updateContainerEnvBody> }>(
+    '/containers/:id/env',
+    {
+      schema: {
+        body: updateContainerEnvBody,
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { env, recreate, rollbackOnFailure, keepRollbackContainer } = request.body;
+      const docker = getDocker();
+
+      if (!recreate) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Updating environment without recreate is not supported by Docker',
+        });
+      }
+
+      try {
+        const currentContainer = docker.getContainer(id);
+        const inspect = await currentContainer.inspect();
+        const originalName = inspect.Name.replace(/^\//, '');
+        const rollbackName = `${originalName}-rollback-${Date.now()}`;
+        const wasRunning = inspect.State.Running;
+
+        if (wasRunning) {
+          await currentContainer.stop({ t: 10 });
+        }
+
+        await currentContainer.rename({ name: rollbackName });
+
+        let newContainerId: string | undefined;
+        try {
+          const labels = {
+            ...(inspect.Config.Labels || {}),
+            'dockpilot.managed': 'true',
+            'dockpilot.rollback.source': inspect.Id,
+            'dockpilot.rollback.name': rollbackName,
+            'dockpilot.env.updatedAt': new Date().toISOString(),
+          };
+
+          const newContainer = await docker.createContainer({
+            name: originalName,
+            Hostname: inspect.Config.Hostname,
+            Domainname: inspect.Config.Domainname,
+            User: inspect.Config.User,
+            AttachStdin: inspect.Config.AttachStdin,
+            AttachStdout: inspect.Config.AttachStdout,
+            AttachStderr: inspect.Config.AttachStderr,
+            ExposedPorts: inspect.Config.ExposedPorts,
+            Tty: inspect.Config.Tty,
+            OpenStdin: inspect.Config.OpenStdin,
+            StdinOnce: inspect.Config.StdinOnce,
+            Env: Object.entries(env).map(([key, value]) => `${key}=${value}`),
+            Cmd: inspect.Config.Cmd,
+            Image: inspect.Config.Image,
+            WorkingDir: inspect.Config.WorkingDir,
+            Entrypoint: inspect.Config.Entrypoint,
+            Labels: labels,
+            HostConfig: inspect.HostConfig,
+            NetworkingConfig: {
+              EndpointsConfig: inspect.NetworkSettings.Networks,
+            },
+          });
+
+          newContainerId = newContainer.id;
+
+          if (wasRunning) {
+            await newContainer.start();
+          }
+
+          if (!keepRollbackContainer) {
+            const rollbackContainer = docker.getContainer(inspect.Id);
+            await rollbackContainer.remove({ force: true });
+          }
+
+          return reply.send({
+            success: true,
+            message: 'Container environment updated via safe recreate',
+            data: {
+              previousContainerId: inspect.Id,
+              newContainerId,
+              rollbackContainerName: keepRollbackContainer ? rollbackName : undefined,
+              rollbackAvailable: keepRollbackContainer,
+            },
+          });
+        } catch (recreateError) {
+          if (rollbackOnFailure) {
+            if (newContainerId) {
+              const partialContainer = docker.getContainer(newContainerId);
+              await partialContainer.remove({ force: true }).catch(() => undefined);
+            }
+
+            const rollbackContainer = docker.getContainer(inspect.Id);
+            await rollbackContainer.rename({ name: originalName }).catch(() => undefined);
+            if (wasRunning) {
+              await rollbackContainer.start().catch(() => undefined);
+            }
+          }
+
+          throw recreateError;
+        }
+      } catch (error) {
+        const err = error as Error;
+        if (err.message.includes('No such container')) {
+          return reply.status(404).send({ error: 'Container not found' });
+        }
+
+        return reply.status(400).send({
+          success: false,
+          error: `Failed to update container environment: ${err.message}`,
+        });
       }
     }
   );

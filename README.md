@@ -1,302 +1,104 @@
-# 🐳 DockPilot
+# DockPilot
 
 <p align="center">
-  <img src="https://via.placeholder.com/200x200/2563eb/ffffff?text=DockPilot" alt="DockPilot Logo" width="200"/>
+  <img src="assets/screenshots/dockpilot_logo.png" alt="DockPilot Logo" width="220"/>
 </p>
 
 <p align="center">
-  <strong>Gestión de contenedores Docker simplificada con una interfaz web intuitiva</strong>
+  <strong>Gestion de contenedores Docker con UI web moderna, deploy desde repos y operaciones seguras.</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/dockpilot/dockpilot/actions"><img src="https://img.shields.io/github/workflow/status/dockpilot/dockpilot/CI/main?style=flat-square" alt="Build Status"/></a>
-  <a href="https://github.com/dockpilot/dockpilot/actions"><img src="https://img.shields.io/github/workflow/status/dockpilot/dockpilot/Tests/main?label=tests&style=flat-square" alt="Tests"/></a>
-  <a href="https://codecov.io/gh/dockpilot/dockpilot"><img src="https://img.shields.io/codecov/c/github/dockpilot/dockpilot?style=flat-square" alt="Coverage"/></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/dockpilot/dockpilot?style=flat-square" alt="License"/></a>
-  <a href="https://hub.docker.com/r/dockpilot/dockpilot"><img src="https://img.shields.io/docker/pulls/dockpilot/dockpilot?style=flat-square" alt="Docker Pulls"/></a>
+  <a href="https://github.com/marweb/DockPilot/actions"><img src="https://img.shields.io/github/actions/workflow/status/marweb/DockPilot/release.yml?style=flat-square" alt="Release"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/marweb/DockPilot?style=flat-square" alt="License"/></a>
+  <a href="https://github.com/marweb/DockPilot/issues"><img src="https://img.shields.io/github/issues/marweb/DockPilot?style=flat-square" alt="Issues"/></a>
 </p>
 
-<p align="center">
-  <a href="#características">Características</a> •
-  <a href="#estructura-del-proyecto">Estructura</a> •
-  <a href="#instalación">Instalación</a> •
-  <a href="#documentación">Documentación</a> •
-  <a href="#contribuir">Contribuir</a>
-</p>
+## Caracteristicas
 
----
+- Gestion completa de contenedores, imagenes, redes y volumenes.
+- Docker Compose wizard con preflight y validacion.
+- Deploy desde repositorios (manual + OAuth opcional).
+- Webhooks GitHub/GitLab con validacion de firma/token e idempotencia.
+- Editor de variables por microservicio con recreate seguro y rollback.
+- RBAC, rate limiting y auditoria para uso productivo.
 
-## 📋 Características
+## Capturas
 
-- 🎨 **Interfaz Web Moderna**: Dashboard intuitivo y responsive
-- 🐳 **Gestión Completa**: Contenedores, imágenes, volúmenes y redes
-- 🔒 **Autenticación Segura**: JWT con políticas de contraseñas
-- 🌐 **Túneles Cloudflare**: Exposición segura de servicios
-- 📊 **Monitoreo en Tiempo Real**: Stats, logs y métricas
-- 📝 **Docker Compose**: Soporte nativo para archivos YAML
-- 🔄 **WebSockets**: Actualizaciones en tiempo real
-- 🧪 **Testing Completo**: Tests E2E con Playwright + Unitarios con Vitest
-- 👥 **RBAC**: Roles granulares (admin/operator/viewer)
-- 🛡️ **Rate Limiting**: Protección contra abuso
-- 📋 **Audit Logging**: Registro completo de acciones
-- 🌍 **Multilenguaje**: 7 idiomas soportados (EN, ES, FR, DE, ZH, RU, JA)
-- 📊 **Visualización**: Gráficos y métricas con Recharts
-- 🚀 **Fácil Instalación**: One-liner con curl
+### Login
 
-## 📸 Screenshots
+![DockPilot Login](assets/screenshots/dockpilot-login.png)
 
-<p align="center">
-  <img src="https://via.placeholder.com/800x400/1e293b/ffffff?text=Dashboard+Screenshot" alt="Dashboard" width="800"/>
-  <br/>
-  <em>Dashboard principal con visión general del sistema</em>
-</p>
+### Dashboard
 
-<p align="center">
-  <img src="https://via.placeholder.com/800x400/1e293b/ffffff?text=Container+Management" alt="Containers" width="800"/>
-  <br/>
-  <em>Gestión de contenedores con logs en tiempo real</em>
-</p>
+![DockPilot Dashboard](assets/screenshots/dockpilot-dashboard.png)
 
-## 🏗️ Arquitectura
+### Settings
 
-```
-┌─────────────────┐
-│   Web Client    │
-│  (React/Vite)   │
-└────────┬────────┘
-         │ HTTP/WebSocket
-         ▼
-┌─────────────────┐
-│  API Gateway    │
-│   (Fastify)     │
-│   (Port 3000)   │
-└────────┬────────┘
-         │
-    ┌────┴────┬────────┐
-    ▼         ▼        ▼
-┌───────┐ ┌────────┐ ┌──────────┐
-│Docker │ │Tunnel  │ │  Auth    │
-│Control│ │Control │ │ Service  │
-│(Fastify)│ (Fastify)│  (Fastify) │
-└───┬───┘ └────────┘ └──────────┘
-    │
-┌───▼───┐
-│Docker │
-│Socket │
-└───────┘
-```
+![DockPilot Settings](assets/screenshots/dockpilot-settings.png)
 
-Para más detalles, ver [docs/architecture.md](docs/architecture.md).
+## Instalacion rapida
 
-## 📁 Estructura del Proyecto
-
-```
-dockpilot/
-├── apps/web/          # Frontend React + Vite + Tailwind
-├── services/          # Microservicios Fastify
-│   ├── api-gateway/   # Auth, RBAC, Rate Limit
-│   ├── docker-control/# Gestión Docker
-│   └── tunnel-control/# Túneles Cloudflare
-├── packages/types/    # Tipos TypeScript
-├── infra/             # Docker Compose + scripts (desarrollo)
-├── scripts/           # Instalador curl | bash + upgrade
-├── tests/             # E2E + Unit tests
-└── docs/              # Documentación
-```
-
-## 💻 Requisitos del Sistema
-
-### Mínimos
-
-- **SO**: Linux (Ubuntu 20.04+, Debian 10+, CentOS 8+)
-- **RAM**: 512 MB
-- **CPU**: 1 core
-- **Docker**: 20.10.0+
-- **Docker Compose**: 2.0.0+
-
-### Recomendados
-
-- **RAM**: 2 GB+
-- **CPU**: 2 cores+
-- **Almacenamiento**: 20 GB SSD
-
-## 🚀 Instalación Rápida
-
-### Método 1: One-liner (Recomendado)
-
-Instala DockPilot con un solo comando. Soporta AMD64 y ARM64 (64-bit).
+### One-liner (recomendado)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/marweb/DockPilot/master/scripts/install.sh | sudo bash
 ```
 
-El script instala Docker (si no está presente), descarga las imágenes y arranca los servicios. Al finalizar, abre `http://TU_IP:8000` para crear tu cuenta de administrador.
-
-### Método 2: Docker Compose (desarrollo)
+### Docker Compose
 
 ```bash
-git clone https://github.com/marweb/DockerPilot.git
-cd DockerPilot
+git clone https://github.com/marweb/DockPilot.git
+cd DockPilot
 cp infra/.env.example infra/.env
-# Editar infra/.env y configurar JWT_SECRET
 docker compose -f infra/docker-compose.yml up -d --build
 ```
 
-### Método 3: Desarrollo local
+### Desarrollo local
 
 ```bash
-git clone https://github.com/marweb/DockerPilot.git
-cd DockerPilot
-pnpm install        # Requiere pnpm >= 8.0.0
-pnpm dev            # Inicia en modo desarrollo
+git clone https://github.com/marweb/DockPilot.git
+cd DockPilot
+pnpm install
+pnpm dev
 ```
 
-Para una guía de instalación detallada, ver [docs/installation.md](docs/installation.md).
-
-## 📖 Uso Básico
-
-### Primer Acceso
-
-1. Accede a `http://TU_IP:8000` (o `http://localhost:8000` si es local)
-2. Completa el setup creando tu usuario administrador (username + contraseña)
-3. ¡Empieza a gestionar tus contenedores!
-
-### Comandos Rápidos
+## Variables importantes
 
 ```bash
-# Ver logs
-docker-compose logs -f
-
-# Reiniciar servicios
-docker-compose restart
-
-# Actualizar
-./scripts/update.sh
+JWT_SECRET=change-this
+MASTER_KEY=change-this-with-32-plus-chars
+PUBLIC_BASE_URL=https://dockpilot.example.com
+GITHUB_WEBHOOK_SECRET=change-this
+GITLAB_WEBHOOK_SECRET=change-this
 ```
 
-### Scripts Disponibles
+Referencias completas:
 
-**Desarrollo:**
+- `docs/configuration.md`
+- `docs/operations-checklist.md`
+- `docs/installation.md`
+- `docs/troubleshooting.md`
 
-- `pnpm dev` - Inicia en modo desarrollo
-- `pnpm build` - Compila para producción
+## Scripts utiles
 
-**Testing:**
+- `infra/scripts/start.sh`
+- `infra/scripts/stop.sh`
+- `infra/scripts/logs.sh`
+- `infra/scripts/backup.sh`
+- `infra/scripts/restore.sh`
 
-- `pnpm test` - Ejecuta todos los tests
-- `pnpm test:unit` - Tests unitarios con Vitest
-- `pnpm test:e2e` - Tests E2E con Playwright
-- `pnpm test:coverage` - Reporte de cobertura
+## Estado de produccion
 
-**Docker:**
+Para cierre operativo (rotacion de secretos, runbook de incidentes, monitoreo/alertas y backup/restore probado), usar:
 
-- `pnpm docker:dev` - Inicia en modo desarrollo con Docker
-- `pnpm docker:prod` - Inicia en modo producción con Docker
+- `docs/operations-checklist.md`
 
-**Infra:**
+## Comunidad
 
-- `./infra/scripts/start.sh` - Inicia servicios
-- `./infra/scripts/stop.sh` - Detiene servicios
-- `./infra/scripts/logs.sh` - Muestra logs
-- `./infra/scripts/backup.sh` - Crea backup
-- `./infra/scripts/update.sh` - Actualiza DockPilot
+- Issues: https://github.com/marweb/DockPilot/issues
+- Discussions: https://github.com/marweb/DockPilot/discussions
 
-**Calidad:**
+## Licencia
 
-- `pnpm lint` - Ejecuta el linter
-- `pnpm format` - Formatea el código
-- `pnpm clean` - Limpia archivos generados
-
-## ⚙️ Configuración
-
-DockPilot se configura mediante variables de entorno:
-
-```bash
-# Configuración básica
-API_PORT=3000
-JWT_SECRET=tu-secret-key
-ENABLE_SWAGGER=true
-
-# Configuración de logs
-LOG_LEVEL=info
-LOG_FORMAT=json
-
-# Base de datos (SQLite en /data/dockpilot.db)
-DATA_DIR=/data
-```
-
-Ver [docs/configuration.md](docs/configuration.md) para todas las opciones.
-
-## 🔄 Actualización
-
-```bash
-# Instalación con curl (producción)
-cd /data/dockpilot/source
-./upgrade.sh latest
-
-# O con Docker Compose manual
-cd /data/dockpilot/source
-docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
-
-## ❌ Desinstalación
-
-```bash
-# Desinstalador para instalaciones con curl
-curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts/uninstall.sh | sudo bash
-
-# O manualmente
-cd /data/dockpilot/source
-docker compose -f docker-compose.yml down
-rm -rf /data/dockpilot
-```
-
-## 🤝 Contribuir
-
-¡Las contribuciones son bienvenidas!
-
-1. Fork el repositorio
-2. Crea tu feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit tus cambios (`git commit -m 'Add amazing feature'`)
-4. Push al branch (`git push origin feature/amazing-feature`)
-5. Abre un Pull Request
-
-Ver [docs/development.md](docs/development.md) para más detalles.
-
-## 🐛 Problemas Comunes
-
-- **No puede conectar a Docker**: Verifica que el socket Docker esté accesible
-- **Error de autenticación**: Revisa el JWT_SECRET
-- **WebSockets no funcionan**: Configura tu proxy/reverse proxy
-
-Ver [docs/troubleshooting.md](docs/troubleshooting.md) para soluciones detalladas.
-
-## 📄 Licencia
-
-Este proyecto está licenciado bajo la [MIT License](LICENSE).
-
-## 🙏 Créditos
-
-- [Docker](https://www.docker.com/) - Por la plataforma de contenedores
-- [Cloudflare](https://www.cloudflare.com/) - Por el servicio de túneles
-- [Fastify](https://www.fastify.io/) - Framework del API Gateway
-- [React](https://reactjs.org/) - Biblioteca del frontend
-- [Vitest](https://vitest.dev/) - Framework de testing unitario
-- [Playwright](https://playwright.dev/) - Testing E2E
-- [Turbo](https://turbo.build/) - Monorepo build system
-- [pnpm](https://pnpm.io/) - Package manager
-- [Recharts](https://recharts.org/) - Visualización de datos
-
-## 🔗 Links
-
-- 📖 [Documentación Completa](docs/)
-- 🐛 [Reportar Issues](https://github.com/dockpilot/dockpilot/issues)
-- 💬 [Discussions](https://github.com/dockpilot/dockpilot/discussions)
-- 🌐 [Sitio Web](https://dockpilot.io)
-
----
-
-<p align="center">
-  Hecho con ❤️ por el equipo de DockPilot
-</p>
+MIT (`LICENSE`).

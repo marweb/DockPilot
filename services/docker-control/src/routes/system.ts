@@ -1,6 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { getDocker, getDockerInfo, getDockerVersion, checkDockerConnection } from '../services/docker.js';
+import {
+  getDocker,
+  getDockerInfo,
+  getDockerVersion,
+  checkDockerConnection,
+} from '../services/docker.js';
 import type { DockerInfo, DockerVersion, DiskUsage } from '@dockpilot/types';
 
 // Track upgrade state
@@ -17,7 +22,7 @@ export async function systemRoutes(fastify: FastifyInstance) {
   // Detailed Docker health check (available at /health)
   fastify.get('/health', async (_request, reply) => {
     const dockerConnected = await checkDockerConnection();
-    
+
     if (!dockerConnected) {
       return reply.status(503).send({
         status: 'unhealthy',
@@ -64,7 +69,15 @@ export async function systemRoutes(fastify: FastifyInstance) {
   // Docker version
   fastify.get('/version', async (_request, reply) => {
     const version = await getDockerVersion();
-    const v = version as unknown as { Version?: string; ApiVersion?: string; GitCommit?: string; GoVersion?: string; Os?: string; Arch?: string; BuildTime?: string };
+    const v = version as unknown as {
+      Version?: string;
+      ApiVersion?: string;
+      GitCommit?: string;
+      GoVersion?: string;
+      Os?: string;
+      Arch?: string;
+      BuildTime?: string;
+    };
 
     const result: DockerVersion = {
       version: v.Version ?? '',
@@ -86,17 +99,21 @@ export async function systemRoutes(fastify: FastifyInstance) {
 
     const result: DiskUsage = {
       layersSize: df.LayersSize,
-      images: (df.Images || []).map((img: { Id?: string; Size?: number; SharedSize?: number; VirtualSize?: number }) => ({
-        id: (img.Id ?? '').replace('sha256:', '').substring(0, 12),
-        size: img.Size,
-        sharedSize: img.SharedSize,
-        virtualSize: img.VirtualSize,
-      })),
-      containers: (df.Containers || []).map((c: { Id?: string; SizeRw?: number; SizeRootFs?: number }) => ({
-        id: (c.Id ?? '').replace('sha256:', '').substring(0, 12),
-        sizeRw: c.SizeRw,
-        sizeRootFs: c.SizeRootFs,
-      })),
+      images: (df.Images || []).map(
+        (img: { Id?: string; Size?: number; SharedSize?: number; VirtualSize?: number }) => ({
+          id: (img.Id ?? '').replace('sha256:', '').substring(0, 12),
+          size: img.Size,
+          sharedSize: img.SharedSize,
+          virtualSize: img.VirtualSize,
+        })
+      ),
+      containers: (df.Containers || []).map(
+        (c: { Id?: string; SizeRw?: number; SizeRootFs?: number }) => ({
+          id: (c.Id ?? '').replace('sha256:', '').substring(0, 12),
+          sizeRw: c.SizeRw,
+          sizeRootFs: c.SizeRootFs,
+        })
+      ),
       volumes: (df.Volumes || []).map((v: { Name?: string; UsageData?: { Size?: number } }) => ({
         name: v.Name,
         size: v.UsageData?.Size || 0,
@@ -142,7 +159,7 @@ export async function systemRoutes(fastify: FastifyInstance) {
         upgradeTargetVersion = version;
         upgradeStartedAt = new Date().toISOString();
 
-        const CDN = 'https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts';
+        const CDN = 'https://raw.githubusercontent.com/marweb/DockPilot/master/scripts';
         const SOURCE_DIR = process.env.DOCKPILOT_SOURCE_DIR || '/data/dockpilot/source';
 
         // Pull the docker:latest image (has Docker CLI + Compose)
@@ -174,15 +191,9 @@ export async function systemRoutes(fastify: FastifyInstance) {
               `bash upgrade.sh "${version}"`,
             ].join(' && '),
           ],
-          Env: [
-            `CDN=${CDN}`,
-            `SOURCE_DIR=${SOURCE_DIR}`,
-          ],
+          Env: [`CDN=${CDN}`, `SOURCE_DIR=${SOURCE_DIR}`],
           HostConfig: {
-            Binds: [
-              '/var/run/docker.sock:/var/run/docker.sock',
-              `${SOURCE_DIR}:${SOURCE_DIR}`,
-            ],
+            Binds: ['/var/run/docker.sock:/var/run/docker.sock', `${SOURCE_DIR}:${SOURCE_DIR}`],
             NetworkMode: 'host',
             AutoRemove: true,
           },

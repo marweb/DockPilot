@@ -77,6 +77,17 @@ services:
       - DOCKER_HOST=${DOCKER_HOST:-unix:///var/run/docker.sock}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
       - COMPOSE_DIR=/data/compose
+      - REPOS_DIR=${REPOS_DIR:-/data/repos}
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-}
+      - MASTER_KEY=${MASTER_KEY:-dev-master-key-32-chars-minimum}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
+      - GITLAB_WEBHOOK_SECRET=${GITLAB_WEBHOOK_SECRET:-}
+      - GITHUB_APP_ID=${GITHUB_APP_ID:-}
+      - GITHUB_APP_CLIENT_ID=${GITHUB_APP_CLIENT_ID:-}
+      - GITHUB_APP_CLIENT_SECRET=${GITHUB_APP_CLIENT_SECRET:-}
+      - GITLAB_BASE_URL=${GITLAB_BASE_URL:-https://gitlab.com}
+      - GITLAB_OAUTH_CLIENT_ID=${GITLAB_OAUTH_CLIENT_ID:-}
+      - GITLAB_OAUTH_CLIENT_SECRET=${GITLAB_OAUTH_CLIENT_SECRET:-}
     volumes:
       # Bind mount for hot reload
       - ../../services/docker-control:/app/services/docker-control

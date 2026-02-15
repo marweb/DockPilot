@@ -184,6 +184,15 @@ export async function createApp(config: Config) {
     await proxyRequest(request, reply, `${config.dockerControlUrl}/api/compose${queryString}`);
   });
 
+  fastify.all('/api/repos/*', async (request, reply) => {
+    await proxyRequest(request, reply, `${config.dockerControlUrl}${request.url}`);
+  });
+
+  fastify.all('/api/repos', async (request, reply) => {
+    const queryString = request.url.includes('?') ? `?${request.url.split('?')[1]}` : '';
+    await proxyRequest(request, reply, `${config.dockerControlUrl}/api/repos${queryString}`);
+  });
+
   fastify.all('/api/info', async (request, reply) => {
     await proxyRequest(request, reply, `${config.dockerControlUrl}/info`);
   });

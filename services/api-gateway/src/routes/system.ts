@@ -4,7 +4,7 @@ import '../types/fastify.js';
 import { getSystemSetting, setSystemSetting, getSystemSettings } from '../services/database.js';
 
 const CDN_VERSIONS_URL =
-  'https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts/versions.json';
+  'https://raw.githubusercontent.com/marweb/DockPilot/master/scripts/versions.json';
 
 // Cache for version check (avoid hammering CDN)
 let versionCache: { latest: string; checkedAt: number } | null = null;

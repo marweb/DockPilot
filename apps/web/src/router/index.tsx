@@ -14,6 +14,7 @@ const Volumes = lazy(() => import('../pages/Volumes'));
 const Networks = lazy(() => import('../pages/Networks'));
 const Builds = lazy(() => import('../pages/Builds'));
 const Compose = lazy(() => import('../pages/Compose'));
+const Repositories = lazy(() => import('../pages/Repositories'));
 const Tunnels = lazy(() => import('../pages/Tunnels'));
 const Settings = lazy(() => import('../pages/Settings'));
 const Documentation = lazy(() => import('../pages/Documentation'));
@@ -106,6 +107,10 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
       {
         path: '/compose',
         element: <Compose />,
+      },
+      {
+        path: '/repositories',
+        element: <Repositories />,
       },
       {
         path: '/tunnels',

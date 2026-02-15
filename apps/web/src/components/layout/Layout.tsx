@@ -11,6 +11,7 @@ import {
   Network,
   Hammer,
   Layers,
+  FolderGit2,
   Globe,
   Settings,
   LogOut,
@@ -31,6 +32,7 @@ interface NavItem {
   name: string;
   href: string;
   icon: React.ElementType;
+  label?: string;
 }
 
 const navigationItems: NavItem[] = [
@@ -41,6 +43,7 @@ const navigationItems: NavItem[] = [
   { name: 'networks', href: '/networks', icon: Network },
   { name: 'builds', href: '/builds', icon: Hammer },
   { name: 'compose', href: '/compose', icon: Layers },
+  { name: 'repositories', href: '/repositories', icon: FolderGit2, label: 'Repositories' },
   { name: 'tunnels', href: '/tunnels', icon: Globe },
   { name: 'settings', href: '/settings', icon: Settings },
 ];
@@ -179,7 +182,7 @@ export default function Layout({ children }: LayoutProps) {
                 <item.icon
                   className={`h-5 w-5 mr-3 ${isActive(item.href) ? 'text-primary-600 dark:text-primary-400' : ''}`}
                 />
-                {t(`nav.${item.name}`)}
+                {t(`nav.${item.name}`, { defaultValue: item.label || item.name })}
               </Link>
             ))}
           </nav>
@@ -215,7 +218,7 @@ export default function Layout({ children }: LayoutProps) {
                 <item.icon
                   className={`h-5 w-5 mr-3 ${isActive(item.href) ? 'text-primary-600 dark:text-primary-400' : ''}`}
                 />
-                {t(`nav.${item.name}`)}
+                {t(`nav.${item.name}`, { defaultValue: item.label || item.name })}
               </Link>
             ))}
           </nav>

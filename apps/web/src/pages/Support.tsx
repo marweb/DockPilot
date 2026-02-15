@@ -4,12 +4,12 @@ const channels = [
   {
     title: 'Reportar bug',
     description: 'Incluye capturas, logs y pasos para reproducir.',
-    href: 'https://github.com/dockpilot',
+    href: 'https://github.com/marweb/DockPilot',
   },
   {
     title: 'Solicitar mejora',
     description: 'Comparte el caso de uso y el resultado esperado.',
-    href: 'https://github.com/dockpilot',
+    href: 'https://github.com/marweb/DockPilot',
   },
 ];
 

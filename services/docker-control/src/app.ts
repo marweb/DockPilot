@@ -12,6 +12,7 @@ import { volumeRoutes } from './routes/volumes.js';
 import { networkRoutes } from './routes/networks.js';
 import { systemRoutes } from './routes/system.js';
 import { composeRoutes } from './routes/compose.js';
+import { repoRoutes } from './routes/repos.js';
 import { buildRoutes } from './routes/builds.js';
 import { registerContainerLogsWebSocket } from './websocket/logs.js';
 import { registerContainerExecWebSocket } from './websocket/exec.js';
@@ -104,6 +105,7 @@ export async function createApp(config: Config) {
   await fastify.register(volumeRoutes, { prefix: '/api' });
   await fastify.register(networkRoutes, { prefix: '/api' });
   await fastify.register(composeRoutes, { prefix: '/api' });
+  await fastify.register(repoRoutes, { prefix: '/api' });
   await fastify.register(buildRoutes, { prefix: '/api' });
 
   // Register WebSocket handlers

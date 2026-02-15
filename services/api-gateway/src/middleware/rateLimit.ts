@@ -375,7 +375,13 @@ export async function heavyOperationRateLimitMiddleware(
   }
 
   const url = request.url.split('?')[0];
-  const heavyPrefixes = ['/api/builds', '/api/compose', '/api/tunnels', '/api/images/pull'];
+  const heavyPrefixes = [
+    '/api/builds',
+    '/api/compose',
+    '/api/tunnels',
+    '/api/images/pull',
+    '/api/repos',
+  ];
   if (!heavyPrefixes.some((prefix) => url.startsWith(prefix))) {
     return;
   }

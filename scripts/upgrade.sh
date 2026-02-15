@@ -15,7 +15,7 @@
 set -e
 set -o pipefail
 
-CDN="${CDN:-https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts}"
+CDN="${CDN:-https://raw.githubusercontent.com/marweb/DockPilot/master/scripts}"
 SOURCE_DIR="${SOURCE_DIR:-/data/dockpilot/source}"
 VERSION="${1:-latest}"
 REGISTRY_URL="${2:-ghcr.io}"

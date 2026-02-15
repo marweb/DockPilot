@@ -13,7 +13,7 @@ const docLinks = [
   { name: 'documentation', href: '/documentation', external: false },
   { name: 'support', href: '/support', external: false },
   { name: 'api', href: 'https://api.dockpilot.io', external: true },
-  { name: 'github', href: 'https://github.com/dockpilot', external: true },
+  { name: 'github', href: 'https://github.com/marweb/DockPilot', external: true },
 ];
 
 export default function Footer({
@@ -69,7 +69,7 @@ export default function Footer({
           {showVersion && (
             <div className="flex items-center gap-3">
               <a
-                href="https://github.com/dockpilot"
+                href="https://github.com/marweb/DockPilot"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"

@@ -7,6 +7,7 @@ Guía completa de configuración de DockPilot mediante variables de entorno.
 - [Variables Globales](#variables-globales)
 - [API Gateway](#api-gateway)
 - [Docker Control](#docker-control)
+- [Repos/OAuth/Webhooks](#reposoauthwebhooks)
 - [Tunnel Control](#tunnel-control)
 - [Web](#web)
 - [Autenticación](#configuración-de-autenticación)
@@ -123,6 +124,32 @@ Variables para el servicio de control Docker.
 | --------------------- | ------------------------------ | ----------------------- | ----------------------------- |
 | `COMPOSE_PATH`        | Ruta al binario docker-compose | /usr/bin/docker-compose | /usr/local/bin/docker-compose |
 | `COMPOSE_PROJECT_DIR` | Directorio por defecto         | /data/compose           | /opt/compose                  |
+
+---
+
+## 🔁 Repos/OAuth/Webhooks
+
+Variables para despliegues desde repositorio, OAuth opcional y webhooks de autodeploy.
+
+| Variable                     | Descripción                                                             | Default     | Ejemplo                       |
+| ---------------------------- | ----------------------------------------------------------------------- | ----------- | ----------------------------- |
+| `REPOS_DIR`                  | Directorio de metadatos/clones/repos keys                               | /data/repos | /var/lib/dockpilot/repos      |
+| `PUBLIC_BASE_URL`            | URL publica usada para validar endpoint webhook y callbacks OAuth       | -           | https://dockpilot.example.com |
+| `MASTER_KEY`                 | Clave maestra para cifrar secretos en repos/OAuth (obligatoria en prod) | -           | base64-random-48              |
+| `GITHUB_WEBHOOK_SECRET`      | Secreto de validación de firma HMAC SHA-256 de GitHub                   | -           | gh-webhook-secret             |
+| `GITLAB_WEBHOOK_SECRET`      | Token secreto de validación webhook GitLab                              | -           | gl-webhook-secret             |
+| `GITHUB_APP_ID`              | App ID de GitHub App (opcional)                                         | -           | 1234567                       |
+| `GITHUB_APP_CLIENT_ID`       | Client ID del OAuth App/GitHub Device Flow                              | -           | Iv1.xxxxxxxxx                 |
+| `GITHUB_APP_CLIENT_SECRET`   | Client secret del OAuth App/GitHub Device Flow                          | -           | ghp_xxxxxxxxx                 |
+| `GITLAB_BASE_URL`            | URL base de GitLab para OAuth/device flow                               | -           | https://gitlab.com            |
+| `GITLAB_OAUTH_CLIENT_ID`     | Client ID de OAuth App GitLab                                           | -           | xxxxxxxx                      |
+| `GITLAB_OAUTH_CLIENT_SECRET` | Client secret de OAuth App GitLab                                       | -           | xxxxxxxx                      |
+
+Notas:
+
+- El flujo manual (SSH/PAT) sigue funcionando sin OAuth.
+- Autodeploy por webhook requiere `PUBLIC_BASE_URL` valido.
+- En `NODE_ENV=production`, `MASTER_KEY` es requerido para iniciar docker-control.
 
 ---
 
@@ -547,3 +574,4 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 - [Architecture](architecture.md) - Entender la arquitectura
 - [Installation](installation.md) - Guía de instalación
 - [API](api.md) - Documentación de API
+- [Operations Checklist](operations-checklist.md) - Operacion productiva

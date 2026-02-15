@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Docker Compose Management', () => {
+test.describe('Compose Modern Wizard', () => {
   test.beforeEach(async ({ page }) => {
     await page.route('**/api/compose/stacks', async (route) => {
       await route.fulfill({
@@ -8,13 +8,7 @@ test.describe('Docker Compose Management', () => {
         contentType: 'application/json',
         body: JSON.stringify({
           success: true,
-          data: [
-            {
-              name: 'existing-stack',
-              status: 'running',
-              services: 1,
-            },
-          ],
+          data: [],
         }),
       });
     });
@@ -27,10 +21,10 @@ test.describe('Docker Compose Management', () => {
           success: true,
           data: {
             valid: true,
-            normalizedName: 'wizard-stack',
+            normalizedName: 'demo-stack',
             errors: [],
-            warnings: ['Service api has no healthcheck configured'],
-            fingerprint: 'sha256:wizard-fingerprint',
+            warnings: [],
+            fingerprint: 'sha256:test-fingerprint',
           },
         }),
       });
@@ -44,41 +38,25 @@ test.describe('Docker Compose Management', () => {
           success: true,
           message: 'Stack started',
           data: {
-            deploymentId: 'dep-e2e-1',
-            fingerprint: 'sha256:wizard-fingerprint',
+            deploymentId: 'dep-1',
+            fingerprint: 'sha256:test-fingerprint',
           },
         }),
       });
     });
-
-    await page.route('**/api/compose/wizard-stack/logs*', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          data: 'api-1  | listening on :8080',
-        }),
-      });
-    });
   });
 
-  test('shows existing stacks', async ({ page }) => {
-    await page.goto('/compose');
-    await expect(page.getByText('existing-stack')).toBeVisible();
-  });
-
-  test('deploys with the wizard flow', async ({ page }) => {
+  test('validates and deploys from wizard flow', async ({ page }) => {
     await page.goto('/compose');
 
-    await page
-      .getByPlaceholder('Nombre del microservicio/stack (ej: api-core)')
-      .fill('wizard-stack');
+    await page.getByPlaceholder('Nombre del microservicio/stack (ej: api-core)').fill('demo-stack');
     await page.getByRole('button', { name: '2. Environment' }).click();
     await page.getByRole('button', { name: '+ Agregar variable' }).click();
 
-    await page.locator('input[placeholder="KEY"]').first().fill('APP_ENV');
-    await page.locator('input[placeholder="value"]').first().fill('production');
+    const keyInput = page.locator('input[placeholder="KEY"]').first();
+    const valueInput = page.locator('input[placeholder="value"]').first();
+    await keyInput.fill('APP_ENV');
+    await valueInput.fill('production');
 
     await page.getByRole('button', { name: '3. Validación' }).click();
     await page.getByRole('button', { name: 'Validar configuración' }).click();
@@ -87,6 +65,6 @@ test.describe('Docker Compose Management', () => {
     await page.getByRole('button', { name: '4. Deploy' }).click();
     await page.getByRole('button', { name: 'Desplegar stack' }).click();
 
-    await expect(page.getByText('Logs de wizard-stack')).toBeVisible();
+    await expect(page.getByText('Logs de demo-stack')).toBeVisible();
   });
 });

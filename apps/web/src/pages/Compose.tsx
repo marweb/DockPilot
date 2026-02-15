@@ -1,28 +1,76 @@
-import { useTranslation } from 'react-i18next';
-import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { useMemo, useState } from 'react';
-import { RefreshCw, Square, Trash2, CheckCircle2, Rocket, FileCode2 } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from 'react-query';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  FileCode2,
+  RefreshCw,
+  Rocket,
+  ScrollText,
+  Settings2,
+  ShieldCheck,
+  Square,
+  Trash2,
+} from 'lucide-react';
 import api from '../api/client';
 
 type ComposeStack = {
   name: string;
   status: 'running' | 'stopped' | 'partial';
   services: Array<{ name: string; status: string }>;
+  createdAt?: string;
 };
 
-export default function Compose() {
-  const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  const [stackName, setStackName] = useState('');
-  const [composeYaml, setComposeYaml] = useState(
-    'services:\n  app:\n    image: nginx:alpine\n    restart: unless-stopped\n    ports:\n      - "8080:80"\n'
-  );
-  const [selectedStackLogs, setSelectedStackLogs] = useState('');
-  const [actionError, setActionError] = useState('');
+type PreflightResult = {
+  valid: boolean;
+  normalizedName: string;
+  errors: string[];
+  warnings: string[];
+  fingerprint: string;
+};
 
-  const trimmedName = stackName.trim();
-  const canValidate = composeYaml.trim().length > 0;
-  const canDeploy = canValidate && trimmedName.length > 0;
+type EnvRow = {
+  key: string;
+  value: string;
+  secret?: boolean;
+};
+
+const STARTER_YAML = `services:
+  app:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+`;
+
+const tabs = [
+  { id: 'source', label: '1. Origen', icon: FileCode2 },
+  { id: 'env', label: '2. Environment', icon: Settings2 },
+  { id: 'validate', label: '3. Validación', icon: ShieldCheck },
+  { id: 'deploy', label: '4. Deploy', icon: Rocket },
+] as const;
+
+function toEnvObject(rows: EnvRow[]): Record<string, string> {
+  return rows.reduce<Record<string, string>>((acc, row) => {
+    const key = row.key.trim();
+    if (!key) return acc;
+    acc[key] = row.value;
+    return acc;
+  }, {});
+}
+
+export default function Compose() {
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]['id']>('source');
+  const [stackName, setStackName] = useState('');
+  const [yaml, setYaml] = useState(STARTER_YAML);
+  const [envRows, setEnvRows] = useState<EnvRow[]>([]);
+  const [selectedStackLogs, setSelectedStackLogs] = useState('');
+  const [preflightResult, setPreflightResult] = useState<PreflightResult | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const envObject = useMemo(() => toEnvObject(envRows), [envRows]);
+  const canValidate = stackName.trim().length > 1 && yaml.trim().length > 0;
 
   const {
     data: stacks,
@@ -37,6 +85,53 @@ export default function Compose() {
     refetchInterval: 10000,
   });
 
+  const preflightMutation = useMutation({
+    mutationFn: async () => {
+      setErrorMessage('');
+      const response = await api.post('/compose/preflight', {
+        name: stackName,
+        yaml,
+        env: envObject,
+        mode: 'create',
+      });
+      return response.data?.data as PreflightResult;
+    },
+    onSuccess: (data) => {
+      setPreflightResult(data);
+      if (data.normalizedName && data.normalizedName !== stackName) {
+        setStackName(data.normalizedName);
+      }
+      setActiveTab('deploy');
+    },
+    onError: (error: unknown) => {
+      setErrorMessage(
+        (error as { message?: string })?.message || 'No se pudo validar la configuración'
+      );
+    },
+  });
+
+  const deployMutation = useMutation({
+    mutationFn: async () => {
+      setErrorMessage('');
+      const response = await api.post('/compose/up', {
+        name: stackName,
+        yaml,
+        env: envObject,
+        preflightFingerprint: preflightResult?.fingerprint,
+        detach: true,
+        removeOrphans: true,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['compose-stacks'] });
+      setSelectedStackLogs(stackName);
+    },
+    onError: (error: unknown) => {
+      setErrorMessage((error as { message?: string })?.message || 'No se pudo desplegar el stack');
+    },
+  });
+
   const downMutation = useMutation({
     mutationFn: (name: string) => api.post('/compose/down', { name }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['compose-stacks'] }),
@@ -45,40 +140,6 @@ export default function Compose() {
   const deleteMutation = useMutation({
     mutationFn: (name: string) => api.delete(`/compose/${name}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['compose-stacks'] }),
-  });
-
-  const validateMutation = useMutation({
-    mutationFn: async () => {
-      setActionError('');
-      const response = await api.post('/compose/validate', { yaml: composeYaml });
-      return response.data;
-    },
-    onError: (err: unknown) => {
-      const message = (err as { message?: string })?.message || 'No se pudo validar el compose';
-      setActionError(message);
-    },
-  });
-
-  const deployMutation = useMutation({
-    mutationFn: async () => {
-      setActionError('');
-      const response = await api.post('/compose/up', {
-        name: trimmedName,
-        yaml: composeYaml,
-        detach: true,
-        build: false,
-        removeOrphans: true,
-      });
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['compose-stacks'] });
-      setSelectedStackLogs(trimmedName);
-    },
-    onError: (err: unknown) => {
-      const message = (err as { message?: string })?.message || 'No se pudo ejecutar compose up';
-      setActionError(message);
-    },
   });
 
   const {
@@ -94,75 +155,193 @@ export default function Compose() {
       return response.data?.data as string;
     },
     enabled: selectedStackLogs.length > 0,
-    refetchInterval: selectedStackLogs.length > 0 ? 5000 : false,
+    refetchInterval: selectedStackLogs ? 5000 : false,
   });
-
-  const validationMessage = useMemo(() => {
-    if (!validateMutation.data) return '';
-    if (validateMutation.data.success) return 'YAML valido. Puedes ejecutar el stack.';
-    return validateMutation.data.error || 'El YAML no es valido.';
-  }, [validateMutation.data]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {t('compose.title')}
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Compose Deploy</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Flujo recomendado: define origen, variables, valida conflictos y despliega.
+          </p>
+        </div>
         <button onClick={() => refetch()} disabled={isLoading} className="btn btn-secondary btn-sm">
           <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
       <div className="card">
-        <div className="card-header flex items-center gap-2">
-          <FileCode2 className="h-4 w-4 text-primary-600" />
-          <h2 className="font-semibold text-gray-900 dark:text-gray-100">Compose raw YAML</h2>
-        </div>
         <div className="card-body space-y-4">
-          {actionError && (
-            <div className="text-sm text-red-600 dark:text-red-400">{actionError}</div>
-          )}
-          <input
-            className="input"
-            placeholder="Nombre del stack (ej: openclaw)"
-            value={stackName}
-            onChange={(e) => setStackName(e.target.value)}
-          />
-          <textarea
-            className="input min-h-[260px] font-mono text-xs"
-            value={composeYaml}
-            onChange={(e) => setComposeYaml(e.target.value)}
-            spellCheck={false}
-          />
-          <div className="flex flex-wrap gap-2">
-            <button
-              className="btn btn-secondary btn-sm"
-              disabled={!canValidate || validateMutation.isLoading}
-              onClick={() => validateMutation.mutate()}
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              Validar YAML
-            </button>
-            <button
-              className="btn btn-primary btn-sm"
-              disabled={!canDeploy || deployMutation.isLoading}
-              onClick={() => deployMutation.mutate()}
-            >
-              <Rocket className="h-4 w-4 mr-1" />
-              Guardar y ejecutar
-            </button>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium border transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                }`}
+              >
+                <tab.icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            ))}
           </div>
-          {validationMessage && (
-            <div
-              className={`text-sm ${validateMutation.data?.success ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
-            >
-              {validationMessage}
+
+          {errorMessage && (
+            <div className="text-sm text-red-600 dark:text-red-400">{errorMessage}</div>
+          )}
+
+          {activeTab === 'source' && (
+            <div className="space-y-3">
+              <input
+                className="input"
+                placeholder="Nombre del microservicio/stack (ej: api-core)"
+                value={stackName}
+                onChange={(e) => setStackName(e.target.value)}
+              />
+              <textarea
+                className="input min-h-[280px] font-mono text-xs"
+                spellCheck={false}
+                value={yaml}
+                onChange={(e) => setYaml(e.target.value)}
+              />
             </div>
           )}
-          {deployMutation.data?.message && (
-            <div className="text-sm text-green-700 dark:text-green-400">
-              {deployMutation.data.message}
+
+          {activeTab === 'env' && (
+            <div className="space-y-3">
+              {envRows.length === 0 && (
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Sin variables definidas. Agrega variables para este deploy.
+                </div>
+              )}
+              {envRows.map((row, index) => (
+                <div key={`${row.key}-${index}`} className="grid grid-cols-1 md:grid-cols-12 gap-2">
+                  <input
+                    className="input md:col-span-4"
+                    placeholder="KEY"
+                    value={row.key}
+                    onChange={(e) => {
+                      setEnvRows((prev) =>
+                        prev.map((entry, entryIndex) =>
+                          entryIndex === index ? { ...entry, key: e.target.value } : entry
+                        )
+                      );
+                    }}
+                  />
+                  <input
+                    className="input md:col-span-6"
+                    placeholder="value"
+                    type={row.secret ? 'password' : 'text'}
+                    value={row.value}
+                    onChange={(e) => {
+                      setEnvRows((prev) =>
+                        prev.map((entry, entryIndex) =>
+                          entryIndex === index ? { ...entry, value: e.target.value } : entry
+                        )
+                      );
+                    }}
+                  />
+                  <label className="md:col-span-1 inline-flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(row.secret)}
+                      onChange={(e) => {
+                        setEnvRows((prev) =>
+                          prev.map((entry, entryIndex) =>
+                            entryIndex === index ? { ...entry, secret: e.target.checked } : entry
+                          )
+                        );
+                      }}
+                    />
+                    Secret
+                  </label>
+                  <button
+                    className="btn btn-danger btn-sm md:col-span-1"
+                    onClick={() =>
+                      setEnvRows((prev) => prev.filter((_, entryIndex) => entryIndex !== index))
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() =>
+                  setEnvRows((prev) => [...prev, { key: '', value: '', secret: false }])
+                }
+              >
+                + Agregar variable
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'validate' && (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-sm text-gray-700 dark:text-gray-300">
+                Ejecuta preflight para detectar conflictos antes del deploy.
+              </div>
+              <button
+                className="btn btn-secondary"
+                disabled={!canValidate || preflightMutation.isLoading}
+                onClick={() => preflightMutation.mutate()}
+              >
+                <ShieldCheck className="h-4 w-4 mr-1" />
+                Validar configuración
+              </button>
+              {preflightResult && (
+                <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+                  <div className="text-sm">
+                    Resultado:{' '}
+                    <span className={preflightResult.valid ? 'text-green-600' : 'text-red-600'}>
+                      {preflightResult.valid ? 'válido' : 'con errores'}
+                    </span>
+                  </div>
+                  {preflightResult.errors.length > 0 && (
+                    <ul className="text-sm text-red-600 dark:text-red-400 list-disc pl-5">
+                      {preflightResult.errors.map((error) => (
+                        <li key={error}>{error}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {preflightResult.warnings.length > 0 && (
+                    <ul className="text-sm text-amber-600 dark:text-amber-400 list-disc pl-5">
+                      {preflightResult.warnings.map((warning) => (
+                        <li key={warning}>{warning}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'deploy' && (
+            <div className="space-y-3">
+              {!preflightResult ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 p-3 text-sm text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 mt-0.5" />
+                  Debes ejecutar validación de preflight antes de desplegar.
+                </div>
+              ) : (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-800 p-3 text-sm text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 mt-0.5" />
+                  Validación lista. Fingerprint: {preflightResult.fingerprint.slice(0, 20)}...
+                </div>
+              )}
+              <button
+                className="btn btn-primary"
+                disabled={!preflightResult?.valid || deployMutation.isLoading}
+                onClick={() => deployMutation.mutate()}
+              >
+                <Rocket className="h-4 w-4 mr-1" />
+                Desplegar stack
+              </button>
             </div>
           )}
         </div>
@@ -171,23 +350,28 @@ export default function Compose() {
       <div className="card">
         <div className="card-body p-0">
           {(stacks?.length || 0) === 0 ? (
-            <div className="p-6 text-sm text-gray-500 dark:text-gray-400">{t('compose.empty')}</div>
+            <div className="p-6 text-sm text-gray-500 dark:text-gray-400">
+              No compose stacks found
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      {t('compose.name')}
+                      Stack
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      {t('compose.status')}
+                      Estado
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      {t('compose.services')}
+                      Servicios
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Creado
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      {t('compose.actions')}
+                      Acciones
                     </th>
                   </tr>
                 </thead>
@@ -203,6 +387,9 @@ export default function Compose() {
                       <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
                         {stack.services.length}
                       </td>
+                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                        {stack.createdAt ? new Date(stack.createdAt).toLocaleString() : '-'}
+                      </td>
                       <td className="px-4 py-3 text-right space-x-2">
                         <button
                           onClick={() => downMutation.mutate(stack.name)}
@@ -210,15 +397,16 @@ export default function Compose() {
                           disabled={downMutation.isLoading}
                         >
                           <Square className="h-4 w-4 mr-1" />
-                          {t('compose.stop')}
+                          Stop
                         </button>
                         <button
+                          className="btn btn-secondary btn-sm"
                           onClick={() => {
                             setSelectedStackLogs(stack.name);
                             refetchLogs();
                           }}
-                          className="btn btn-secondary btn-sm"
                         >
+                          <ScrollText className="h-4 w-4 mr-1" />
                           Logs
                         </button>
                         <button
@@ -227,7 +415,7 @@ export default function Compose() {
                           disabled={deleteMutation.isLoading}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
-                          {t('compose.delete')}
+                          Eliminar
                         </button>
                       </td>
                     </tr>
@@ -243,7 +431,7 @@ export default function Compose() {
         <div className="card">
           <div className="card-header flex items-center justify-between">
             <h2 className="font-semibold text-gray-900 dark:text-gray-100">
-              Logs de stack: {selectedStackLogs}
+              Logs de {selectedStackLogs}
             </h2>
             <button
               className="btn btn-secondary btn-sm"
@@ -255,7 +443,7 @@ export default function Compose() {
           </div>
           <div className="card-body">
             <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 text-xs overflow-auto max-h-[320px]">
-              {logsResponse || 'Sin logs disponibles'}
+              {logsResponse || 'Sin logs'}
             </pre>
           </div>
         </div>

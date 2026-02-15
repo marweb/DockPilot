@@ -90,7 +90,7 @@ El método más rápido y fácil. Instala DockPilot con un solo comando. Soporta
 ### Instalación con One-Liner
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/marweb/DockPilot/master/scripts/install.sh | sudo bash
 ```
 
 ### Qué hace el instalador
@@ -312,7 +312,7 @@ node --version
 
 ```bash
 # Clonar monorepo
-git clone https://github.com/dockpilot/dockpilot.git
+git clone https://github.com/marweb/DockPilot.git
 cd dockpilot
 
 # Instalar dependencias raíz

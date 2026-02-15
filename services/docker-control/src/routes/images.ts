@@ -33,7 +33,7 @@ export async function imageRoutes(fastify: FastifyInstance) {
         size: img.Size,
         created: img.Created * 1000,
         labels: img.Labels || {},
-        containers: img.Containers || 0,
+        containers: Math.max(img.Containers ?? 0, 0),
       };
     });
 
@@ -191,13 +191,21 @@ export async function imageRoutes(fastify: FastifyInstance) {
       const image = docker.getImage(id);
       const history = await image.history();
 
-      const result: ImageHistory[] = history.map((h: { Id: string; Created: number; CreatedBy?: string; Size: number; Comment?: string }) => ({
-        id: h.Id.replace('sha256:', '').substring(0, 12),
-        created: h.Created * 1000,
-        createdBy: h.CreatedBy || '',
-        size: h.Size,
-        comment: h.Comment || '',
-      }));
+      const result: ImageHistory[] = history.map(
+        (h: {
+          Id: string;
+          Created: number;
+          CreatedBy?: string;
+          Size: number;
+          Comment?: string;
+        }) => ({
+          id: h.Id.replace('sha256:', '').substring(0, 12),
+          created: h.Created * 1000,
+          createdBy: h.CreatedBy || '',
+          size: h.Size,
+          comment: h.Comment || '',
+        })
+      );
 
       return reply.send({ success: true, data: result });
     } catch (error) {

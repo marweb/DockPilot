@@ -12,6 +12,7 @@ const rolePermissions: Record<UserRole, string[]> = {
     'builds:*',
     'compose:*',
     'tunnels:*',
+    'repos:*',
     'users:*',
     'settings:*',
     'system:*',
@@ -37,13 +38,22 @@ const rolePermissions: Record<UserRole, string[]> = {
     'builds:get',
     'compose:list',
     'compose:get',
+    'compose:create',
     'compose:up',
     'compose:down',
     'compose:logs',
+    'compose:update',
     'tunnels:list',
     'tunnels:get',
     'tunnels:start',
     'tunnels:stop',
+    'repos:list',
+    'repos:get',
+    'repos:create',
+    'repos:update',
+    'repos:delete',
+    'repos:sync',
+    'repos:deploy',
     'system:*',
   ],
   viewer: [
@@ -64,6 +74,8 @@ const rolePermissions: Record<UserRole, string[]> = {
     'compose:logs',
     'tunnels:list',
     'tunnels:get',
+    'repos:list',
+    'repos:get',
     'system:*',
   ],
 };
@@ -96,6 +108,10 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
     ];
 
     if (skipAuthPaths.some((p) => request.url.startsWith(p))) {
+      return;
+    }
+
+    if (request.url.startsWith('/api/repos/webhooks/')) {
       return;
     }
 
@@ -184,6 +200,8 @@ export const routePermissions: Record<string, string> = {
   'GET:/api/containers/:id/logs': 'containers:logs',
   'GET:/api/containers/:id/stats': 'containers:stats',
   'GET:/api/containers/:id/inspect': 'containers:get',
+  'GET:/api/containers/:id/env': 'containers:get',
+  'PUT:/api/containers/:id/env': 'containers:update',
   'POST:/api/containers/prune': 'containers:delete',
   'POST:/api/containers/:id/exec': 'containers:exec',
 
@@ -225,6 +243,28 @@ export const routePermissions: Record<string, string> = {
   'POST:/api/compose/down': 'compose:down',
   'GET:/api/compose/:name/logs': 'compose:logs',
   'DELETE:/api/compose/:name': 'compose:delete',
+  'POST:/api/compose/preflight': 'compose:create',
+  'POST:/api/compose/name/validate': 'compose:create',
+  'GET:/api/compose/:name/env': 'compose:get',
+  'PUT:/api/compose/:name/env': 'compose:update',
+  'GET:/api/compose/:name/history': 'compose:get',
+
+  // Repositories
+  'GET:/api/repos': 'repos:list',
+  'POST:/api/repos': 'repos:create',
+  'GET:/api/repos/:id': 'repos:get',
+  'PATCH:/api/repos/:id': 'repos:update',
+  'DELETE:/api/repos/:id': 'repos:delete',
+  'GET:/api/repos/:id/public-key': 'repos:get',
+  'POST:/api/repos/:id/test-connection': 'repos:sync',
+  'POST:/api/repos/:id/sync': 'repos:sync',
+  'POST:/api/repos/:id/deploy': 'repos:deploy',
+  'GET:/api/repos/oauth/status': 'repos:get',
+  'GET:/api/repos/oauth/connections': 'repos:get',
+  'POST:/api/repos/oauth/github/device/start': 'repos:create',
+  'POST:/api/repos/oauth/github/device/poll': 'repos:create',
+  'POST:/api/repos/oauth/gitlab/device/start': 'repos:create',
+  'POST:/api/repos/oauth/gitlab/device/poll': 'repos:create',
 
   // System (Docker)
   'GET:/api/info': 'system:read',
@@ -269,6 +309,7 @@ export async function routePermissionMiddleware(
   if (
     request.url.startsWith('/api/auth') ||
     request.url.startsWith('/api/health') ||
+    request.url.startsWith('/api/repos/webhooks/') ||
     request.url === '/healthz' ||
     request.url.startsWith('/ws/')
   ) {

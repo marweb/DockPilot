@@ -8,6 +8,7 @@
     "networks": "Redes",
     "builds": "Construcciones",
     "compose": "Compose",
+    "repositories": "Repositorios",
     "tunnels": "Túneles",
     "settings": "Configuración"
   },

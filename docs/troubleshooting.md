@@ -595,7 +595,13 @@ docker stack deploy -c docker-compose.yml dockpilot
 
 ```bash
 # Script incluido
-./scripts/backup.sh
+./infra/scripts/backup.sh /opt/dockpilot/backups
+
+# Restore de prueba (dry-run)
+./infra/scripts/restore.sh /opt/dockpilot/backups/dockpilot-backup-YYYYmmdd_HHMMSS.tar.gz
+
+# Restore real (solo con ventana de mantenimiento)
+./infra/scripts/restore.sh --apply --restore-env /opt/dockpilot/backups/dockpilot-backup-YYYYmmdd_HHMMSS.tar.gz
 
 # Manual
 tar -czf backup-$(date +%Y%m%d).tar.gz data/ config/ docker-compose.yml .env
@@ -628,15 +634,18 @@ rm -rf /data/dockpilot
 - Usa contraseñas fuertes
 - Mantén actualizado
 - Configura backups
-- Lee [security.md](security.md)
+- Lee [operations-checklist.md](operations-checklist.md)
 
 ### ¿Puedo contribuir al proyecto?
 
-¡Sí! Ver [development.md](development.md) para guías de contribución.
+Si, abre un issue o discussion con contexto y pasos de reproduccion:
+
+- https://github.com/marweb/DockPilot/issues
+- https://github.com/marweb/DockPilot/discussions
 
 ### ¿Dónde reporto bugs?
 
-- GitHub Issues: https://github.com/dockpilot/dockpilot/issues
+- GitHub Issues: https://github.com/marweb/DockPilot/issues
 - Incluye logs y pasos para reproducir
 
 ---
@@ -659,4 +668,4 @@ Si el problema persiste:
 
 3. Únete a nuestra comunidad:
    - Discord: https://discord.gg/dockpilot
-   - Discussions: https://github.com/dockpilot/dockpilot/discussions
+   - Discussions: https://github.com/marweb/DockPilot/discussions

@@ -75,7 +75,49 @@ export async function getContainer(id: string): Promise<Container> {
  * @returns Container inspection details
  */
 export async function inspectContainer(id: string): Promise<ContainerInspect> {
-  const response = await api.get<ApiResponse<ContainerInspect>>(`/containers/${id}/inspect`);
+  const response = await api.get<ApiResponse<ContainerInspect>>(`/containers/${id}`);
+  return extractData(response);
+}
+
+export async function getContainerEnv(id: string): Promise<{
+  env: Record<string, string>;
+  containerName: string;
+  image: string;
+  running: boolean;
+}> {
+  const response = await api.get<
+    ApiResponse<{
+      env: Record<string, string>;
+      containerName: string;
+      image: string;
+      running: boolean;
+    }>
+  >(`/containers/${id}/env`);
+  return extractData(response);
+}
+
+export async function updateContainerEnv(
+  id: string,
+  payload: {
+    env: Record<string, string>;
+    recreate?: boolean;
+    rollbackOnFailure?: boolean;
+    keepRollbackContainer?: boolean;
+  }
+): Promise<{
+  previousContainerId: string;
+  newContainerId: string;
+  rollbackContainerName?: string;
+  rollbackAvailable: boolean;
+}> {
+  const response = await api.put<
+    ApiResponse<{
+      previousContainerId: string;
+      newContainerId: string;
+      rollbackContainerName?: string;
+      rollbackAvailable: boolean;
+    }>
+  >(`/containers/${id}/env`, payload);
   return extractData(response);
 }
 

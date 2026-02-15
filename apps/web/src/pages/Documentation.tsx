@@ -9,7 +9,7 @@ const quickLinks = [
   {
     title: 'Repositorio GitHub',
     description: 'Código fuente, changelog y mejores prácticas de despliegue.',
-    href: 'https://github.com/dockpilot',
+    href: 'https://github.com/marweb/DockPilot',
   },
 ];
 

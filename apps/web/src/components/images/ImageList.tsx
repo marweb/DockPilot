@@ -24,6 +24,12 @@ const localeMap: Record<string, Locale> = {
   ja: ja,
 };
 
+function normalizeTimestamp(value: number): number {
+  if (value > 1e15) return Math.floor(value / 1e6);
+  if (value > 1e12) return value;
+  return value * 1000;
+}
+
 export default function ImageList({
   images,
   isLoading,
@@ -117,7 +123,7 @@ export default function ImageList({
                   <td className="text-sm text-gray-600 dark:text-gray-400">
                     <div className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      {formatDistanceToNow(image.created * 1000, {
+                      {formatDistanceToNow(normalizeTimestamp(image.created), {
                         addSuffix: true,
                         locale: currentLocale,
                       })}
@@ -166,7 +172,7 @@ export default function ImageList({
               <div>{formatSize(image.size)}</div>
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                {formatDistanceToNow(image.created * 1000, {
+                {formatDistanceToNow(normalizeTimestamp(image.created), {
                   addSuffix: true,
                   locale: currentLocale,
                 })}

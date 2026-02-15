@@ -4,13 +4,16 @@ on:
   pull_request:
     paths:
       - 'scripts/*.sh'
+      - 'infra/scripts/*.sh'
       - '.github/workflows/*.yml'
       - '.github/workflows/*.yaml'
   push:
     branches:
+      - main
       - master
     paths:
       - 'scripts/*.sh'
+      - 'infra/scripts/*.sh'
       - '.github/workflows/*.yml'
       - '.github/workflows/*.yaml'
 
@@ -30,9 +33,9 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          files=(scripts/*.sh)
+          files=(scripts/*.sh infra/scripts/*.sh)
           if [ ${#files[@]} -eq 0 ]; then
-            echo "No shell scripts found in scripts/"
+            echo "No shell scripts found in scripts/ or infra/scripts/"
             exit 0
           fi
           for file in "${files[@]}"; do
@@ -43,4 +46,4 @@ jobs:
       - name: Run shellcheck
         run: |
           set -euo pipefail
-          shellcheck -x scripts/*.sh
+          shellcheck -x scripts/*.sh infra/scripts/*.sh

@@ -17,7 +17,7 @@
 
 set -e
 
-CDN="${CDN:-https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts}"
+CDN="${CDN:-https://raw.githubusercontent.com/marweb/DockPilot/master/scripts}"
 SOURCE_DIR="${SOURCE_DIR:-/data/dockpilot/source}"
 LOG_FILE="${SOURCE_DIR}/auto-update.log"
 LOCK_FILE="${SOURCE_DIR}/.auto-update.lock"

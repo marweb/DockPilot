@@ -71,7 +71,7 @@ git push origin v1.0.0
 
 ### Step 4: Monitor the workflow
 
-Go to [https://github.com/marweb/DockerPilot/actions](https://github.com/marweb/DockerPilot/actions) and monitor the "Release" workflow. The build typically takes 15-25 minutes (ARM64 builds via QEMU are slower).
+Go to [https://github.com/marweb/DockPilot/actions](https://github.com/marweb/DockPilot/actions) and monitor the "Release" workflow. The build typically takes 15-25 minutes (ARM64 builds via QEMU are slower).
 
 ---
 
@@ -104,7 +104,7 @@ The output should show both `linux/amd64` and `linux/arm64` in the manifest.
 On a clean server:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/marweb/DockerPilot/master/scripts/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/marweb/DockPilot/master/scripts/install.sh | sudo bash
 ```
 
 ---
@@ -186,9 +186,9 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
 
 ## Summary
 
-| Step | Command |
-|------|---------|
-| Create tag | `git tag v1.0.0` |
-| Push tag | `git push origin v1.0.0` |
-| Verify | Check [Actions](https://github.com/marweb/DockerPilot/actions) and [Packages](https://github.com/marweb?tab=packages) |
-| Make public | Package settings → Change visibility → Public |
+| Step        | Command                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------- |
+| Create tag  | `git tag v1.0.0`                                                                                                    |
+| Push tag    | `git push origin v1.0.0`                                                                                            |
+| Verify      | Check [Actions](https://github.com/marweb/DockPilot/actions) and [Packages](https://github.com/marweb?tab=packages) |
+| Make public | Package settings → Change visibility → Public                                                                       |
