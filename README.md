@@ -101,4 +101,4 @@ Para cierre operativo (rotacion de secretos, runbook de incidentes, monitoreo/al
 
 ## Licencia
 
-MIT (`LICENSE`).
+Este proyecto se distribuye bajo licencia MIT. Ver `LICENSE`.

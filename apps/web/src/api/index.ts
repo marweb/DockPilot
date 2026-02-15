@@ -26,3 +26,9 @@ export * from './compose';
 
 // Tunnel API
 export * from './tunnels';
+
+// System Settings API
+export * from './system';
+
+// Notifications API
+export * from './notifications';

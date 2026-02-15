@@ -1,7 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { request as httpRequest, Agent } from 'http';
 import { request as httpsRequest } from 'https';
-import type { Config } from '../config/index.js';
 
 // Create agents for connection pooling
 const httpAgent = new Agent({
@@ -113,6 +112,7 @@ export function createWebSocketProxy(
       const targetUrl = `${targetBaseUrl}/ws/${path}`;
 
       // Create WebSocket connection to target
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const WebSocket = require('ws');
       const targetWs = new WebSocket(targetUrl);
 

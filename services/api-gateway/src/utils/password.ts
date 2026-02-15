@@ -333,7 +333,7 @@ export function validatePasswordStrength(password: string): {
   }
 
   // Special character check
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
     errors.push('Password must contain at least one special character');
   } else {
     score += 1;

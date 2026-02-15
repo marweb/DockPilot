@@ -569,9 +569,43 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 ---
 
+## Notification Configuration
+
+DockPilot supports multiple notification channels for alerts and system events.
+
+### Quick Start
+
+1. Go to Settings → Notifications
+2. Enable and configure your preferred channels
+3. Send test notifications to verify
+
+### Supported Channels
+
+- **SMTP**: For email notifications
+- **Resend**: Cloud email service
+- **Slack**: Team messaging
+- **Telegram**: Mobile push notifications
+- **Discord**: Community/team chat
+
+See detailed guides in `docs/notifications/`.
+
+### Security Notes
+
+- All credentials are encrypted with AES-256-GCM
+- Secrets are never exposed in UI or logs
+- Use app-specific passwords when available
+- Rotate credentials periodically
+
+---
+
 ## 📚 Referencias
 
 - [Architecture](architecture.md) - Entender la arquitectura
 - [Installation](installation.md) - Guía de instalación
 - [API](api.md) - Documentación de API
 - [Operations Checklist](operations-checklist.md) - Operacion productiva
+- [SMTP](notifications/smtp.md) - Configuración SMTP
+- [Resend](notifications/resend.md) - Configuración Resend
+- [Slack](notifications/slack.md) - Configuración Slack
+- [Telegram](notifications/telegram.md) - Configuración Telegram
+- [Discord](notifications/discord.md) - Configuración Discord

@@ -1,7 +1,6 @@
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { getUser } from '../types/fastify.js';
 import { z } from 'zod';
-import type { UserRole } from '@dockpilot/types';
 import '../types/fastify.js';
 import {
   listUsers,
@@ -18,7 +17,6 @@ import {
   validatePasswordStrength,
 } from '../utils/password.js';
 import { requireRole } from '../middleware/rbac.js';
-import { generateTokenPair } from '../utils/jwt.js';
 
 // Validation schemas
 const createUserSchema = z.object({

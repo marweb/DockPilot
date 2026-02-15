@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 import { readFile } from 'fs/promises';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync } from 'fs';
 import path from 'path';
 import type { User, UserRole } from '@dockpilot/types';
 
@@ -23,6 +23,29 @@ export interface AuditLog {
   details?: Record<string, unknown>;
   ip: string;
   userAgent: string;
+}
+
+export interface SystemSetting {
+  key: string;
+  value: string;
+  type: 'string' | 'number' | 'boolean' | 'json';
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type NotificationProvider = 'smtp' | 'resend' | 'slack' | 'telegram' | 'discord';
+
+export interface NotificationChannel {
+  id: string;
+  provider: NotificationProvider;
+  name: string;
+  enabled: boolean;
+  config: string;
+  fromName?: string;
+  fromAddress?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 let db: Database.Database | null = null;
@@ -115,9 +138,7 @@ async function migrateFromJson(sqlite: Database.Database): Promise<void> {
   const content = await readFile(jsonPath, 'utf-8');
   const jsonDb: JsonDb = JSON.parse(content);
 
-  const insertMeta = sqlite.prepare(
-    'INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)'
-  );
+  const insertMeta = sqlite.prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)');
   insertMeta.run('setup_complete', jsonDb.setupComplete ? '1' : '0');
   insertMeta.run('migrated_from_json', '1');
 
@@ -127,9 +148,19 @@ async function migrateFromJson(sqlite: Database.Database): Promise<void> {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     for (const u of jsonDb.users) {
-      const createdAt = typeof u.createdAt === 'string' ? u.createdAt : (u.createdAt as Date).toISOString();
-      const updatedAt = typeof u.updatedAt === 'string' ? u.updatedAt : (u.updatedAt as Date).toISOString();
-      insertUser.run(u.id, u.username, u.passwordHash, u.role, u.refreshToken ?? null, createdAt, updatedAt);
+      const createdAt =
+        typeof u.createdAt === 'string' ? u.createdAt : (u.createdAt as Date).toISOString();
+      const updatedAt =
+        typeof u.updatedAt === 'string' ? u.updatedAt : (u.updatedAt as Date).toISOString();
+      insertUser.run(
+        u.id,
+        u.username,
+        u.passwordHash,
+        u.role,
+        u.refreshToken ?? null,
+        createdAt,
+        updatedAt
+      );
     }
   }
 
@@ -157,6 +188,47 @@ async function migrateFromJson(sqlite: Database.Database): Promise<void> {
   }
 }
 
+async function runMigrations(sqlite: Database.Database): Promise<void> {
+  const migrationsDir = path.join(__dirname, '../migrations');
+
+  if (!existsSync(migrationsDir)) {
+    return;
+  }
+
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS migrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      filename TEXT UNIQUE NOT NULL,
+      executed_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  const executedMigrations = sqlite.prepare('SELECT filename FROM migrations').all() as Array<{
+    filename: string;
+  }>;
+  const executedSet = new Set(executedMigrations.map((m) => m.filename));
+
+  const files = readdirSync(migrationsDir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
+
+  for (const filename of files) {
+    if (executedSet.has(filename)) {
+      continue;
+    }
+
+    const filePath = path.join(migrationsDir, filename);
+    const sql = await readFile(filePath, 'utf-8');
+
+    const transaction = sqlite.transaction(() => {
+      sqlite.exec(sql);
+      sqlite.prepare('INSERT INTO migrations (filename) VALUES (?)').run(filename);
+    });
+
+    transaction();
+  }
+}
+
 async function initSqlite(): Promise<void> {
   ensureDataDir();
   const dbPath = getDbPath();
@@ -165,7 +237,9 @@ async function initSqlite(): Promise<void> {
   sqlite.pragma('journal_mode = WAL');
   createSchema(sqlite);
 
-  const meta = sqlite.prepare('SELECT value FROM meta WHERE key = ?').get('setup_complete') as { value: string } | undefined;
+  const meta = sqlite.prepare('SELECT value FROM meta WHERE key = ?').get('setup_complete') as
+    | { value: string }
+    | undefined;
   const hasMeta = meta !== undefined;
   const jsonPath = getDbJsonPath();
   const jsonExists = existsSync(jsonPath);
@@ -175,6 +249,8 @@ async function initSqlite(): Promise<void> {
   } else if (!hasMeta) {
     sqlite.prepare("INSERT INTO meta (key, value) VALUES ('setup_complete', '0')").run();
   }
+
+  await runMigrations(sqlite);
 
   db = sqlite;
 }
@@ -191,7 +267,9 @@ export async function getDatabase(): Promise<Database.Database> {
 
 export async function isSetupComplete(): Promise<boolean> {
   const sqlite = await getDatabase();
-  const row = sqlite.prepare('SELECT value FROM meta WHERE key = ?').get('setup_complete') as { value: string } | undefined;
+  const row = sqlite.prepare('SELECT value FROM meta WHERE key = ?').get('setup_complete') as
+    | { value: string }
+    | undefined;
   if (!row) return false;
   const userCount = sqlite.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number };
   return row.value === '1' && userCount.c > 0;
@@ -204,7 +282,9 @@ export async function completeSetup(): Promise<void> {
 
 export async function getSystemSetting(key: string): Promise<string | null> {
   const sqlite = await getDatabase();
-  const row = sqlite.prepare('SELECT value FROM meta WHERE key = ?').get(key) as { value: string } | undefined;
+  const row = sqlite.prepare('SELECT value FROM meta WHERE key = ?').get(key) as
+    | { value: string }
+    | undefined;
   return row?.value ?? null;
 }
 
@@ -215,7 +295,9 @@ export async function setSystemSetting(key: string, value: string): Promise<void
 
 export async function getSystemSettings(): Promise<Record<string, string>> {
   const sqlite = await getDatabase();
-  const rows = sqlite.prepare("SELECT key, value FROM meta WHERE key LIKE 'setting_%'").all() as Array<{ key: string; value: string }>;
+  const rows = sqlite
+    .prepare("SELECT key, value FROM meta WHERE key LIKE 'setting_%'")
+    .all() as Array<{ key: string; value: string }>;
   const settings: Record<string, string> = {};
   for (const row of rows) {
     settings[row.key.replace('setting_', '')] = row.value;
@@ -223,19 +305,229 @@ export async function getSystemSettings(): Promise<Record<string, string>> {
   return settings;
 }
 
-export async function findUserByUsername(username: string): Promise<StoredUser | null> {
+export async function getSetting(key: string): Promise<SystemSetting | null> {
   const sqlite = await getDatabase();
-  const row = sqlite.prepare(
-    'SELECT id, username, password_hash, role, refresh_token, created_at, updated_at FROM users WHERE username = ?'
-  ).get(username) as {
-    id: string;
-    username: string;
-    password_hash: string;
-    role: string;
-    refresh_token: string | null;
+  const row = sqlite
+    .prepare(
+      'SELECT key, value, type, description, created_at, updated_at FROM system_settings WHERE key = ?'
+    )
+    .get(key) as
+    | {
+        key: string;
+        value: string;
+        type: string;
+        description: string | null;
+        created_at: string;
+        updated_at: string;
+      }
+    | undefined;
+
+  if (!row) return null;
+
+  return {
+    key: row.key,
+    value: row.value,
+    type: row.type as SystemSetting['type'],
+    description: row.description ?? undefined,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
+}
+
+export async function setSetting(
+  key: string,
+  value: string,
+  type: SystemSetting['type'] = 'string',
+  description?: string
+): Promise<void> {
+  const sqlite = await getDatabase();
+  const now = new Date().toISOString();
+
+  const validTypes: SystemSetting['type'][] = ['string', 'number', 'boolean', 'json'];
+  if (!validTypes.includes(type)) {
+    throw new Error(`Invalid setting type: ${type}. Must be one of: ${validTypes.join(', ')}`);
+  }
+
+  sqlite
+    .prepare(
+      'INSERT INTO system_settings (key, value, type, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = ?, type = ?, description = ?, updated_at = ?'
+    )
+    .run(key, value, type, description ?? null, now, now, value, type, description ?? null, now);
+}
+
+export async function getAllSettings(): Promise<SystemSetting[]> {
+  const sqlite = await getDatabase();
+  const rows = sqlite
+    .prepare(
+      'SELECT key, value, type, description, created_at, updated_at FROM system_settings ORDER BY key'
+    )
+    .all() as Array<{
+    key: string;
+    value: string;
+    type: string;
+    description: string | null;
     created_at: string;
     updated_at: string;
-  } | undefined;
+  }>;
+
+  return rows.map((row) => ({
+    key: row.key,
+    value: row.value,
+    type: row.type as SystemSetting['type'],
+    description: row.description ?? undefined,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  }));
+}
+
+export async function getNotificationChannels(): Promise<NotificationChannel[]> {
+  const sqlite = await getDatabase();
+  const rows = sqlite
+    .prepare(
+      'SELECT id, provider, name, enabled, config, from_name, from_address, created_at, updated_at FROM notification_channels ORDER BY name'
+    )
+    .all() as Array<{
+    id: string;
+    provider: string;
+    name: string;
+    enabled: number;
+    config: string;
+    from_name: string | null;
+    from_address: string | null;
+    created_at: string;
+    updated_at: string;
+  }>;
+
+  return rows.map((row) => ({
+    id: row.id,
+    provider: row.provider as NotificationProvider,
+    name: row.name,
+    enabled: Boolean(row.enabled),
+    config: row.config,
+    fromName: row.from_name ?? undefined,
+    fromAddress: row.from_address ?? undefined,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  }));
+}
+
+export async function getNotificationChannel(
+  provider: NotificationProvider
+): Promise<NotificationChannel | null> {
+  const sqlite = await getDatabase();
+  const row = sqlite
+    .prepare(
+      'SELECT id, provider, name, enabled, config, from_name, from_address, created_at, updated_at FROM notification_channels WHERE provider = ?'
+    )
+    .get(provider) as
+    | {
+        id: string;
+        provider: string;
+        name: string;
+        enabled: number;
+        config: string;
+        from_name: string | null;
+        from_address: string | null;
+        created_at: string;
+        updated_at: string;
+      }
+    | undefined;
+
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    provider: row.provider as NotificationProvider,
+    name: row.name,
+    enabled: Boolean(row.enabled),
+    config: row.config,
+    fromName: row.from_name ?? undefined,
+    fromAddress: row.from_address ?? undefined,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
+}
+
+export async function saveNotificationChannel(
+  channel: Omit<NotificationChannel, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
+): Promise<NotificationChannel> {
+  const sqlite = await getDatabase();
+  const now = new Date().toISOString();
+
+  const validProviders: NotificationProvider[] = ['smtp', 'resend', 'slack', 'telegram', 'discord'];
+  if (!validProviders.includes(channel.provider)) {
+    throw new Error(
+      `Invalid provider: ${channel.provider}. Must be one of: ${validProviders.join(', ')}`
+    );
+  }
+
+  const id = channel.id ?? crypto.randomUUID();
+  const exists =
+    sqlite.prepare('SELECT 1 FROM notification_channels WHERE id = ?').get(id) !== undefined;
+
+  if (exists) {
+    sqlite
+      .prepare(
+        'UPDATE notification_channels SET provider = ?, name = ?, enabled = ?, config = ?, from_name = ?, from_address = ?, updated_at = ? WHERE id = ?'
+      )
+      .run(
+        channel.provider,
+        channel.name,
+        channel.enabled ? 1 : 0,
+        channel.config,
+        channel.fromName ?? null,
+        channel.fromAddress ?? null,
+        now,
+        id
+      );
+  } else {
+    sqlite
+      .prepare(
+        'INSERT INTO notification_channels (id, provider, name, enabled, config, from_name, from_address, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      )
+      .run(
+        id,
+        channel.provider,
+        channel.name,
+        channel.enabled ? 1 : 0,
+        channel.config,
+        channel.fromName ?? null,
+        channel.fromAddress ?? null,
+        now,
+        now
+      );
+  }
+
+  const result = await getNotificationChannel(channel.provider);
+  if (!result) {
+    throw new Error('Failed to save notification channel');
+  }
+  return result;
+}
+
+export async function deleteNotificationChannel(id: string): Promise<boolean> {
+  const sqlite = await getDatabase();
+  const result = sqlite.prepare('DELETE FROM notification_channels WHERE id = ?').run(id);
+  return result.changes > 0;
+}
+
+export async function findUserByUsername(username: string): Promise<StoredUser | null> {
+  const sqlite = await getDatabase();
+  const row = sqlite
+    .prepare(
+      'SELECT id, username, password_hash, role, refresh_token, created_at, updated_at FROM users WHERE username = ?'
+    )
+    .get(username) as
+    | {
+        id: string;
+        username: string;
+        password_hash: string;
+        role: string;
+        refresh_token: string | null;
+        created_at: string;
+        updated_at: string;
+      }
+    | undefined;
 
   if (!row) return null;
   return {
@@ -251,17 +543,21 @@ export async function findUserByUsername(username: string): Promise<StoredUser |
 
 export async function findUserById(id: string): Promise<StoredUser | null> {
   const sqlite = await getDatabase();
-  const row = sqlite.prepare(
-    'SELECT id, username, password_hash, role, refresh_token, created_at, updated_at FROM users WHERE id = ?'
-  ).get(id) as {
-    id: string;
-    username: string;
-    password_hash: string;
-    role: string;
-    refresh_token: string | null;
-    created_at: string;
-    updated_at: string;
-  } | undefined;
+  const row = sqlite
+    .prepare(
+      'SELECT id, username, password_hash, role, refresh_token, created_at, updated_at FROM users WHERE id = ?'
+    )
+    .get(id) as
+    | {
+        id: string;
+        username: string;
+        password_hash: string;
+        role: string;
+        refresh_token: string | null;
+        created_at: string;
+        updated_at: string;
+      }
+    | undefined;
 
   if (!row) return null;
   return {
@@ -282,10 +578,14 @@ export async function createUser(
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
 
-  sqlite.prepare(`
+  sqlite
+    .prepare(
+      `
     INSERT INTO users (id, username, password_hash, role, refresh_token, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(id, user.username, user.passwordHash, user.role, user.refreshToken ?? null, now, now);
+  `
+    )
+    .run(id, user.username, user.passwordHash, user.role, user.refreshToken ?? null, now, now);
 
   return {
     ...user,
@@ -305,14 +605,19 @@ export async function updateUser(
   const sqlite = await getDatabase();
   const passwordHash = updates.passwordHash ?? existing.passwordHash;
   const role = updates.role ?? existing.role;
-  const refreshToken = updates.refreshToken !== undefined ? updates.refreshToken : existing.refreshToken;
+  const refreshToken =
+    updates.refreshToken !== undefined ? updates.refreshToken : existing.refreshToken;
   const username = updates.username ?? existing.username;
   const updatedAt = new Date().toISOString();
 
-  sqlite.prepare(`
+  sqlite
+    .prepare(
+      `
     UPDATE users SET username = ?, password_hash = ?, role = ?, refresh_token = ?, updated_at = ?
     WHERE id = ?
-  `).run(username, passwordHash, role, refreshToken ?? null, updatedAt, id);
+  `
+    )
+    .run(username, passwordHash, role, refreshToken ?? null, updatedAt, id);
 
   return findUserById(id);
 }
@@ -325,9 +630,9 @@ export async function deleteUser(id: string): Promise<boolean> {
 
 export async function listUsers(): Promise<User[]> {
   const sqlite = await getDatabase();
-  const rows = sqlite.prepare(
-    'SELECT id, username, role, created_at, updated_at FROM users'
-  ).all() as Array<{
+  const rows = sqlite
+    .prepare('SELECT id, username, role, created_at, updated_at FROM users')
+    .all() as Array<{
     id: string;
     username: string;
     role: string;
@@ -358,27 +663,31 @@ export async function addAuditLog(log: {
   const id = crypto.randomUUID();
   const timestamp = new Date().toISOString();
 
-  sqlite.prepare(`
+  sqlite
+    .prepare(
+      `
     INSERT INTO audit_logs (id, timestamp, user_id, username, action, resource, resource_id, details, ip, user_agent)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    id,
-    timestamp,
-    log.userId,
-    log.username,
-    log.action,
-    log.resource,
-    log.resourceId ?? null,
-    log.details ? JSON.stringify(log.details) : null,
-    log.ip,
-    log.userAgent
-  );
+  `
+    )
+    .run(
+      id,
+      timestamp,
+      log.userId,
+      log.username,
+      log.action,
+      log.resource,
+      log.resourceId ?? null,
+      log.details ? JSON.stringify(log.details) : null,
+      log.ip,
+      log.userAgent
+    );
 
   const count = (sqlite.prepare('SELECT COUNT(*) as c FROM audit_logs').get() as { c: number }).c;
   if (count > 10000) {
-    const toDelete = sqlite.prepare(
-      'SELECT id FROM audit_logs ORDER BY timestamp ASC LIMIT ?'
-    ).all(count - 10000) as Array<{ id: string }>;
+    const toDelete = sqlite
+      .prepare('SELECT id FROM audit_logs ORDER BY timestamp ASC LIMIT ?')
+      .all(count - 10000) as Array<{ id: string }>;
     const del = sqlite.prepare('DELETE FROM audit_logs WHERE id = ?');
     for (const r of toDelete) del.run(r.id);
   }
@@ -386,10 +695,14 @@ export async function addAuditLog(log: {
 
 export async function getAuditLogs(limit = 100): Promise<AuditLog[]> {
   const sqlite = await getDatabase();
-  const rows = sqlite.prepare(`
+  const rows = sqlite
+    .prepare(
+      `
     SELECT id, timestamp, user_id, username, action, resource, resource_id, details, ip, user_agent
     FROM audit_logs ORDER BY timestamp DESC LIMIT ?
-  `).all(limit) as Array<{
+  `
+    )
+    .all(limit) as Array<{
     id: string;
     timestamp: string;
     user_id: string;

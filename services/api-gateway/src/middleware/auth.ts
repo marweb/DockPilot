@@ -137,7 +137,7 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
 
     // Attach user to request
     request.user = decoded;
-  } catch (error) {
+  } catch {
     reply.status(401).send({
       success: false,
       error: 'Invalid or expired token',
@@ -279,6 +279,11 @@ export const routePermissions: Record<string, string> = {
   'PUT:/api/system/settings': 'settings:update',
   'POST:/api/system/upgrade': 'settings:update',
   'GET:/api/system/upgrade-status': 'system:read',
+
+  // Notifications
+  'GET:/api/system/notifications/config': 'settings:read',
+  'PUT:/api/system/notifications/config': 'settings:update',
+  'POST:/api/system/notifications/test': 'settings:update',
 
   // Users
   'GET:/api/users': 'users:list',

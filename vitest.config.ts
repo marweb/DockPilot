@@ -5,8 +5,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['tests/**/*.{test,spec}.{ts,tsx}', '**/__tests__/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['node_modules', 'dist', '.turbo', 'tests/e2e/**/*'],
+    include: [
+      'tests/**/*.{test,spec}.{ts,tsx}',
+      '**/__tests__/**/*.{test,spec}.{ts,tsx}',
+      'services/**/tests/**/*.{test,spec}.{ts,tsx}',
+    ],
+    exclude: ['node_modules', 'dist', '.turbo', 'tests/e2e/**/*', 'services/**/tests/e2e/**/*'],
     setupFiles: ['./tests/setup.ts'],
     coverage: {
       provider: 'v8',

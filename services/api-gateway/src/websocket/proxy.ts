@@ -297,7 +297,7 @@ async function proxyWebSocket(
   connection: { socket: WebSocketLike },
   request: FastifyRequest,
   targetUrl: string,
-  fastify: FastifyInstance
+  _fastify: FastifyInstance
 ): Promise<void> {
   const client: WebSocketClient = {
     socket: connection.socket,
