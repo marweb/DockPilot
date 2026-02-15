@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { getDocker } from '../services/docker.js';
 import type { Container, ContainerInspect, ContainerStats } from '@dockpilot/types';
+import { emitContainerRestart } from '../services/eventDispatcher.js';
 
 // Schemas
 const listContainersQuery = z.object({
@@ -228,7 +229,27 @@ export async function containerRoutes(fastify: FastifyInstance) {
 
       try {
         const container = docker.getContainer(id);
+
+        // Get container info before restart for event
+        let containerName = id;
+        let restartCount = 0;
+        try {
+          const inspect = await container.inspect();
+          containerName = inspect.Name.replace(/^\//, '');
+          restartCount = inspect.RestartCount || 0;
+        } catch {
+          // Ignore error, use defaults
+        }
+
         await container.restart({ t });
+
+        // Emit container restart event (fire-and-forget)
+        try {
+          await emitContainerRestart(id, containerName, restartCount + 1);
+        } catch (error) {
+          fastify.log.warn({ error }, 'Failed to emit container restart event');
+        }
+
         return reply.send({ success: true, message: 'Container restarted' });
       } catch (error) {
         const err = error as Error;

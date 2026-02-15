@@ -22,8 +22,8 @@ CREATE TABLE IF NOT EXISTS notification_channels (
 );
 
 -- Índices
-CREATE INDEX idx_notification_channels_provider ON notification_channels(provider);
-CREATE INDEX idx_notification_channels_enabled ON notification_channels(enabled);
+CREATE INDEX IF NOT EXISTS idx_notification_channels_provider ON notification_channels(provider);
+CREATE INDEX IF NOT EXISTS idx_notification_channels_enabled ON notification_channels(enabled);
 
 -- Insertar settings por defecto
 INSERT OR IGNORE INTO system_settings (key, value, type, description) VALUES

@@ -18,59 +18,59 @@ describe('Tunnel Routes', () => {
 
   beforeEach(async () => {
     app = Fastify();
-    
+
     // Register a simple test route
     app.get('/api/tunnels', async () => ({
       success: true,
       data: [mockTunnel],
-      meta: { total: 1 }
+      meta: { total: 1 },
     }));
 
     app.post('/api/tunnels', async (request, reply) => {
       const body = request.body as any;
       if (!body.name) {
-        return reply.status(400).send({ success: false, error: { code: 'VALIDATION_ERROR' }});
+        return reply.status(400).send({ success: false, error: { code: 'VALIDATION_ERROR' } });
       }
       return reply.status(201).send({
         success: true,
         data: mockTunnel,
-        message: 'Tunnel created successfully'
+        message: 'Tunnel created successfully',
       });
     });
 
     app.get('/api/tunnels/:id', async (request, reply) => {
       const { id } = request.params as any;
       if (id === 'not-found') {
-        return reply.status(404).send({ success: false, error: { code: 'NOT_FOUND' }});
+        return reply.status(404).send({ success: false, error: { code: 'NOT_FOUND' } });
       }
       return { success: true, data: mockTunnel };
     });
 
     app.delete('/api/tunnels/:id', async () => ({
       success: true,
-      message: 'Tunnel deleted successfully'
+      message: 'Tunnel deleted successfully',
     }));
 
     app.post('/api/tunnels/:id/start', async () => ({
       success: true,
       message: 'Tunnel started successfully',
-      data: { status: 'active' }
+      data: { status: 'active' },
     }));
 
     app.post('/api/tunnels/:id/stop', async () => ({
       success: true,
       message: 'Tunnel stopped successfully',
-      data: { status: 'inactive' }
+      data: { status: 'inactive' },
     }));
 
     app.get('/api/tunnels/:id/logs', async () => ({
       success: true,
-      data: { logs: ['log1', 'log2'], lines: 2 }
+      data: { logs: ['log1', 'log2'], lines: 2 },
     }));
 
     app.get('/api/tunnels/:id/status', async () => ({
       success: true,
-      data: { status: 'active', pid: 12345 }
+      data: { status: 'active', pid: 12345 },
     }));
   });
 

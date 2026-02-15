@@ -345,6 +345,7 @@
     "tabs": {
       "general": "Allgemein",
       "notifications": "Benachrichtigungen",
+      "events": "Ereignisse",
       "updates": "Version & Updates",
       "security": "Sicherheit"
     },
@@ -425,7 +426,55 @@
       "channelSaved": "Konfiguration gespeichert",
       "channelSaveError": "Fehler beim Speichern der Konfiguration",
       "expand": "Erweitern",
-      "collapse": "Einklappen"
+      "collapse": "Einklappen",
+      "eventsMatrix": {
+        "title": "Benachrichtigungsereignisse",
+        "description": "Konfigurieren Sie, welche Ereignisse Benachrichtigungen in jedem Kanal auslösen",
+        "enabled": "Benachrichtigungen aktiviert",
+        "disabled": "Benachrichtigungen deaktiviert"
+      },
+      "categories": {
+        "auth": "Authentifizierung",
+        "system": "System",
+        "container": "Container",
+        "repo": "Repositories",
+        "security": "Sicherheit"
+      },
+      "events": {
+        "auth.login.success": {
+          "title": "Anmeldung erfolgreich",
+          "description": "Benutzer hat sich erfolgreich angemeldet"
+        },
+        "auth.login.failed": {
+          "title": "Anmeldung fehlgeschlagen",
+          "description": "Fehlgeschlagener Anmeldeversuch"
+        },
+        "system.upgrade.completed": {
+          "title": "Upgrade abgeschlossen",
+          "description": "System-Upgrade erfolgreich abgeschlossen"
+        },
+        "system.upgrade.failed": {
+          "title": "Upgrade fehlgeschlagen",
+          "description": "System-Upgrade fehlgeschlagen"
+        },
+        "container.crashed": {
+          "title": "Container abgestürzt",
+          "description": "Container ist unerwartet abgestürzt"
+        },
+        "repo.deploy.success": {
+          "title": "Bereitstellung erfolgreich",
+          "description": "Bereitstellung erfolgreich abgeschlossen"
+        },
+        "repo.deploy.failed": {
+          "title": "Bereitstellung fehlgeschlagen",
+          "description": "Bereitstellung fehlgeschlagen"
+        }
+      },
+      "rulesUpdated": "Benachrichtigungsregeln aktualisiert",
+      "errors": {
+        "loadFailed": "Benachrichtigungseinstellungen konnten nicht geladen werden",
+        "saveFailed": "Benachrichtigungsregel konnte nicht gespeichert werden"
+      }
     },
     "errors": {
       "adminRequired": "Administratorzugriff erforderlich",

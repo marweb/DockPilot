@@ -16,9 +16,11 @@ export const useThemeStore = create<ThemeState>()(
 
       setTheme: (theme: Theme) => {
         set({ theme });
-        
+
         if (theme === 'system') {
-          const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light';
           document.documentElement.classList.toggle('dark', systemTheme === 'dark');
         } else {
           document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -27,11 +29,13 @@ export const useThemeStore = create<ThemeState>()(
 
       initTheme: () => {
         const { theme } = get();
-        
+
         if (theme === 'system') {
-          const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light';
           document.documentElement.classList.toggle('dark', systemTheme === 'dark');
-          
+
           // Listen for system theme changes
           window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
             const currentTheme = get().theme;

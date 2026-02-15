@@ -345,6 +345,7 @@
     "tabs": {
       "general": "一般",
       "notifications": "通知",
+      "events": "イベント",
       "updates": "バージョンとアップデート",
       "security": "セキュリティ"
     },
@@ -425,7 +426,55 @@
       "channelSaved": "設定が保存されました",
       "channelSaveError": "設定の保存に失敗しました",
       "expand": "展開",
-      "collapse": "折りたたむ"
+      "collapse": "折りたたむ",
+      "eventsMatrix": {
+        "title": "通知イベント",
+        "description": "各チャネルで通知をトリガーするイベントを設定する",
+        "enabled": "通知が有効",
+        "disabled": "通知が無効"
+      },
+      "categories": {
+        "auth": "認証",
+        "system": "システム",
+        "container": "コンテナ",
+        "repo": "リポジトリ",
+        "security": "セキュリティ"
+      },
+      "events": {
+        "auth.login.success": {
+          "title": "ログイン成功",
+          "description": "ユーザーが正常にログインしました"
+        },
+        "auth.login.failed": {
+          "title": "ログイン失敗",
+          "description": "ログイン試行が失敗しました"
+        },
+        "system.upgrade.completed": {
+          "title": "アップグレード完了",
+          "description": "システムアップグレードが正常に完了しました"
+        },
+        "system.upgrade.failed": {
+          "title": "アップグレード失敗",
+          "description": "システムアップグレードに失敗しました"
+        },
+        "container.crashed": {
+          "title": "コンテナクラッシュ",
+          "description": "コンテナが予期せず停止しました"
+        },
+        "repo.deploy.success": {
+          "title": "デプロイ成功",
+          "description": "デプロイが正常に完了しました"
+        },
+        "repo.deploy.failed": {
+          "title": "デプロイ失敗",
+          "description": "デプロイに失敗しました"
+        }
+      },
+      "rulesUpdated": "通知ルールが更新されました",
+      "errors": {
+        "loadFailed": "通知設定の読み込みに失敗しました",
+        "saveFailed": "通知ルールの保存に失敗しました"
+      }
     },
     "errors": {
       "adminRequired": "管理者アクセスが必要です",

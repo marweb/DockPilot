@@ -4,7 +4,6 @@ import type { Config } from '../config/index.js';
 let logger: pino.Logger | null = null;
 
 export function initLogger(cfg: Config): void {
-
   const transport =
     process.env.NODE_ENV !== 'production'
       ? {

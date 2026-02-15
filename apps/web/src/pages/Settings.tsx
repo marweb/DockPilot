@@ -33,6 +33,7 @@ import { useToast } from '../contexts/ToastContext';
 import Modal from '../components/common/Modal';
 import Button from '../components/common/Button';
 import NotificationsSection from './Settings/NotificationsSection';
+import EventsMatrix from './Settings/EventsMatrix';
 
 interface VersionInfo {
   currentVersion: string;
@@ -50,7 +51,7 @@ interface UpgradeStatus {
   startedAt?: string;
 }
 
-type TabId = 'general' | 'notifications' | 'version' | 'security';
+type TabId = 'general' | 'notifications' | 'events' | 'version' | 'security';
 
 interface Tab {
   id: TabId;
@@ -140,6 +141,11 @@ export default function Settings() {
     {
       id: 'notifications',
       label: t('settings.tabs.notifications'),
+      icon: <Bell className="h-4 w-4" />,
+    },
+    {
+      id: 'events',
+      label: t('settings.tabs.events'),
       icon: <Bell className="h-4 w-4" />,
     },
     {
@@ -719,6 +725,9 @@ export default function Settings() {
   // Render Notifications Tab
   const renderNotificationsTab = () => <NotificationsSection />;
 
+  // Render Events Tab
+  const renderEventsTab = () => <EventsMatrix />;
+
   // Render Version & Updates Tab
   const renderVersionTab = () => (
     <div className="space-y-6">
@@ -1038,6 +1047,7 @@ export default function Settings() {
       <div className="mt-6">
         {activeTab === 'general' && renderGeneralTab()}
         {activeTab === 'notifications' && renderNotificationsTab()}
+        {activeTab === 'events' && renderEventsTab()}
         {activeTab === 'version' && renderVersionTab()}
         {activeTab === 'security' && renderSecurityTab()}
       </div>

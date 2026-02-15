@@ -635,6 +635,7 @@
     "tabs": {
       "general": "General",
       "notifications": "Notifications",
+      "events": "Events",
       "updates": "Version & Updates",
       "security": "Security"
     },
@@ -715,7 +716,55 @@
       "channelSaved": "Configuration saved",
       "channelSaveError": "Failed to save configuration",
       "expand": "Expand",
-      "collapse": "Collapse"
+      "collapse": "Collapse",
+      "eventsMatrix": {
+        "title": "Notification Events",
+        "description": "Configure which events trigger notifications on each channel",
+        "enabled": "Notifications enabled",
+        "disabled": "Notifications disabled"
+      },
+      "categories": {
+        "auth": "Authentication",
+        "system": "System",
+        "container": "Containers",
+        "repo": "Repositories",
+        "security": "Security"
+      },
+      "events": {
+        "auth.login.success": {
+          "title": "Login Success",
+          "description": "User logged in successfully"
+        },
+        "auth.login.failed": {
+          "title": "Login Failed",
+          "description": "Failed login attempt"
+        },
+        "system.upgrade.completed": {
+          "title": "Upgrade Completed",
+          "description": "System upgrade completed successfully"
+        },
+        "system.upgrade.failed": {
+          "title": "Upgrade Failed",
+          "description": "System upgrade failed"
+        },
+        "container.crashed": {
+          "title": "Container Crashed",
+          "description": "Container crashed unexpectedly"
+        },
+        "repo.deploy.success": {
+          "title": "Deploy Success",
+          "description": "Deployment completed successfully"
+        },
+        "repo.deploy.failed": {
+          "title": "Deploy Failed",
+          "description": "Deployment failed"
+        }
+      },
+      "rulesUpdated": "Notification rules updated",
+      "errors": {
+        "loadFailed": "Failed to load notification settings",
+        "saveFailed": "Failed to save notification rule"
+      }
     },
     "errors": {
       "adminRequired": "Admin access required",

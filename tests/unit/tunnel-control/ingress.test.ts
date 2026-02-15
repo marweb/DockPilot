@@ -12,27 +12,27 @@ describe('Ingress Routes', () => {
 
   beforeEach(async () => {
     app = Fastify();
-    
+
     app.get('/api/tunnels/:id/ingress', async () => ({
       success: true,
-      data: { tunnelId: mockTunnelId, ingress: mockIngressRules, count: 2 }
+      data: { tunnelId: mockTunnelId, ingress: mockIngressRules, count: 2 },
     }));
 
     app.post('/api/tunnels/:id/ingress', async (request, reply) => {
       const body = request.body as any;
       if (!body.ingress || !Array.isArray(body.ingress)) {
-        return reply.status(400).send({ success: false, error: { code: 'VALIDATION_ERROR' }});
+        return reply.status(400).send({ success: false, error: { code: 'VALIDATION_ERROR' } });
       }
       return {
         success: true,
         message: 'Ingress rules updated successfully',
-        data: { tunnelId: mockTunnelId, ingress: body.ingress, count: body.ingress.length }
+        data: { tunnelId: mockTunnelId, ingress: body.ingress, count: body.ingress.length },
       };
     });
 
     app.delete('/api/tunnels/:id/ingress/:hostname', async () => ({
       success: true,
-      message: 'Ingress rule deleted successfully'
+      message: 'Ingress rule deleted successfully',
     }));
   });
 

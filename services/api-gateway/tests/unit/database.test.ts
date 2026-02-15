@@ -10,6 +10,17 @@ import {
   getNotificationChannel,
   saveNotificationChannel,
   deleteNotificationChannel,
+  getNotificationRules,
+  getNotificationRulesByEvent,
+  saveNotificationRule,
+  updateNotificationRule,
+  deleteNotificationRule,
+  getNotificationRulesMatrix,
+  addNotificationHistory,
+  updateNotificationHistory,
+  getRecentNotificationHistory,
+  getNotificationHistoryByEvent,
+  wasRecentlyNotified,
   type NotificationProvider,
 } from '../../src/services/database.js';
 
@@ -301,6 +312,510 @@ describe('database - settings and channels', () => {
 
         expect(result).toBe(true);
         expect(retrieved).toBeNull();
+      });
+    });
+  });
+
+  describe('Notification Rules (DP-202)', () => {
+    beforeEach(async () => {
+      const sqlite = await import('../../src/services/database.js').then((m) => m.getDatabase());
+      sqlite.prepare('DELETE FROM notification_rules').run();
+      sqlite.prepare('DELETE FROM notification_channels').run();
+    });
+
+    describe('saveNotificationRule', () => {
+      it('should create a new rule', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        const rule = saveNotificationRule({
+          eventType: 'auth.login.success',
+          channelId: channel.id,
+          enabled: true,
+          minSeverity: 'info',
+          cooldownMinutes: 0,
+        });
+
+        expect(rule.id).toBeDefined();
+        expect(rule.eventType).toBe('auth.login.success');
+        expect(rule.channelId).toBe(channel.id);
+        expect(rule.enabled).toBe(true);
+        expect(rule.minSeverity).toBe('info');
+        expect(rule.cooldownMinutes).toBe(0);
+        expect(rule.createdAt).toBeDefined();
+        expect(rule.updatedAt).toBeDefined();
+      });
+
+      it('should throw error for duplicate event type and channel', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        saveNotificationRule({
+          eventType: 'auth.login.failed',
+          channelId: channel.id,
+          enabled: true,
+          minSeverity: 'warning',
+          cooldownMinutes: 5,
+        });
+
+        expect(() =>
+          saveNotificationRule({
+            eventType: 'auth.login.failed',
+            channelId: channel.id,
+            enabled: false,
+            minSeverity: 'info',
+            cooldownMinutes: 0,
+          })
+        ).toThrow();
+      });
+    });
+
+    describe('getNotificationRules', () => {
+      it('should return empty array when no rules', () => {
+        const rules = getNotificationRules();
+        expect(rules).toEqual([]);
+      });
+
+      it('should return all rules', async () => {
+        const channel1 = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'SMTP 1',
+          enabled: true,
+          config: '{}',
+        });
+        const channel2 = await saveNotificationChannel({
+          provider: 'slack',
+          name: 'Slack',
+          enabled: true,
+          config: '{}',
+        });
+
+        saveNotificationRule({
+          eventType: 'auth.login.success',
+          channelId: channel1.id,
+          enabled: true,
+          minSeverity: 'info',
+          cooldownMinutes: 0,
+        });
+        saveNotificationRule({
+          eventType: 'system.upgrade.failed',
+          channelId: channel2.id,
+          enabled: true,
+          minSeverity: 'critical',
+          cooldownMinutes: 0,
+        });
+
+        const rules = getNotificationRules();
+        expect(rules).toHaveLength(2);
+      });
+    });
+
+    describe('getNotificationRulesByEvent', () => {
+      it('should return rules for specific event type', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        saveNotificationRule({
+          eventType: 'container.crashed',
+          channelId: channel.id,
+          enabled: true,
+          minSeverity: 'critical',
+          cooldownMinutes: 0,
+        });
+
+        const rules = getNotificationRulesByEvent('container.crashed');
+        expect(rules).toHaveLength(1);
+        expect(rules[0].eventType).toBe('container.crashed');
+      });
+
+      it('should return empty array for non-existent event', () => {
+        const rules = getNotificationRulesByEvent('nonexistent.event');
+        expect(rules).toEqual([]);
+      });
+    });
+
+    describe('updateNotificationRule', () => {
+      it('should update rule properties', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        const rule = saveNotificationRule({
+          eventType: 'auth.login.success',
+          channelId: channel.id,
+          enabled: true,
+          minSeverity: 'info',
+          cooldownMinutes: 0,
+        });
+
+        const updated = updateNotificationRule(rule.id, {
+          enabled: false,
+          minSeverity: 'warning',
+          cooldownMinutes: 10,
+        });
+
+        expect(updated.enabled).toBe(false);
+        expect(updated.minSeverity).toBe('warning');
+        expect(updated.cooldownMinutes).toBe(10);
+      });
+
+      it('should throw error for non-existent rule', () => {
+        expect(() => updateNotificationRule('non-existent-id', { enabled: false })).toThrow(
+          'Notification rule not found'
+        );
+      });
+    });
+
+    describe('deleteNotificationRule', () => {
+      it('should delete existing rule', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        const rule = saveNotificationRule({
+          eventType: 'auth.login.success',
+          channelId: channel.id,
+          enabled: true,
+          minSeverity: 'info',
+          cooldownMinutes: 0,
+        });
+
+        deleteNotificationRule(rule.id);
+
+        const rules = getNotificationRules();
+        expect(rules).toHaveLength(0);
+      });
+
+      it('should throw error for non-existent rule', () => {
+        expect(() => deleteNotificationRule('non-existent-id')).toThrow(
+          'Notification rule not found'
+        );
+      });
+    });
+
+    describe('getNotificationRulesMatrix', () => {
+      it('should group rules by event type', async () => {
+        const channel1 = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'SMTP',
+          enabled: true,
+          config: '{}',
+        });
+        const channel2 = await saveNotificationChannel({
+          provider: 'slack',
+          name: 'Slack',
+          enabled: true,
+          config: '{}',
+        });
+
+        saveNotificationRule({
+          eventType: 'container.crashed',
+          channelId: channel1.id,
+          enabled: true,
+          minSeverity: 'critical',
+          cooldownMinutes: 0,
+        });
+        saveNotificationRule({
+          eventType: 'container.crashed',
+          channelId: channel2.id,
+          enabled: true,
+          minSeverity: 'critical',
+          cooldownMinutes: 0,
+        });
+        saveNotificationRule({
+          eventType: 'auth.login.success',
+          channelId: channel1.id,
+          enabled: true,
+          minSeverity: 'info',
+          cooldownMinutes: 0,
+        });
+
+        const matrix = getNotificationRulesMatrix();
+
+        expect(Object.keys(matrix)).toHaveLength(2);
+        expect(matrix['container.crashed']).toHaveLength(2);
+        expect(matrix['auth.login.success']).toHaveLength(1);
+      });
+    });
+  });
+
+  describe('Notification History (DP-202)', () => {
+    beforeEach(async () => {
+      const sqlite = await import('../../src/services/database.js').then((m) => m.getDatabase());
+      sqlite.prepare('DELETE FROM notification_history').run();
+      sqlite.prepare('DELETE FROM notification_channels').run();
+    });
+
+    describe('addNotificationHistory', () => {
+      it('should add history entry', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        const entry = addNotificationHistory({
+          eventType: 'auth.login.success',
+          channelId: channel.id,
+          severity: 'info',
+          message: 'User admin logged in',
+          status: 'sent',
+          retryCount: 0,
+        });
+
+        expect(entry.id).toBeDefined();
+        expect(entry.eventType).toBe('auth.login.success');
+        expect(entry.status).toBe('sent');
+        expect(entry.createdAt).toBeDefined();
+      });
+
+      it('should add entry with optional fields', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        const entry = addNotificationHistory({
+          eventType: 'container.crashed',
+          channelId: channel.id,
+          severity: 'critical',
+          message: 'Container nginx crashed',
+          recipients: JSON.stringify(['admin@example.com']),
+          status: 'pending',
+          error: undefined,
+          retryCount: 0,
+          sentAt: undefined,
+        });
+
+        expect(entry.recipients).toBe(JSON.stringify(['admin@example.com']));
+      });
+    });
+
+    describe('getRecentNotificationHistory', () => {
+      it('should return empty array when no history', () => {
+        const history = getRecentNotificationHistory();
+        expect(history).toEqual([]);
+      });
+
+      it('should return recent history entries', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        addNotificationHistory({
+          eventType: 'auth.login.success',
+          channelId: channel.id,
+          severity: 'info',
+          message: 'Test message 1',
+          status: 'sent',
+          retryCount: 0,
+        });
+        addNotificationHistory({
+          eventType: 'auth.login.failed',
+          channelId: channel.id,
+          severity: 'warning',
+          message: 'Test message 2',
+          status: 'failed',
+          retryCount: 1,
+        });
+
+        const history = getRecentNotificationHistory(10);
+        expect(history).toHaveLength(2);
+      });
+
+      it('should respect limit parameter', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        for (let i = 0; i < 5; i++) {
+          addNotificationHistory({
+            eventType: 'auth.login.success',
+            channelId: channel.id,
+            severity: 'info',
+            message: `Test message ${i}`,
+            status: 'sent',
+            retryCount: 0,
+          });
+        }
+
+        const history = getRecentNotificationHistory(3);
+        expect(history).toHaveLength(3);
+      });
+    });
+
+    describe('getNotificationHistoryByEvent', () => {
+      it('should return history for specific event', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        addNotificationHistory({
+          eventType: 'auth.login.success',
+          channelId: channel.id,
+          severity: 'info',
+          message: 'Login success',
+          status: 'sent',
+          retryCount: 0,
+        });
+        addNotificationHistory({
+          eventType: 'container.crashed',
+          channelId: channel.id,
+          severity: 'critical',
+          message: 'Container crash',
+          status: 'sent',
+          retryCount: 0,
+        });
+
+        const history = getNotificationHistoryByEvent('auth.login.success');
+        expect(history).toHaveLength(1);
+        expect(history[0].eventType).toBe('auth.login.success');
+      });
+    });
+
+    describe('updateNotificationHistory', () => {
+      it('should update history entry status', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        const entry = addNotificationHistory({
+          eventType: 'auth.login.success',
+          channelId: channel.id,
+          severity: 'info',
+          message: 'Test message',
+          status: 'pending',
+          retryCount: 0,
+        });
+
+        updateNotificationHistory(entry.id, {
+          status: 'sent',
+          sentAt: new Date().toISOString(),
+        });
+
+        const history = getRecentNotificationHistory();
+        expect(history[0].status).toBe('sent');
+        expect(history[0].sentAt).toBeDefined();
+      });
+
+      it('should update retry count and error', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        const entry = addNotificationHistory({
+          eventType: 'auth.login.success',
+          channelId: channel.id,
+          severity: 'info',
+          message: 'Test message',
+          status: 'pending',
+          retryCount: 0,
+        });
+
+        updateNotificationHistory(entry.id, {
+          status: 'failed',
+          retryCount: 1,
+          error: 'Connection timeout',
+        });
+
+        const history = getRecentNotificationHistory();
+        expect(history[0].status).toBe('failed');
+        expect(history[0].retryCount).toBe(1);
+      });
+    });
+
+    describe('wasRecentlyNotified', () => {
+      it('should return false when no cooldown', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        const result = wasRecentlyNotified('auth.login.success', channel.id, 0);
+        expect(result).toBe(false);
+      });
+
+      it('should return true when recently notified', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        addNotificationHistory({
+          eventType: 'auth.login.success',
+          channelId: channel.id,
+          severity: 'info',
+          message: 'Test message',
+          status: 'sent',
+          retryCount: 0,
+          sentAt: new Date().toISOString(),
+        });
+
+        const result = wasRecentlyNotified('auth.login.success', channel.id, 60);
+        expect(result).toBe(true);
+      });
+
+      it('should return false when outside cooldown window', async () => {
+        const channel = await saveNotificationChannel({
+          provider: 'smtp',
+          name: 'Test SMTP',
+          enabled: true,
+          config: '{}',
+        });
+
+        const oldDate = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(); // 2 hours ago
+        addNotificationHistory({
+          eventType: 'auth.login.success',
+          channelId: channel.id,
+          severity: 'info',
+          message: 'Test message',
+          status: 'sent',
+          retryCount: 0,
+          sentAt: oldDate,
+        });
+
+        const result = wasRecentlyNotified('auth.login.success', channel.id, 60);
+        expect(result).toBe(false);
       });
     });
   });

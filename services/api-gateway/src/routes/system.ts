@@ -27,6 +27,11 @@ import {
 } from '../utils/validation.js';
 import { logAuditEntry } from '../middleware/audit.js';
 import { requireAdmin } from '../middleware/auth.js';
+import {
+  emitSystemUpgradeStarted,
+  emitSystemUpgradeCompleted,
+  emitSystemUpgradeFailed,
+} from '../services/eventDispatcher.js';
 
 // Rate limiting for notification tests
 const TEST_RATE_LIMIT = 5; // max 5 per minute

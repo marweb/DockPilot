@@ -736,40 +736,28 @@ export interface SendTestNotificationResponse {
 }
 
 // ============================================================================
-// NOTIFICATION EVENT TYPES (DP-004)
+// NOTIFICATION EVENT TYPES (DP-004) - REPLACED BY DP-201 CATALOG
 // ============================================================================
 
 /**
- * Available notification event types
- * Used to subscribe to specific system events
+ * @deprecated Use NOTIFICATION_EVENTS catalog from DP-201 instead
+ * Available notification event types are now derived from the catalog
  */
-export type NotificationEventType =
-  | 'auth.login.failed'
-  | 'auth.login.success'
-  | 'system.upgrade.completed'
-  | 'system.upgrade.failed'
-  | 'repo.deploy.success'
-  | 'repo.deploy.failed'
-  | 'container.crash';
-
-/**
- * Notification severity levels
- */
-export type NotificationSeverity = 'info' | 'warning' | 'critical';
 
 /**
  * Configuration for a notification event subscription
  * Defines which events trigger notifications and through which channels
+ * @deprecated Use NotificationRule interface from DP-202 instead
  */
 export interface NotificationEventConfig {
   /** Event type identifier */
-  eventType: NotificationEventType;
+  eventType: string;
   /** Whether notifications are enabled for this event */
   enabled: boolean;
   /** List of providers to use for this event */
   channels: NotificationProvider[];
   /** Minimum severity level to trigger notification */
-  minSeverity: NotificationSeverity;
+  minSeverity: 'info' | 'warning' | 'critical';
 }
 
 // ============================================================================
@@ -896,16 +884,41 @@ export type SendTestNotificationInputValidated = z.infer<typeof sendTestNotifica
 
 /**
  * Zod schema for validating notification event configuration
+ * Uses all event types from the NOTIFICATION_EVENTS catalog (DP-201)
  */
 export const notificationEventConfigSchema = z.object({
   eventType: z.enum([
+    // Auth events
     'auth.login.failed',
     'auth.login.success',
+    'auth.logout',
+    'auth.password.changed',
+    'auth.mfa.enabled',
+    // System events
+    'system.startup',
+    'system.upgrade.started',
     'system.upgrade.completed',
     'system.upgrade.failed',
+    'system.backup.completed',
+    'system.backup.failed',
+    // Container events
+    'container.created',
+    'container.started',
+    'container.stopped',
+    'container.crashed',
+    'container.restarted',
+    'container.oom',
+    'container.health.failed',
+    // Repo events
+    'repo.deploy.started',
     'repo.deploy.success',
     'repo.deploy.failed',
-    'container.crash',
+    'repo.deploy.rolled_back',
+    'repo.webhook.received',
+    // Security events
+    'security.suspicious_activity',
+    'security.brute_force',
+    'security.unauthorized_access',
   ]),
   enabled: z.boolean(),
   channels: z.array(z.enum(['smtp', 'resend', 'slack', 'telegram', 'discord'])).min(1),
@@ -916,3 +929,217 @@ export const notificationEventConfigSchema = z.object({
  * Type derived from notificationEventConfigSchema
  */
 export type NotificationEventConfigValidated = z.infer<typeof notificationEventConfigSchema>;
+
+// ============================================================================
+// NOTIFICATION EVENTS CATALOG (DP-201)
+// ============================================================================
+
+/**
+ * Catálogo completo de eventos soportados para notificaciones
+ */
+export const NOTIFICATION_EVENTS = {
+  // Autenticación
+  'auth.login.success': {
+    category: 'auth',
+    severity: 'info',
+    description: 'User logged in successfully',
+  },
+  'auth.login.failed': {
+    category: 'auth',
+    severity: 'warning',
+    description: 'Failed login attempt',
+  },
+  'auth.logout': {
+    category: 'auth',
+    severity: 'info',
+    description: 'User logged out',
+  },
+  'auth.password.changed': {
+    category: 'auth',
+    severity: 'info',
+    description: 'Password changed',
+  },
+  'auth.mfa.enabled': {
+    category: 'auth',
+    severity: 'info',
+    description: 'Two-factor authentication enabled',
+  },
+
+  // Sistema
+  'system.startup': {
+    category: 'system',
+    severity: 'info',
+    description: 'DockPilot started',
+  },
+  'system.upgrade.started': {
+    category: 'system',
+    severity: 'warning',
+    description: 'System upgrade started',
+  },
+  'system.upgrade.completed': {
+    category: 'system',
+    severity: 'info',
+    description: 'System upgrade completed',
+  },
+  'system.upgrade.failed': {
+    category: 'system',
+    severity: 'critical',
+    description: 'System upgrade failed',
+  },
+  'system.backup.completed': {
+    category: 'system',
+    severity: 'info',
+    description: 'Backup completed',
+  },
+  'system.backup.failed': {
+    category: 'system',
+    severity: 'critical',
+    description: 'Backup failed',
+  },
+
+  // Contenedores
+  'container.created': {
+    category: 'container',
+    severity: 'info',
+    description: 'Container created',
+  },
+  'container.started': {
+    category: 'container',
+    severity: 'info',
+    description: 'Container started',
+  },
+  'container.stopped': {
+    category: 'container',
+    severity: 'info',
+    description: 'Container stopped',
+  },
+  'container.crashed': {
+    category: 'container',
+    severity: 'critical',
+    description: 'Container crashed unexpectedly',
+  },
+  'container.restarted': {
+    category: 'container',
+    severity: 'warning',
+    description: 'Container restarted',
+  },
+  'container.oom': {
+    category: 'container',
+    severity: 'critical',
+    description: 'Container killed (Out of Memory)',
+  },
+  'container.health.failed': {
+    category: 'container',
+    severity: 'warning',
+    description: 'Container health check failed',
+  },
+
+  // Repositorios/Deploys
+  'repo.deploy.started': {
+    category: 'repo',
+    severity: 'info',
+    description: 'Deployment started',
+  },
+  'repo.deploy.success': {
+    category: 'repo',
+    severity: 'info',
+    description: 'Deployment completed successfully',
+  },
+  'repo.deploy.failed': {
+    category: 'repo',
+    severity: 'critical',
+    description: 'Deployment failed',
+  },
+  'repo.deploy.rolled_back': {
+    category: 'repo',
+    severity: 'warning',
+    description: 'Deployment rolled back',
+  },
+  'repo.webhook.received': {
+    category: 'repo',
+    severity: 'info',
+    description: 'Webhook received',
+  },
+
+  // Seguridad
+  'security.suspicious_activity': {
+    category: 'security',
+    severity: 'critical',
+    description: 'Suspicious activity detected',
+  },
+  'security.brute_force': {
+    category: 'security',
+    severity: 'critical',
+    description: 'Brute force attack detected',
+  },
+  'security.unauthorized_access': {
+    category: 'security',
+    severity: 'critical',
+    description: 'Unauthorized access attempt',
+  },
+} as const;
+
+/**
+ * Tipo para los nombres de eventos de notificación
+ */
+export type NotificationEventType = keyof typeof NOTIFICATION_EVENTS;
+
+/**
+ * Categorías de eventos de notificación
+ */
+export type NotificationCategory = 'auth' | 'system' | 'container' | 'repo' | 'security';
+
+/**
+ * Niveles de severidad para notificaciones
+ */
+export type NotificationSeverity = 'info' | 'warning' | 'critical';
+
+// ============================================================================
+// NOTIFICATION RULES TYPES (DP-202)
+// ============================================================================
+
+/**
+ * Regla de notificación (evento → canal)
+ */
+export interface NotificationRule {
+  id: string;
+  eventType: string;
+  channelId: string;
+  enabled: boolean;
+  minSeverity: 'info' | 'warning' | 'critical';
+  cooldownMinutes: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Entrada para crear/actualizar una regla de notificación
+ */
+export type NotificationRuleInput = Omit<NotificationRule, 'id' | 'createdAt' | 'updatedAt'>;
+
+/**
+ * Historial de notificaciones enviadas
+ */
+export interface NotificationHistory {
+  id: string;
+  eventType: string;
+  channelId: string;
+  severity: string;
+  message: string;
+  recipients?: string;
+  status: 'pending' | 'sent' | 'failed' | 'retrying';
+  error?: string;
+  retryCount: number;
+  sentAt?: string;
+  createdAt: string;
+}
+
+/**
+ * Entrada para agregar al historial de notificaciones
+ */
+export type NotificationHistoryInput = Omit<NotificationHistory, 'id' | 'createdAt'>;
+
+/**
+ * Matriz de reglas de notificación por evento
+ */
+export type NotificationRulesMatrix = Record<string, NotificationRule[]>;

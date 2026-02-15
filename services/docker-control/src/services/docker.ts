@@ -10,7 +10,7 @@ export function initDocker(config: Config): Docker {
 
   // Parse Docker host
   const host = config.dockerHost;
-  
+
   if (host.startsWith('unix://')) {
     docker = new Docker({ socketPath: host.replace('unix://', '') });
   } else if (host.startsWith('tcp://')) {

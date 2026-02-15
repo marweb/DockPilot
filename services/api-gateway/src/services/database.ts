@@ -2,7 +2,13 @@ import Database from 'better-sqlite3';
 import { readFile } from 'fs/promises';
 import { existsSync, mkdirSync, readdirSync } from 'fs';
 import path from 'path';
-import type { User, UserRole } from '@dockpilot/types';
+import type {
+  User,
+  UserRole,
+  NotificationRule,
+  NotificationHistory,
+  NotificationRulesMatrix,
+} from '@dockpilot/types';
 
 const DB_FILE = 'dockpilot.db';
 const DB_JSON_FILE = 'db.json';
@@ -46,6 +52,31 @@ export interface NotificationChannel {
   fromAddress?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface NotificationRuleRecord {
+  id: string;
+  event_type: string;
+  channel_id: string;
+  enabled: number;
+  min_severity: string;
+  cooldown_minutes: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationHistoryRecord {
+  id: string;
+  event_type: string;
+  channel_id: string;
+  severity: string;
+  message: string;
+  recipients?: string;
+  status: 'pending' | 'sent' | 'failed' | 'retrying';
+  error?: string;
+  retry_count: number;
+  sent_at?: string;
+  created_at: string;
 }
 
 let db: Database.Database | null = null;
@@ -103,6 +134,25 @@ function createSchema(sqlite: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp);
     CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+
+    -- Notification channels table (for storing provider configurations)
+    CREATE TABLE IF NOT EXISTS notification_channels (
+      id TEXT PRIMARY KEY,
+      provider TEXT NOT NULL,
+      name TEXT NOT NULL,
+      enabled INTEGER NOT NULL DEFAULT 1,
+      config TEXT NOT NULL,
+      from_name TEXT,
+      from_address TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_notification_channels_provider ON notification_channels(provider);
+    CREATE INDEX IF NOT EXISTS idx_notification_channels_enabled ON notification_channels(enabled);
+
+    -- Notification rules table (managed by migration 003)
+    -- Notification history table (managed by migration 003)
   `);
 }
 
@@ -727,4 +777,378 @@ export async function getAuditLogs(limit = 100): Promise<AuditLog[]> {
     ip: r.ip,
     userAgent: r.user_agent,
   }));
+}
+
+// ============================================================================
+// NOTIFICATION RULES FUNCTIONS (DP-202/DP-203)
+// ============================================================================
+
+export function getNotificationRules(): NotificationRule[] {
+  if (!db) return [];
+
+  const rows = db
+    .prepare(
+      `
+    SELECT id, event_type as eventType, channel_id as channelId, enabled, min_severity as minSeverity, cooldown_minutes as cooldownMinutes, created_at, updated_at
+    FROM notification_rules ORDER BY created_at DESC
+  `
+    )
+    .all() as Array<{
+    id: string;
+    eventType: string;
+    channelId: string;
+    enabled: number;
+    minSeverity: string;
+    cooldownMinutes: number;
+    created_at: string;
+    updated_at: string;
+  }>;
+
+  return rows.map((r) => ({
+    id: r.id,
+    eventType: r.eventType,
+    channelId: r.channelId,
+    enabled: Boolean(r.enabled),
+    minSeverity: r.minSeverity as 'info' | 'warning' | 'critical',
+    cooldownMinutes: r.cooldownMinutes,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }));
+}
+
+export function getNotificationRulesByEvent(eventType: string): NotificationRule[] {
+  if (!db) return [];
+
+  const rows = db
+    .prepare(
+      `
+    SELECT id, event_type as eventType, channel_id as channelId, enabled, min_severity as minSeverity, cooldown_minutes as cooldownMinutes, created_at, updated_at
+    FROM notification_rules WHERE event_type = ? ORDER BY created_at DESC
+  `
+    )
+    .all(eventType) as Array<{
+    id: string;
+    eventType: string;
+    channelId: string;
+    enabled: number;
+    minSeverity: string;
+    cooldownMinutes: number;
+    created_at: string;
+    updated_at: string;
+  }>;
+
+  return rows.map((r) => ({
+    id: r.id,
+    eventType: r.eventType,
+    channelId: r.channelId,
+    enabled: Boolean(r.enabled),
+    minSeverity: r.minSeverity as 'info' | 'warning' | 'critical',
+    cooldownMinutes: r.cooldownMinutes,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }));
+}
+
+export function getNotificationRulesMatrix(): NotificationRulesMatrix {
+  const rules = getNotificationRules();
+  const matrix: NotificationRulesMatrix = {};
+
+  for (const rule of rules) {
+    if (!matrix[rule.eventType]) {
+      matrix[rule.eventType] = [];
+    }
+    matrix[rule.eventType].push(rule);
+  }
+
+  return matrix;
+}
+
+export function saveNotificationRule(
+  rule: Omit<NotificationRule, 'id' | 'createdAt' | 'updatedAt'>
+): NotificationRule {
+  if (!db) throw new Error('Database not initialized');
+
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+
+  db.prepare(
+    `
+    INSERT INTO notification_rules (id, event_type, channel_id, enabled, min_severity, cooldown_minutes, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `
+  ).run(
+    id,
+    rule.eventType,
+    rule.channelId,
+    rule.enabled ? 1 : 0,
+    rule.minSeverity,
+    rule.cooldownMinutes,
+    now,
+    now
+  );
+
+  return {
+    id,
+    eventType: rule.eventType,
+    channelId: rule.channelId,
+    enabled: rule.enabled,
+    minSeverity: rule.minSeverity,
+    cooldownMinutes: rule.cooldownMinutes,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export function updateNotificationRule(
+  id: string,
+  updates: Partial<Omit<NotificationRule, 'id' | 'createdAt' | 'updatedAt'>>
+): NotificationRule {
+  if (!db) throw new Error('Database not initialized');
+
+  const existing = db.prepare('SELECT 1 FROM notification_rules WHERE id = ?').get(id);
+  if (!existing) {
+    throw new Error('Notification rule not found');
+  }
+
+  const now = new Date().toISOString();
+  const sets: string[] = [];
+  const values: (string | number)[] = [];
+
+  if (updates.eventType !== undefined) {
+    sets.push('event_type = ?');
+    values.push(updates.eventType);
+  }
+  if (updates.channelId !== undefined) {
+    sets.push('channel_id = ?');
+    values.push(updates.channelId);
+  }
+  if (updates.enabled !== undefined) {
+    sets.push('enabled = ?');
+    values.push(updates.enabled ? 1 : 0);
+  }
+  if (updates.minSeverity !== undefined) {
+    sets.push('min_severity = ?');
+    values.push(updates.minSeverity);
+  }
+  if (updates.cooldownMinutes !== undefined) {
+    sets.push('cooldown_minutes = ?');
+    values.push(updates.cooldownMinutes);
+  }
+
+  sets.push('updated_at = ?');
+  values.push(now);
+  values.push(id);
+
+  db.prepare(`UPDATE notification_rules SET ${sets.join(', ')} WHERE id = ?`).run(...values);
+
+  const row = db
+    .prepare(
+      `
+    SELECT id, event_type, channel_id, enabled, min_severity, cooldown_minutes, created_at, updated_at
+    FROM notification_rules WHERE id = ?
+  `
+    )
+    .get(id) as NotificationRuleRecord | undefined;
+
+  if (!row) {
+    throw new Error('Failed to retrieve updated rule');
+  }
+
+  return {
+    id: row.id,
+    eventType: row.event_type,
+    channelId: row.channel_id,
+    enabled: Boolean(row.enabled),
+    minSeverity: row.min_severity as 'info' | 'warning' | 'critical',
+    cooldownMinutes: row.cooldown_minutes,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function deleteNotificationRule(id: string): void {
+  if (!db) throw new Error('Database not initialized');
+
+  const result = db.prepare('DELETE FROM notification_rules WHERE id = ?').run(id);
+  if (result.changes === 0) {
+    throw new Error('Notification rule not found');
+  }
+}
+
+// ============================================================================
+// NOTIFICATION HISTORY FUNCTIONS (DP-202/DP-203)
+// ============================================================================
+
+export function getRecentNotificationHistory(limit = 50): NotificationHistory[] {
+  if (!db) return [];
+
+  const rows = db
+    .prepare(
+      `
+    SELECT id, event_type as eventType, channel_id as channelId, severity, message, recipients, status, error, retry_count as retryCount, sent_at as sentAt, created_at
+    FROM notification_history ORDER BY created_at DESC LIMIT ?
+  `
+    )
+    .all(limit) as Array<{
+    id: string;
+    eventType: string;
+    channelId: string;
+    severity: string;
+    message: string;
+    recipients: string | null;
+    status: 'pending' | 'sent' | 'failed' | 'retrying';
+    error: string | null;
+    retryCount: number;
+    sentAt: string | null;
+    created_at: string;
+  }>;
+
+  return rows.map((r) => ({
+    id: r.id,
+    eventType: r.eventType,
+    channelId: r.channelId,
+    severity: r.severity,
+    message: r.message,
+    recipients: r.recipients ?? undefined,
+    status: r.status,
+    error: r.error ?? undefined,
+    retryCount: r.retryCount,
+    sentAt: r.sentAt ?? undefined,
+    createdAt: r.created_at,
+  }));
+}
+
+export function addNotificationHistory(
+  entry: Omit<NotificationHistory, 'id' | 'createdAt'>
+): NotificationHistory {
+  if (!db) throw new Error('Database not initialized');
+
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+
+  db.prepare(
+    `
+    INSERT INTO notification_history (id, event_type, channel_id, severity, message, recipients, status, error, retry_count, sent_at, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `
+  ).run(
+    id,
+    entry.eventType,
+    entry.channelId,
+    entry.severity,
+    entry.message,
+    entry.recipients ?? null,
+    entry.status,
+    entry.error ?? null,
+    entry.retryCount ?? 0,
+    entry.sentAt ?? null,
+    now
+  );
+
+  return {
+    id,
+    eventType: entry.eventType,
+    channelId: entry.channelId,
+    severity: entry.severity,
+    message: entry.message,
+    recipients: entry.recipients,
+    status: entry.status,
+    error: entry.error,
+    retryCount: entry.retryCount ?? 0,
+    sentAt: entry.sentAt,
+    createdAt: now,
+  };
+}
+
+export function updateNotificationHistory(
+  id: string,
+  updates: Partial<Pick<NotificationHistory, 'status' | 'retryCount' | 'error' | 'sentAt'>>
+): void {
+  if (!db) throw new Error('Database not initialized');
+
+  const sets: string[] = [];
+  const values: (string | number | null)[] = [];
+
+  if (updates.status !== undefined) {
+    sets.push('status = ?');
+    values.push(updates.status);
+  }
+  if (updates.retryCount !== undefined) {
+    sets.push('retry_count = ?');
+    values.push(updates.retryCount);
+  }
+  if (updates.error !== undefined) {
+    sets.push('error = ?');
+    values.push(updates.error ?? null);
+  }
+  if (updates.sentAt !== undefined) {
+    sets.push('sent_at = ?');
+    values.push(updates.sentAt ?? null);
+  }
+
+  values.push(id);
+  db.prepare(`UPDATE notification_history SET ${sets.join(', ')} WHERE id = ?`).run(...values);
+}
+
+export function getNotificationHistoryByEvent(
+  eventType: string,
+  limit = 50
+): NotificationHistory[] {
+  if (!db) return [];
+
+  const rows = db
+    .prepare(
+      `
+    SELECT id, event_type as eventType, channel_id as channelId, severity, message, recipients, status, error, retry_count as retryCount, sent_at as sentAt, created_at
+    FROM notification_history WHERE event_type = ? ORDER BY created_at DESC LIMIT ?
+  `
+    )
+    .all(eventType, limit) as Array<{
+    id: string;
+    eventType: string;
+    channelId: string;
+    severity: string;
+    message: string;
+    recipients: string | null;
+    status: 'pending' | 'sent' | 'failed' | 'retrying';
+    error: string | null;
+    retryCount: number;
+    sentAt: string | null;
+    created_at: string;
+  }>;
+
+  return rows.map((r) => ({
+    id: r.id,
+    eventType: r.eventType,
+    channelId: r.channelId,
+    severity: r.severity,
+    message: r.message,
+    recipients: r.recipients ?? undefined,
+    status: r.status,
+    error: r.error ?? undefined,
+    retryCount: r.retryCount,
+    sentAt: r.sentAt ?? undefined,
+    createdAt: r.created_at,
+  }));
+}
+
+export function wasRecentlyNotified(
+  eventType: string,
+  channelId: string,
+  cooldownMinutes: number
+): boolean {
+  if (!db || cooldownMinutes === 0) return false;
+
+  const cutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
+
+  const row = db
+    .prepare(
+      `
+    SELECT COUNT(*) as count FROM notification_history
+    WHERE event_type = ? AND channel_id = ? AND status IN ('sent', 'pending', 'retrying') AND (sent_at > ? OR (sent_at IS NULL AND created_at > ?))
+  `
+    )
+    .get(eventType, channelId, cutoff, cutoff) as { count: number } | undefined;
+
+  return (row?.count ?? 0) > 0;
 }

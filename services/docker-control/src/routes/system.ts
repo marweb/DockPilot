@@ -7,6 +7,11 @@ import {
   checkDockerConnection,
 } from '../services/docker.js';
 import type { DockerInfo, DockerVersion, DiskUsage } from '@dockpilot/types';
+import {
+  emitSystemUpgradeStarted,
+  emitSystemUpgradeCompleted,
+  emitSystemUpgradeFailed,
+} from '../services/eventDispatcher.js';
 
 // Track upgrade state
 let upgradeInProgress = false;
@@ -210,6 +215,14 @@ export async function systemRoutes(fastify: FastifyInstance) {
         await container.start();
         fastify.log.info({ containerId: container.id, version }, 'Upgrade container started');
 
+        // Emit upgrade started event (fire-and-forget)
+        const currentVersion = process.env.DOCKPILOT_VERSION || '0.0.0';
+        try {
+          await emitSystemUpgradeStarted(version, currentVersion);
+        } catch (error) {
+          fastify.log.warn({ error }, 'Failed to emit upgrade started event');
+        }
+
         return reply.send({
           success: true,
           data: {
@@ -222,10 +235,19 @@ export async function systemRoutes(fastify: FastifyInstance) {
         upgradeInProgress = false;
         upgradeContainerId = null;
         upgradeStartedAt = null;
+
+        const err = error as Error;
+
+        // Emit upgrade failed event (fire-and-forget)
+        try {
+          await emitSystemUpgradeFailed(err.message);
+        } catch (eventError) {
+          fastify.log.warn({ error: eventError }, 'Failed to emit upgrade failed event');
+        }
+
         upgradeTargetVersion = null;
 
         fastify.log.error(error, 'Failed to start upgrade');
-        const err = error as Error;
         return reply.status(500).send({
           success: false,
           error: {
@@ -264,6 +286,19 @@ export async function systemRoutes(fastify: FastifyInstance) {
         if (!containerRunning) {
           upgradeInProgress = false;
           const exitCode = info.State.ExitCode;
+          const completed = exitCode === 0;
+
+          // Emit upgrade completed/failed event (fire-and-forget)
+          try {
+            if (completed && upgradeTargetVersion) {
+              await emitSystemUpgradeCompleted(upgradeTargetVersion);
+            } else if (!completed) {
+              await emitSystemUpgradeFailed(`Upgrade failed with exit code ${exitCode}`);
+            }
+          } catch (error) {
+            fastify.log.warn({ error }, 'Failed to emit upgrade status event');
+          }
+
           upgradeContainerId = null;
           upgradeStartedAt = null;
 
@@ -271,7 +306,7 @@ export async function systemRoutes(fastify: FastifyInstance) {
             success: true,
             data: {
               inProgress: false,
-              completed: exitCode === 0,
+              completed,
               exitCode,
               targetVersion: upgradeTargetVersion,
             },

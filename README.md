@@ -22,6 +22,35 @@
 - Webhooks GitHub/GitLab con validacion de firma/token e idempotencia.
 - Editor de variables por microservicio con recreate seguro y rollback.
 - RBAC, rate limiting y auditoria para uso productivo.
+- **Sistema de notificaciones automaticas por eventos** (Nuevo en v2.0)
+
+## Notifications
+
+DockPilot includes a powerful event notification system that can alert you when important events occur:
+
+### Supported Events
+
+- Container crashes and OOM kills
+- Failed deployments
+- Security incidents
+- System upgrades
+- Authentication events
+- And 25+ more...
+
+### Notification Channels
+
+- Email (SMTP/Resend)
+- Slack
+- Telegram
+- Discord
+
+### Quick Setup
+
+1. Configure channels in Settings → Notifications
+2. Enable events in Settings → Events
+3. Receive automatic alerts
+
+See [Notification Documentation](./docs/notifications/)
 
 ## Capturas
 

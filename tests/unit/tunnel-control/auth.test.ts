@@ -7,30 +7,36 @@ describe('Auth Routes', () => {
 
   beforeEach(async () => {
     app = Fastify();
-    
+
     app.post('/api/tunnels/auth/login', async (request, reply) => {
       const body = request.body as any;
       if (!body.apiToken || !body.accountId) {
-        return reply.status(400).send({ success: false, error: { code: 'VALIDATION_ERROR' }});
+        return reply.status(400).send({ success: false, error: { code: 'VALIDATION_ERROR' } });
       }
       if (body.apiToken === 'invalid') {
-        return reply.status(401).send({ success: false, error: { code: 'AUTH_FAILED', message: 'Invalid API token' }});
+        return reply
+          .status(401)
+          .send({ success: false, error: { code: 'AUTH_FAILED', message: 'Invalid API token' } });
       }
       return {
         success: true,
         message: 'Authentication successful',
-        data: { authenticated: true, accountId: body.accountId, accountName: 'Test Account' }
+        data: { authenticated: true, accountId: body.accountId, accountName: 'Test Account' },
       };
     });
 
     app.post('/api/tunnels/auth/logout', async () => ({
       success: true,
-      message: 'Logged out successfully'
+      message: 'Logged out successfully',
     }));
 
     app.get('/api/tunnels/auth/status', async () => ({
       success: true,
-      data: { authenticated: true, accountId: '12345678901234567890123456789012', method: 'api_token' }
+      data: {
+        authenticated: true,
+        accountId: '12345678901234567890123456789012',
+        method: 'api_token',
+      },
     }));
   });
 

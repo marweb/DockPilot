@@ -1,6 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { UserRole } from '@dockpilot/types';
 import '../types/fastify.js';
+import { emitSecurityBruteForce } from '../services/eventDispatcher.js';
 
 interface RateLimitConfig {
   windowMs: number;
@@ -16,6 +17,16 @@ interface RateLimitEntry {
 interface RateLimitStore {
   [key: string]: RateLimitEntry;
 }
+
+interface FailedAttemptsEntry {
+  count: number;
+  lastAttempt: number;
+}
+
+// Track failed login attempts for brute force detection
+const failedAttempts: Map<string, FailedAttemptsEntry> = new Map();
+const BRUTE_FORCE_THRESHOLD = 10;
+const BRUTE_FORCE_WINDOW = 5 * 60 * 1000; // 5 minutes
 
 function parseEnvInt(value: string | undefined, defaultValue: number): number {
   if (!value) return defaultValue;
@@ -425,6 +436,41 @@ export function clearAuthLoginRateLimit(request: FastifyRequest): void {
   if (keys.perIdentityKey) {
     delete store[keys.perIdentityKey];
   }
+}
+
+/**
+ * Track failed login attempts and emit brute force event if threshold exceeded
+ */
+export async function trackFailedLogin(ip: string, targetEndpoint: string): Promise<void> {
+  const now = Date.now();
+  const entry = failedAttempts.get(ip);
+
+  if (!entry || now - entry.lastAttempt > BRUTE_FORCE_WINDOW) {
+    // Reset counter if window expired
+    failedAttempts.set(ip, { count: 1, lastAttempt: now });
+    return;
+  }
+
+  entry.count++;
+  entry.lastAttempt = now;
+
+  // Check if threshold exceeded
+  if (entry.count > BRUTE_FORCE_THRESHOLD) {
+    try {
+      await emitSecurityBruteForce(ip, entry.count, targetEndpoint);
+    } catch (error) {
+      console.warn('Failed to emit brute force event:', error);
+    }
+    // Reset counter after emitting event
+    failedAttempts.delete(ip);
+  }
+}
+
+/**
+ * Clear failed login attempts for an IP (called on successful login)
+ */
+export function clearFailedLoginAttempts(ip: string): void {
+  failedAttempts.delete(ip);
 }
 
 export function clearAuthSetupRateLimit(request: FastifyRequest): void {

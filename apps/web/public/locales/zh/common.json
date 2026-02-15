@@ -345,6 +345,7 @@
     "tabs": {
       "general": "常规",
       "notifications": "通知",
+      "events": "事件",
       "updates": "版本和更新",
       "security": "安全"
     },
@@ -425,7 +426,55 @@
       "channelSaved": "配置已保存",
       "channelSaveError": "保存配置失败",
       "expand": "展开",
-      "collapse": "收起"
+      "collapse": "收起",
+      "eventsMatrix": {
+        "title": "通知事件",
+        "description": "配置哪些事件在每个渠道触发通知",
+        "enabled": "通知已启用",
+        "disabled": "通知已禁用"
+      },
+      "categories": {
+        "auth": "认证",
+        "system": "系统",
+        "container": "容器",
+        "repo": "仓库",
+        "security": "安全"
+      },
+      "events": {
+        "auth.login.success": {
+          "title": "登录成功",
+          "description": "用户成功登录"
+        },
+        "auth.login.failed": {
+          "title": "登录失败",
+          "description": "登录尝试失败"
+        },
+        "system.upgrade.completed": {
+          "title": "升级完成",
+          "description": "系统升级成功完成"
+        },
+        "system.upgrade.failed": {
+          "title": "升级失败",
+          "description": "系统升级失败"
+        },
+        "container.crashed": {
+          "title": "容器崩溃",
+          "description": "容器意外停止"
+        },
+        "repo.deploy.success": {
+          "title": "部署成功",
+          "description": "部署成功完成"
+        },
+        "repo.deploy.failed": {
+          "title": "部署失败",
+          "description": "部署失败"
+        }
+      },
+      "rulesUpdated": "通知规则已更新",
+      "errors": {
+        "loadFailed": "加载通知设置失败",
+        "saveFailed": "保存通知规则失败"
+      }
     },
     "errors": {
       "adminRequired": "需要管理员权限",

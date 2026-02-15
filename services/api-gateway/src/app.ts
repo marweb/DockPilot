@@ -7,10 +7,12 @@ import websocket from '@fastify/websocket';
 import { validatorCompiler, serializerCompiler } from 'fastify-type-provider-zod';
 import type { Config } from './config/index.js';
 import { initDatabase } from './services/database.js';
+import { initializeEventDispatcher } from './services/eventDispatcher.js';
 import { authRoutes } from './routes/auth.js';
 import { userRoutes } from './routes/users.js';
 import { healthRoutes } from './routes/health.js';
 import { systemRoutes } from './routes/system.js';
+import { notificationRulesRoutes } from './routes/notifications.js';
 import { authMiddleware, routePermissionMiddleware } from './middleware/auth.js';
 import { auditMiddleware } from './middleware/audit.js';
 import {
@@ -60,6 +62,11 @@ export async function createApp(config: Config) {
 
   // Initialize database
   initDatabase(config.dataDir);
+
+  // Initialize event dispatcher (fire-and-forget)
+  initializeEventDispatcher().catch((error) => {
+    fastify.log.warn({ error }, 'Failed to initialize event dispatcher');
+  });
 
   // Register plugins
   await fastify.register(cors, {
@@ -249,6 +256,9 @@ export async function createApp(config: Config) {
 
   // Register system routes (version check, settings, upgrade)
   await fastify.register(systemRoutes, { prefix: '/api' });
+
+  // Register notification routes
+  await fastify.register(notificationRulesRoutes, { prefix: '/api' });
 
   // Proxy upgrade request to docker-control
   fastify.post('/api/system/upgrade', async (request, reply) => {

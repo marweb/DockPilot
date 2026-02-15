@@ -53,11 +53,26 @@ export async function networkRoutes(fastify: FastifyInstance) {
       const network = docker.getNetwork(id);
       const inspect = await network.inspect();
 
-      const containers: Record<string, { name: string; endpointId: string; macAddress: string; ipv4Address: string; ipv6Address: string }> = {};
-      
+      const containers: Record<
+        string,
+        {
+          name: string;
+          endpointId: string;
+          macAddress: string;
+          ipv4Address: string;
+          ipv6Address: string;
+        }
+      > = {};
+
       if (inspect.Containers) {
         for (const [containerId, container] of Object.entries(inspect.Containers)) {
-          const c = container as { Name: string; EndpointID: string; MacAddress: string; IPv4Address: string; IPv6Address: string };
+          const c = container as {
+            Name: string;
+            EndpointID: string;
+            MacAddress: string;
+            IPv4Address: string;
+            IPv6Address: string;
+          };
           containers[containerId] = {
             name: c.Name,
             endpointId: c.EndpointID,

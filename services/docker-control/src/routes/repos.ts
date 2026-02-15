@@ -12,6 +12,13 @@ import {
   createDecipheriv,
   timingSafeEqual,
 } from 'crypto';
+import {
+  emitDeployStarted,
+  emitDeploySuccess,
+  emitDeployFailed,
+  emitDeployRolledBack,
+  emitWebhookReceived,
+} from '../services/eventDispatcher.js';
 
 const REPOS_DIR = process.env.REPOS_DIR || '/data/repos';
 const REPOS_META = path.join(REPOS_DIR, 'repositories.json');
@@ -911,6 +918,15 @@ export async function repoRoutes(fastify: FastifyInstance) {
         html_url?: string;
       };
     };
+
+    // Emit webhook received event (fire-and-forget)
+    const repoName = body.repository?.clone_url || body.repository?.html_url || 'unknown';
+    try {
+      await emitWebhookReceived('github', repoName, event);
+    } catch (error) {
+      fastify.log.warn({ error }, 'Failed to emit webhook received event');
+    }
+
     const branch = extractBranchFromRef(body.ref);
     const repoCandidates = [
       body.repository?.clone_url,
@@ -1014,6 +1030,14 @@ export async function repoRoutes(fastify: FastifyInstance) {
         web_url?: string;
       };
     };
+
+    // Emit webhook received event (fire-and-forget)
+    const repoName = body.project?.git_http_url || body.project?.web_url || 'unknown';
+    try {
+      await emitWebhookReceived('gitlab', repoName, event);
+    } catch (error) {
+      fastify.log.warn({ error }, 'Failed to emit webhook received event');
+    }
 
     const branch = extractBranchFromRef(body.ref);
     const repoCandidates = [
@@ -1320,6 +1344,15 @@ export async function repoRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ success: false, error: 'Repository not found' });
       }
 
+      // Emit deploy started event (fire-and-forget)
+      try {
+        await emitDeployStarted(repo.name, repo.id, repo.branch);
+      } catch (error) {
+        fastify.log.warn({ error }, 'Failed to emit deploy started event');
+      }
+
+      const startTime = Date.now();
+
       try {
         const deployment = await deployRepoRecord(repo, {
           stackName: request.body.stackName,
@@ -1327,6 +1360,15 @@ export async function repoRoutes(fastify: FastifyInstance) {
           build: request.body.build,
           removeOrphans: request.body.removeOrphans,
         });
+
+        const duration = Date.now() - startTime;
+
+        // Emit deploy success event (fire-and-forget)
+        try {
+          await emitDeploySuccess(repo.name, duration, [deployment.stackName]);
+        } catch (error) {
+          fastify.log.warn({ error }, 'Failed to emit deploy success event');
+        }
 
         return reply.send({
           success: true,
@@ -1337,7 +1379,17 @@ export async function repoRoutes(fastify: FastifyInstance) {
           },
         });
       } catch (error) {
-        return reply.status(400).send({ success: false, error: (error as Error).message });
+        const duration = Date.now() - startTime;
+        const errorMessage = (error as Error).message;
+
+        // Emit deploy failed event (fire-and-forget)
+        try {
+          await emitDeployFailed(repo.name, errorMessage, 'deploy');
+        } catch (eventError) {
+          fastify.log.warn({ error: eventError }, 'Failed to emit deploy failed event');
+        }
+
+        return reply.status(400).send({ success: false, error: errorMessage });
       }
     }
   );

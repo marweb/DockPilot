@@ -31,7 +31,7 @@ export const useAuthStore = create<AuthState>()(
       login: async (username: string, password: string) => {
         const response = await api.post('/auth/login', { username, password });
         const { user, tokens } = response.data.data;
-        
+
         set({
           user,
           token: tokens.accessToken,
@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // Ignore logout errors
         }
-        
+
         set({
           user: null,
           token: null,
@@ -92,7 +92,7 @@ export const useAuthStore = create<AuthState>()(
       setup: async (username: string, password: string) => {
         const response = await api.post('/auth/setup', { username, password });
         const { user, tokens } = response.data.data;
-        
+
         set({
           user,
           token: tokens.accessToken,
@@ -110,7 +110,7 @@ export const useAuthStore = create<AuthState>()(
 
         const response = await api.post('/auth/refresh', { refreshToken });
         const { accessToken, refreshToken: newRefreshToken } = response.data.data;
-        
+
         set({
           token: accessToken,
           refreshToken: newRefreshToken,

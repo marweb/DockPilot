@@ -1436,4 +1436,331 @@ export class NotificationService {
       };
     }
   }
+
+  /**
+   * Send an event notification to a channel
+   */
+  async sendEvent(
+    channel: NotificationChannel,
+    event: {
+      eventType: string;
+      severity: 'info' | 'warning' | 'critical';
+      message: string;
+      metadata: Record<string, unknown>;
+      timestamp: string;
+    }
+  ): Promise<void> {
+    if (!channel.enabled) {
+      return;
+    }
+
+    const config = this.decryptConfig(channel);
+    const severityEmoji = {
+      info: 'ℹ️',
+      warning: '⚠️',
+      critical: '🚨',
+    };
+
+    const formattedMessage = this.formatEventMessage(event, severityEmoji[event.severity]);
+
+    try {
+      switch (channel.provider) {
+        case 'smtp':
+          await this.sendSMTPEvent(config as SMTPConfig, event, formattedMessage);
+          break;
+        case 'resend':
+          await this.sendResendEvent(config as ResendConfig, event, formattedMessage);
+          break;
+        case 'slack':
+          await this.sendSlackEvent(config as SlackConfig, event, formattedMessage);
+          break;
+        case 'telegram':
+          await this.sendTelegramEvent(config as TelegramConfig, event, formattedMessage);
+          break;
+        case 'discord':
+          await this.sendDiscordEvent(config as DiscordConfig, event, formattedMessage);
+          break;
+      }
+    } catch (error) {
+      console.warn(
+        `Failed to send event notification to ${channel.provider}:`,
+        error instanceof Error ? error.message : String(error)
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Format event message for different providers
+   */
+  private formatEventMessage(
+    event: {
+      eventType: string;
+      severity: string;
+      message: string;
+      metadata: Record<string, unknown>;
+      timestamp: string;
+    },
+    emoji: string
+  ): { subject: string; body: string; html: string } {
+    const subject = `${emoji} ${event.eventType} - ${event.severity.toUpperCase()}`;
+
+    // Plain text body
+    const metadataText = Object.entries(event.metadata)
+      .map(([key, value]) => `  ${key}: ${JSON.stringify(value)}`)
+      .join('\n');
+
+    const body = `${emoji} ${event.eventType}
+Severity: ${event.severity.toUpperCase()}
+Time: ${event.timestamp}
+Message: ${event.message}
+
+Metadata:
+${metadataText}`;
+
+    // HTML body
+    const metadataHtml = Object.entries(event.metadata)
+      .map(([key, value]) => `<li><strong>${key}:</strong> ${JSON.stringify(value)}</li>`)
+      .join('');
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>DockPilot Notification</title>
+</head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: ${this.getSeverityColor(event.severity)}; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0;">${emoji} ${event.eventType}</h1>
+  </div>
+  <div style="background: #f8f9fa; padding: 20px; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 8px 8px;">
+    <p style="font-size: 16px; color: #333;"><strong>${event.message}</strong></p>
+    <div style="background: white; padding: 15px; border-radius: 4px; margin: 20px 0;">
+      <p style="margin: 5px 0; color: #666;"><strong>Severity:</strong> ${event.severity.toUpperCase()}</p>
+      <p style="margin: 5px 0; color: #666;"><strong>Time:</strong> ${event.timestamp}</p>
+    </div>
+    <h3 style="color: #333; margin-top: 20px;">Metadata:</h3>
+    <ul style="color: #666;">
+      ${metadataHtml}
+    </ul>
+  </div>
+</body>
+</html>`;
+
+    return { subject, body, html };
+  }
+
+  private getSeverityColor(severity: string): string {
+    switch (severity) {
+      case 'critical':
+        return '#dc3545';
+      case 'warning':
+        return '#ffc107';
+      case 'info':
+      default:
+        return '#17a2b8';
+    }
+  }
+
+  private async sendSMTPEvent(
+    config: SMTPConfig,
+    _event: { eventType: string; severity: string; message: string; timestamp: string },
+    formatted: { subject: string; body: string; html: string }
+  ): Promise<void> {
+    const transporter = nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.encryption === 'ssl' || config.port === 465,
+      requireTLS: config.encryption === 'tls' || config.encryption === 'starttls',
+      auth: {
+        user: config.username,
+        pass: config.password,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
+    });
+
+    await transporter.sendMail({
+      from: `"${config.fromName}" <${config.fromAddress}>`,
+      to: config.fromAddress,
+      subject: formatted.subject,
+      text: formatted.body,
+      html: formatted.html,
+    });
+  }
+
+  private async sendResendEvent(
+    config: ResendConfig,
+    _event: { eventType: string; severity: string; message: string; timestamp: string },
+    formatted: { subject: string; body: string; html: string }
+  ): Promise<void> {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: config.fromAddress,
+        to: config.fromAddress,
+        subject: formatted.subject,
+        text: formatted.body,
+        html: formatted.html,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = (await response.json().catch(() => ({ message: '' }))) as {
+        message: string;
+      };
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+  }
+
+  private async sendSlackEvent(
+    config: SlackConfig,
+    event: {
+      eventType: string;
+      severity: string;
+      message: string;
+      metadata: Record<string, unknown>;
+      timestamp: string;
+    },
+    _formatted: { subject: string; body: string; html: string }
+  ): Promise<void> {
+    const severityColor = {
+      info: '#17a2b8',
+      warning: '#ffc107',
+      critical: '#dc3545',
+    };
+
+    const fields = Object.entries(event.metadata).map(([key, value]) => ({
+      title: key,
+      value: JSON.stringify(value),
+      short: true,
+    }));
+
+    const response = await fetch(config.webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        attachments: [
+          {
+            color: severityColor[event.severity as keyof typeof severityColor],
+            title: event.eventType,
+            text: event.message,
+            fields,
+            footer: 'DockPilot',
+            ts: Math.floor(new Date(event.timestamp).getTime() / 1000),
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+  }
+
+  private async sendTelegramEvent(
+    config: TelegramConfig,
+    event: {
+      eventType: string;
+      severity: string;
+      message: string;
+      metadata: Record<string, unknown>;
+      timestamp: string;
+    },
+    _formatted: { subject: string; body: string; html: string }
+  ): Promise<void> {
+    const severityEmoji = {
+      info: 'ℹ️',
+      warning: '⚠️',
+      critical: '🚨',
+    };
+
+    const metadataText = Object.entries(event.metadata)
+      .map(([key, value]) => `<b>${key}:</b> ${JSON.stringify(value)}`)
+      .join('\n');
+
+    const text = `${severityEmoji[event.severity as keyof typeof severityEmoji]} <b>${event.eventType}</b>
+
+<b>${event.message}</b>
+
+<b>Severity:</b> ${event.severity.toUpperCase()}
+<b>Time:</b> ${event.timestamp}
+
+<b>Metadata:</b>
+${metadataText}`;
+
+    const response = await fetch(`https://api.telegram.org/bot${config.botToken}/sendMessage`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat_id: config.chatId,
+        text,
+        parse_mode: 'HTML',
+      }),
+    });
+
+    const data = (await response.json()) as { ok: boolean; description?: string };
+
+    if (!data.ok) {
+      throw new Error(data.description || 'Telegram API error');
+    }
+  }
+
+  private async sendDiscordEvent(
+    config: DiscordConfig,
+    event: {
+      eventType: string;
+      severity: string;
+      message: string;
+      metadata: Record<string, unknown>;
+      timestamp: string;
+    },
+    _formatted: { subject: string; body: string; html: string }
+  ): Promise<void> {
+    const severityColor = {
+      info: 0x17a2b8,
+      warning: 0xffc107,
+      critical: 0xdc3545,
+    };
+
+    const fields = Object.entries(event.metadata).map(([key, value]) => ({
+      name: key,
+      value: JSON.stringify(value).slice(0, 1024),
+      inline: true,
+    }));
+
+    const response = await fetch(config.webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        embeds: [
+          {
+            title: event.eventType,
+            description: event.message,
+            color: severityColor[event.severity as keyof typeof severityColor],
+            fields,
+            timestamp: event.timestamp,
+            footer: {
+              text: 'DockPilot',
+            },
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+  }
 }

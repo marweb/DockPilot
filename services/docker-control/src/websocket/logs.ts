@@ -76,7 +76,10 @@ export async function registerContainerLogsWebSocket(fastify: FastifyInstance): 
           ...(until && { until: parseInt(until, 10) }),
         };
 
-        request.log.info({ containerId: id, options: logsOptions }, 'Starting container logs stream');
+        request.log.info(
+          { containerId: id, options: logsOptions },
+          'Starting container logs stream'
+        );
 
         // Get logs stream - when follow: true, Dockerode returns a stream
         stream = (await container.logs(logsOptions)) as unknown as Duplex;

@@ -345,6 +345,7 @@
     "tabs": {
       "general": "Général",
       "notifications": "Notifications",
+      "events": "Événements",
       "updates": "Version & Mises à Jour",
       "security": "Sécurité"
     },
@@ -425,7 +426,55 @@
       "channelSaved": "Configuration enregistrée",
       "channelSaveError": "Échec de l'enregistrement de la configuration",
       "expand": "Développer",
-      "collapse": "Réduire"
+      "collapse": "Réduire",
+      "eventsMatrix": {
+        "title": "Événements de Notification",
+        "description": "Configurez quels événements déclenchent des notifications sur chaque canal",
+        "enabled": "Notifications activées",
+        "disabled": "Notifications désactivées"
+      },
+      "categories": {
+        "auth": "Authentification",
+        "system": "Système",
+        "container": "Conteneurs",
+        "repo": "Référentiels",
+        "security": "Sécurité"
+      },
+      "events": {
+        "auth.login.success": {
+          "title": "Connexion Réussie",
+          "description": "L'utilisateur s'est connecté avec succès"
+        },
+        "auth.login.failed": {
+          "title": "Connexion Échouée",
+          "description": "Tentative de connexion échouée"
+        },
+        "system.upgrade.completed": {
+          "title": "Mise à Niveau Terminée",
+          "description": "Mise à niveau du système terminée avec succès"
+        },
+        "system.upgrade.failed": {
+          "title": "Mise à Niveau Échouée",
+          "description": "La mise à niveau du système a échoué"
+        },
+        "container.crashed": {
+          "title": "Conteneur Planté",
+          "description": "Le conteneur s'est arrêté de manière inattendue"
+        },
+        "repo.deploy.success": {
+          "title": "Déploiement Réussi",
+          "description": "Déploiement terminé avec succès"
+        },
+        "repo.deploy.failed": {
+          "title": "Déploiement Échoué",
+          "description": "Le déploiement a échoué"
+        }
+      },
+      "rulesUpdated": "Règles de notification mises à jour",
+      "errors": {
+        "loadFailed": "Échec du chargement des paramètres de notification",
+        "saveFailed": "Échec de l'enregistrement de la règle de notification"
+      }
     },
     "errors": {
       "adminRequired": "Accès administrateur requis",

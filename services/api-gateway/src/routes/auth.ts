@@ -16,6 +16,8 @@ import {
   refreshRateLimitMiddleware,
   clearAuthLoginRateLimit,
   clearAuthSetupRateLimit,
+  trackFailedLogin,
+  clearFailedLoginAttempts,
 } from '../middleware/rateLimit.js';
 import {
   hashPassword,
@@ -23,6 +25,12 @@ import {
   validatePasswordStrength,
 } from '../utils/password.js';
 import { generateTokenPair, verifyRefreshToken, rotateRefreshToken } from '../utils/jwt.js';
+import {
+  emitAuthLoginSuccess,
+  emitAuthLoginFailed,
+  emitAuthPasswordChanged,
+  emitSecurityUnauthorizedAccess,
+} from '../services/eventDispatcher.js';
 
 // Validation schemas
 const loginSchema = z.object({
@@ -262,6 +270,16 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
             errorMessage: 'Invalid password',
           });
 
+          // Emit login failed event (fire-and-forget)
+          try {
+            await emitAuthLoginFailed(user.username, request.ip, 'invalid_password');
+          } catch (error) {
+            fastify.log.warn({ error }, 'Failed to emit login failed event');
+          }
+
+          // Track failed login attempt for brute force detection (fire-and-forget)
+          void trackFailedLogin(request.ip, '/auth/login');
+
           return handleAuthError(reply, 401, 'INVALID_CREDENTIALS', 'Invalid username or password');
         }
 
@@ -289,6 +307,16 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
           userAgent: request.headers['user-agent'] || 'unknown',
           success: true,
         });
+
+        // Emit login success event (fire-and-forget)
+        try {
+          await emitAuthLoginSuccess(user.username, request.ip);
+        } catch (error) {
+          fastify.log.warn({ error }, 'Failed to emit login success event');
+        }
+
+        // Clear failed attempts on successful login
+        clearFailedLoginAttempts(request.ip);
 
         clearAuthLoginRateLimit(request);
 
@@ -546,6 +574,13 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
           userAgent: request.headers['user-agent'] || 'unknown',
           success: true,
         });
+
+        // Emit password changed event (fire-and-forget)
+        try {
+          await emitAuthPasswordChanged((request.user as { username: string }).username);
+        } catch (error) {
+          fastify.log.warn({ error }, 'Failed to emit password changed event');
+        }
 
         return reply.send({
           success: true,

@@ -1,6 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { UserRole } from '@dockpilot/types';
 import { getUser } from '../types/fastify.js';
+import { emitSecurityUnauthorizedAccess } from '../services/eventDispatcher.js';
 
 // Permission definitions by role
 const rolePermissions: Record<UserRole, string[]> = {
@@ -95,6 +96,11 @@ function hasPermission(role: UserRole, permission: string): boolean {
 // JWT authentication middleware
 export async function authMiddleware(request: FastifyRequest, reply: FastifyReply): Promise<void> {
   try {
+    // Skip auth for routes with skipAuth config
+    if ((request.routeOptions?.config as { skipAuth?: boolean })?.skipAuth) {
+      return;
+    }
+
     // Skip auth for setup, login, refresh and logout endpoints
     const skipAuthPaths = [
       '/api/auth/setup',
@@ -352,6 +358,16 @@ export async function routePermissionMiddleware(
   }
 
   if (permission && !hasPermission(getUser(request)!.role, permission)) {
+    // Emit unauthorized access event (fire-and-forget)
+    const user = getUser(request);
+    if (user) {
+      void emitSecurityUnauthorizedAccess(user.username, `${method}:${url}`, request.ip).catch(
+        (error) => {
+          console.warn('Failed to emit unauthorized access event:', error);
+        }
+      );
+    }
+
     reply.status(403).send({
       success: false,
       error: 'Insufficient permissions',
