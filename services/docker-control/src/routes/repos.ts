@@ -16,7 +16,6 @@ import {
   emitDeployStarted,
   emitDeploySuccess,
   emitDeployFailed,
-  emitDeployRolledBack,
   emitWebhookReceived,
 } from '../services/eventDispatcher.js';
 
@@ -1379,7 +1378,6 @@ export async function repoRoutes(fastify: FastifyInstance) {
           },
         });
       } catch (error) {
-        const duration = Date.now() - startTime;
         const errorMessage = (error as Error).message;
 
         // Emit deploy failed event (fire-and-forget)
