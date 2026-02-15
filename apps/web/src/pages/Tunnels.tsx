@@ -1,7 +1,21 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
-import { RefreshCw, Play, Square, Trash2, LogIn, LogOut, Plus, Bug } from 'lucide-react';
+import {
+  RefreshCw,
+  Play,
+  Square,
+  Trash2,
+  LogIn,
+  LogOut,
+  Plus,
+  Bug,
+  Globe,
+  Server,
+  Route,
+  Rocket,
+  Link2,
+} from 'lucide-react';
 import api from '../api/client';
 
 type Tunnel = {
@@ -323,6 +337,33 @@ export default function Tunnels() {
     (container) => container.id === serviceContainerId
   );
 
+  const statusLabel: Record<Tunnel['status'], string> = {
+    active: 'Activo',
+    creating: 'Conectando',
+    inactive: 'Inactivo',
+    error: 'Error',
+  };
+
+  const statusBadgeClass: Record<Tunnel['status'], string> = {
+    active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    creating: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    inactive: 'bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-300',
+    error: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+  };
+
+  const getLinkedServiceName = (tunnel: Tunnel) => {
+    const linkedId = tunnel.connectedServices?.[0];
+    if (!linkedId) return '-';
+    return (
+      (containers || []).find((container) => container.id === linkedId)?.name ||
+      `${linkedId.slice(0, 12)}...`
+    );
+  };
+
+  const getTunnelHostname = (tunnel: Tunnel) => tunnel.ingressRules?.[0]?.hostname || '-';
+
+  const getTunnelService = (tunnel: Tunnel) => tunnel.ingressRules?.[0]?.service || '-';
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -532,92 +573,129 @@ export default function Tunnels() {
                 <div className="text-sm text-red-600 dark:text-red-400">{actionError}</div>
               )}
 
-              <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-sm text-gray-600 dark:text-gray-300">
-                Flujo recomendado: 1) selecciona microservicio, 2) hostname publico, 3) crear.
-                DockPilot enlaza servicio + ingress, crea DNS CNAME y opcionalmente inicia tunel.
+              <div className="rounded-xl border border-primary-200/70 bg-gradient-to-r from-primary-50 to-white dark:from-primary-900/20 dark:to-gray-800 p-4">
+                <div className="flex items-start gap-3">
+                  <Rocket className="h-5 w-5 mt-0.5 text-primary-600 dark:text-primary-400" />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Crea tu tunel en 3 pasos
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                      1) Elige microservicio, 2) define hostname publico, 3) crea. DockPilot
+                      configura ingress + DNS CNAME automaticamente.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <select
-                  className="input"
-                  value={serviceContainerId}
-                  onChange={(e) => {
-                    const nextId = e.target.value;
-                    setServiceContainerId(nextId);
-                    const nextContainer = (containers || []).find(
-                      (container) => container.id === nextId
-                    );
-                    if (nextContainer) {
-                      setServicePort(String(nextContainer.ports?.[0]?.containerPort || 80));
-                      if (!tunnelName) {
-                        setTunnelName(
-                          nextContainer.name
-                            .toLowerCase()
-                            .replace(/[^a-z0-9-]/g, '-')
-                            .replace(/-+/g, '-')
-                            .replace(/^-|-$/g, '')
-                            .slice(0, 63)
-                        );
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary-600 text-white text-xs">
+                      1
+                    </span>
+                    Microservicio
+                  </div>
+                  <select
+                    className="input"
+                    value={serviceContainerId}
+                    onChange={(e) => {
+                      const nextId = e.target.value;
+                      setServiceContainerId(nextId);
+                      const nextContainer = (containers || []).find(
+                        (container) => container.id === nextId
+                      );
+                      if (nextContainer) {
+                        setServicePort(String(nextContainer.ports?.[0]?.containerPort || 80));
+                        if (!tunnelName) {
+                          setTunnelName(
+                            nextContainer.name
+                              .toLowerCase()
+                              .replace(/[^a-z0-9-]/g, '-')
+                              .replace(/-+/g, '-')
+                              .replace(/^-|-$/g, '')
+                              .slice(0, 63)
+                          );
+                        }
                       }
-                    }
-                  }}
-                >
-                  <option value="">Microservicio</option>
-                  {(containers || []).map((container) => (
-                    <option key={container.id} value={container.id}>
-                      {container.name} ({container.status})
-                    </option>
-                  ))}
-                </select>
+                    }}
+                  >
+                    <option value="">Seleccionar microservicio</option>
+                    {(containers || []).map((container) => (
+                      <option key={container.id} value={container.id}>
+                        {container.name} ({container.status})
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    className="input"
+                    placeholder="Puerto interno (ej: 80)"
+                    value={servicePort}
+                    onChange={(e) => setServicePort(e.target.value.replace(/[^0-9]/g, ''))}
+                  />
+                </div>
 
-                <input
-                  className="input"
-                  placeholder="Hostname publico (ej: api.midominio.com)"
-                  value={hostname}
-                  onChange={(e) => setHostname(e.target.value)}
-                />
-                <input
-                  className="input"
-                  placeholder="Puerto interno servicio"
-                  value={servicePort}
-                  onChange={(e) => setServicePort(e.target.value.replace(/[^0-9]/g, ''))}
-                />
-                <input
-                  className="input"
-                  placeholder="Nombre del tunel (opcional)"
-                  value={tunnelName}
-                  onChange={(e) => setTunnelName(e.target.value)}
-                />
-                <input
-                  className="input"
-                  placeholder="Zone ID (opcional)"
-                  value={zoneId}
-                  onChange={(e) => setZoneId(e.target.value)}
-                />
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary-600 text-white text-xs">
+                      2
+                    </span>
+                    Hostname publico
+                  </div>
+                  <input
+                    className="input"
+                    placeholder="ej: api.midominio.com"
+                    value={hostname}
+                    onChange={(e) => setHostname(e.target.value)}
+                  />
+                  <input
+                    className="input"
+                    placeholder="Zone ID (opcional)"
+                    value={zoneId}
+                    onChange={(e) => setZoneId(e.target.value)}
+                  />
+                </div>
+
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary-600 text-white text-xs">
+                      3
+                    </span>
+                    Finalizar
+                  </div>
+                  <input
+                    className="input"
+                    placeholder="Nombre del tunel (opcional)"
+                    value={tunnelName}
+                    onChange={(e) => setTunnelName(e.target.value)}
+                  />
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={autoStartOnBoot}
+                      onChange={(e) => setAutoStartOnBoot(e.target.checked)}
+                      className="rounded"
+                    />
+                    Auto iniciar al crear y cuando DockPilot reinicie
+                  </label>
+                </div>
               </div>
 
               {selectedContainer && (
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  Servicio destino:{' '}
-                  <span className="font-mono">
+                <div className="rounded-lg bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 p-3 text-sm text-gray-700 dark:text-gray-300">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Link2 className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                    Vista previa de destino
+                  </div>
+                  <span className="font-mono text-xs sm:text-sm">
                     http://{selectedContainer.name}:
                     {servicePort || selectedContainer.ports?.[0]?.containerPort || 80}
                   </span>
                 </div>
               )}
 
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={autoStartOnBoot}
-                  onChange={(e) => setAutoStartOnBoot(e.target.checked)}
-                  className="rounded"
-                />
-                Auto iniciar tunel al crear y cuando DockPilot reinicie
-              </label>
-
               <button
-                className="btn btn-primary btn-sm"
+                className="btn btn-primary"
                 onClick={() => createTunnelMutation.mutate()}
                 disabled={!serviceContainerId || !hostname || createTunnelMutation.isLoading}
               >
@@ -634,108 +712,113 @@ export default function Tunnels() {
           ) : (tunnels?.length || 0) === 0 ? (
             <div className="text-sm text-gray-500 dark:text-gray-400">{t('tunnels.empty')}</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      {t('tunnels.name')}
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      {t('tunnels.status')}
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      URL
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Microservicio
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Hostname
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Auto inicio
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      {t('tunnels.actions')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(tunnels || []).map((tunnel) => (
-                    <tr key={tunnel.id} className="border-b border-gray-100 dark:border-gray-700">
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                        {tunnel.name}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                        {tunnel.status}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                        {tunnel.publicUrl || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                        {(() => {
-                          const linkedId = tunnel.connectedServices?.[0];
-                          if (!linkedId) return '-';
-                          return (
-                            (containers || []).find((container) => container.id === linkedId)
-                              ?.name || `${linkedId.slice(0, 12)}...`
-                          );
-                        })()}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                        {tunnel.ingressRules?.[0]?.hostname || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                        <label className="inline-flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={Boolean(tunnel.autoStart)}
-                            onChange={(e) =>
-                              updateSettingsMutation.mutate({
-                                id: tunnel.id,
-                                autoStart: e.target.checked,
-                              })
-                            }
-                            className="rounded"
-                            disabled={updateSettingsMutation.isLoading}
-                          />
-                          <span>{tunnel.autoStart ? 'Si' : 'No'}</span>
-                        </label>
-                      </td>
-                      <td className="px-4 py-3 text-right space-x-2">
-                        {tunnel.status !== 'active' ? (
-                          <button
-                            onClick={() => startMutation.mutate(tunnel.id)}
-                            className="btn btn-primary btn-sm"
-                            disabled={startMutation.isLoading}
-                          >
-                            <Play className="h-4 w-4 mr-1" />
-                            {t('tunnels.start')}
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => stopMutation.mutate(tunnel.id)}
-                            className="btn btn-secondary btn-sm"
-                            disabled={stopMutation.isLoading}
-                          >
-                            <Square className="h-4 w-4 mr-1" />
-                            {t('tunnels.stop')}
-                          </button>
-                        )}
-                        <button
-                          onClick={() => deleteMutation.mutate(tunnel.id)}
-                          className="btn btn-danger btn-sm"
-                          disabled={deleteMutation.isLoading}
+            <div className="space-y-3">
+              {(tunnels || []).map((tunnel) => (
+                <div
+                  key={tunnel.id}
+                  className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/40 p-4"
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div className="space-y-3 flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                          {tunnel.name}
+                        </h3>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeClass[tunnel.status]}`}
                         >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          {t('tunnels.delete')}
+                          {statusLabel[tunnel.status]}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                          {tunnel.id.slice(0, 8)}...{tunnel.id.slice(-6)}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                        <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <Globe className="h-3.5 w-3.5" /> Hostname publico
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100 break-all">
+                            {getTunnelHostname(tunnel)}
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <Server className="h-3.5 w-3.5" /> Microservicio
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {getLinkedServiceName(tunnel)}
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <Route className="h-3.5 w-3.5" /> Servicio destino
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100 break-all">
+                            {getTunnelService(tunnel)}
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">URL temporal</p>
+                          <p className="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100 break-all">
+                            {tunnel.publicUrl || 'No aplica (usas hostname propio)'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(tunnel.autoStart)}
+                          onChange={(e) =>
+                            updateSettingsMutation.mutate({
+                              id: tunnel.id,
+                              autoStart: e.target.checked,
+                            })
+                          }
+                          className="rounded"
+                          disabled={updateSettingsMutation.isLoading}
+                        />
+                        Auto inicio {tunnel.autoStart ? 'habilitado' : 'deshabilitado'}
+                      </label>
+                    </div>
+
+                    <div className="flex flex-wrap lg:flex-col gap-2 lg:min-w-[130px]">
+                      {tunnel.status !== 'active' ? (
+                        <button
+                          onClick={() => startMutation.mutate(tunnel.id)}
+                          className="btn btn-primary btn-sm"
+                          disabled={startMutation.isLoading}
+                        >
+                          <Play className="h-4 w-4 mr-1" />
+                          {t('tunnels.start')}
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      ) : (
+                        <button
+                          onClick={() => stopMutation.mutate(tunnel.id)}
+                          className="btn btn-secondary btn-sm"
+                          disabled={stopMutation.isLoading}
+                        >
+                          <Square className="h-4 w-4 mr-1" />
+                          {t('tunnels.stop')}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => deleteMutation.mutate(tunnel.id)}
+                        className="btn btn-danger btn-sm"
+                        disabled={deleteMutation.isLoading}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        {t('tunnels.delete')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

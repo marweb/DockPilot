@@ -10,4 +10,6 @@ export { default as Builds } from './Builds';
 export { default as Compose } from './Compose';
 export { default as Tunnels } from './Tunnels';
 export { default as Settings } from './Settings';
+export { default as Documentation } from './Documentation';
+export { default as Support } from './Support';
 export { default as NotFound } from './NotFound';

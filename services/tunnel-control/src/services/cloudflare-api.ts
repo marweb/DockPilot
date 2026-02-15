@@ -64,6 +64,11 @@ interface TunnelCredentials {
   TunnelName: string;
 }
 
+export interface TunnelRuntimeAuth {
+  token?: string;
+  credentials?: TunnelCredentials;
+}
+
 let currentToken: string | null = null;
 let currentAccountId: string | null = null;
 let baseUrl = 'https://api.cloudflare.com/client/v4';
@@ -169,13 +174,33 @@ export async function getTunnel(id: string, accountId: string): Promise<Cloudfla
   });
 }
 
-export async function getTunnelToken(id: string, accountId: string): Promise<TunnelCredentials> {
+export async function getTunnelToken(id: string, accountId: string): Promise<TunnelRuntimeAuth> {
   checkRateLimit('getTunnelToken');
-  const encoded = await request<string>(`/accounts/${accountId}/cfd_tunnel/${id}/token`, {
-    method: 'GET',
-  });
-  const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
-  return JSON.parse(decoded) as TunnelCredentials;
+  const raw = (
+    await request<string>(`/accounts/${accountId}/cfd_tunnel/${id}/token`, {
+      method: 'GET',
+    })
+  )
+    .trim()
+    .replace(/^"|"$/g, '');
+
+  // Newer Cloudflare APIs return a run token directly.
+  if (raw.includes('.')) {
+    return { token: raw };
+  }
+
+  // Backward compatibility: older responses can be base64-encoded credentials JSON.
+  try {
+    const decoded = Buffer.from(raw, 'base64').toString('utf-8');
+    const credentials = JSON.parse(decoded) as TunnelCredentials;
+    if (credentials.TunnelID && credentials.TunnelSecret) {
+      return { credentials };
+    }
+  } catch {
+    // Fall through to token mode below
+  }
+
+  return { token: raw };
 }
 
 export async function getTunnelConfiguration(

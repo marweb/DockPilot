@@ -16,6 +16,8 @@ const Builds = lazy(() => import('../pages/Builds'));
 const Compose = lazy(() => import('../pages/Compose'));
 const Tunnels = lazy(() => import('../pages/Tunnels'));
 const Settings = lazy(() => import('../pages/Settings'));
+const Documentation = lazy(() => import('../pages/Documentation'));
+const Support = lazy(() => import('../pages/Support'));
 const NotFound = lazy(() => import('../pages/NotFound'));
 
 // Componente de carga
@@ -44,7 +46,7 @@ const LayoutWrapper = () => (
  * - Layouts anidados
  * - Manejo de 404
  */
-export const router = createBrowserRouter([
+export const router: ReturnType<typeof createBrowserRouter> = createBrowserRouter([
   // Rutas públicas (sin autenticación)
   {
     path: '/login',
@@ -112,6 +114,14 @@ export const router = createBrowserRouter([
       {
         path: '/settings',
         element: <Settings />,
+      },
+      {
+        path: '/documentation',
+        element: <Documentation />,
+      },
+      {
+        path: '/support',
+        element: <Support />,
       },
     ],
   },

@@ -150,12 +150,12 @@ export default function Layout({ children }: LayoutProps) {
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
-          <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex h-20 items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700">
             <Link to="/" className="flex items-center">
               <img
                 src="/logo.png"
                 alt="DockPilot"
-                className="h-11 w-auto max-w-[190px] object-contain"
+                className="w-full max-w-[210px] h-auto object-contain"
               />
             </Link>
             <button
@@ -192,12 +192,12 @@ export default function Layout({ children }: LayoutProps) {
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex flex-col flex-1 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-          <div className="flex h-16 items-center px-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex h-20 items-center px-4 border-b border-gray-200 dark:border-gray-700">
             <Link to="/" className="flex items-center">
               <img
                 src="/logo.png"
                 alt="DockPilot"
-                className="h-11 w-auto max-w-[200px] object-contain"
+                className="w-full max-w-[220px] h-auto object-contain"
               />
             </Link>
           </div>

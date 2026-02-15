@@ -10,7 +10,8 @@ interface FooterProps {
 }
 
 const docLinks = [
-  { name: 'documentation', href: 'https://docs.dockpilot.io', external: true },
+  { name: 'documentation', href: '/documentation', external: false },
+  { name: 'support', href: '/support', external: false },
   { name: 'api', href: 'https://api.dockpilot.io', external: true },
   { name: 'github', href: 'https://github.com/dockpilot', external: true },
 ];
@@ -25,7 +26,8 @@ export default function Footer({
   const [appVersion, setAppVersion] = useState('...');
 
   useEffect(() => {
-    api.get('/system/version')
+    api
+      .get('/system/version')
       .then((res) => {
         setAppVersion(res.data?.data?.currentVersion || '...');
       })
@@ -76,9 +78,7 @@ export default function Footer({
                 <Github className="h-5 w-5" />
               </a>
               <a
-                href="https://docs.dockpilot.io"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/documentation"
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 aria-label="Documentation"
               >

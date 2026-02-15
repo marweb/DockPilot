@@ -10,6 +10,7 @@ import { loadCredentials, getDefaultAccount } from './credentials.js';
 import {
   createTunnel as createCloudflareTunnel,
   deleteTunnel as deleteCloudflareTunnel,
+  getTunnel as getCloudflareTunnel,
   getTunnelToken,
   getTunnelConfiguration,
   updateTunnelConfiguration,
@@ -39,6 +40,8 @@ interface TunnelConfig {
   createdAt: Date;
   containerIds: string[];
   autoStart: boolean;
+  lastStatusSyncAt?: number;
+  token?: string;
 }
 
 interface StoredTunnel {
@@ -52,6 +55,7 @@ interface StoredTunnel {
   cloudflareTunnelId?: string;
   containerIds?: string[];
   autoStart?: boolean;
+  token?: string;
 }
 
 interface ProvisionTunnelOptions {
@@ -75,6 +79,7 @@ interface ProvisionTunnelResult {
 const tunnels = new Map<string, TunnelConfig>();
 const tunnelLogs = new Map<string, string[]>();
 const tunnelEmitters = new Map<string, EventEmitter>();
+const STATUS_SYNC_TTL_MS = 10000;
 
 let config: Config;
 
@@ -160,6 +165,8 @@ export async function listTunnels(): Promise<Tunnel[]> {
   await ensureCredentialsDir();
   await loadStoredTunnels();
 
+  await Promise.all([...tunnels.values()].map((tunnel) => refreshTunnelStatus(tunnel)));
+
   const result: Tunnel[] = [];
 
   for (const [, tunnel] of tunnels) {
@@ -189,6 +196,8 @@ export async function getTunnel(id: string): Promise<Tunnel> {
   if (!tunnel) {
     throw new Error('Tunnel not found');
   }
+
+  await refreshTunnelStatus(tunnel);
 
   return {
     id: tunnel.id,
@@ -236,6 +245,7 @@ async function loadStoredTunnels(): Promise<void> {
           createdAt: new Date(stored.createdAt),
           containerIds: stored.containerIds || [],
           autoStart: stored.autoStart ?? false,
+          token: stored.token,
         });
       }
     } catch (error) {
@@ -259,9 +269,47 @@ async function persistTunnelConfig(tunnel: TunnelConfig): Promise<void> {
     cloudflareTunnelId: tunnel.id,
     containerIds: tunnel.containerIds,
     autoStart: tunnel.autoStart,
+    token: tunnel.token,
   };
 
   await writeFile(configFile, JSON.stringify(stored, null, 2));
+}
+
+function isProcessRunning(proc?: ChildProcess): boolean {
+  return Boolean(proc && proc.exitCode === null && !proc.killed);
+}
+
+function hasActiveCloudflareConnection(
+  remoteTunnel: Awaited<ReturnType<typeof getCloudflareTunnel>>
+): boolean {
+  return remoteTunnel.connections.some((connection) => !connection.disconnected_at);
+}
+
+async function refreshTunnelStatus(tunnel: TunnelConfig, force = false): Promise<TunnelStatus> {
+  const now = Date.now();
+  if (!force && tunnel.lastStatusSyncAt && now - tunnel.lastStatusSyncAt < STATUS_SYNC_TTL_MS) {
+    return tunnel.status;
+  }
+
+  const localRunning = isProcessRunning(tunnel.process);
+  let nextStatus: TunnelStatus = localRunning ? 'creating' : 'inactive';
+
+  try {
+    await ensureCloudflareSession(tunnel.accountId);
+    const remoteTunnel = await getCloudflareTunnel(tunnel.id, tunnel.accountId);
+    if (hasActiveCloudflareConnection(remoteTunnel)) {
+      nextStatus = 'active';
+    }
+  } catch (error) {
+    logger.debug({ error, tunnelId: tunnel.id }, 'Failed to refresh remote tunnel status');
+    if (!localRunning && tunnel.status === 'error') {
+      nextStatus = 'error';
+    }
+  }
+
+  tunnel.status = nextStatus;
+  tunnel.lastStatusSyncAt = now;
+  return nextStatus;
 }
 
 async function ensureCloudflareSession(accountId: string): Promise<void> {
@@ -433,8 +481,21 @@ export async function createTunnel(
 
   try {
     const remoteTunnel = await createCloudflareTunnel(name, useAccountId);
-    const tokenPayload = await getTunnelToken(remoteTunnel.id, useAccountId);
-    await writeFile(credentialsFile, JSON.stringify(tokenPayload, null, 2), { mode: 0o600 });
+    const tunnelAuth = await getTunnelToken(remoteTunnel.id, useAccountId);
+
+    let token: string | undefined;
+    let credentialsPath = credentialsFile;
+
+    if (tunnelAuth.credentials) {
+      await writeFile(credentialsFile, JSON.stringify(tunnelAuth.credentials, null, 2), {
+        mode: 0o600,
+      });
+      credentialsPath = credentialsFile;
+    } else if (tunnelAuth.token) {
+      token = tunnelAuth.token;
+    } else {
+      throw new Error('Unable to retrieve tunnel runtime credentials/token from Cloudflare');
+    }
 
     const tunnelId = remoteTunnel.id;
 
@@ -444,12 +505,13 @@ export async function createTunnel(
       name,
       accountId: useAccountId,
       zoneId,
-      credentialsPath: credentialsFile,
+      credentialsPath,
       ingress: [],
       createdAt: new Date().toISOString(),
       cloudflareTunnelId: tunnelId,
       containerIds: [],
       autoStart,
+      token,
     };
 
     await writeFile(path.join(tunnelDir, 'config.json'), JSON.stringify(stored, null, 2));
@@ -460,7 +522,7 @@ export async function createTunnel(
       name,
       accountId: useAccountId,
       zoneId,
-      credentialsFile,
+      credentialsFile: credentialsPath,
       ingress: [],
       status: 'inactive',
       logs: [],
@@ -468,6 +530,7 @@ export async function createTunnel(
       createdAt: new Date(),
       containerIds: [],
       autoStart,
+      token,
     };
 
     tunnels.set(tunnelId, newTunnel);
@@ -526,8 +589,10 @@ export async function deleteTunnel(id: string): Promise<void> {
   }
 
   // Remove local files
-  const tunnelDir = path.dirname(tunnel.credentialsFile);
-  if (existsSync(tunnelDir)) {
+  const tunnelDir = tunnel.credentialsFile
+    ? path.dirname(tunnel.credentialsFile)
+    : path.join(config.credentialsDir, tunnel.name);
+  if (tunnelDir && tunnelDir !== '.' && existsSync(tunnelDir)) {
     await rm(tunnelDir, { recursive: true, force: true });
   }
 
@@ -550,18 +615,26 @@ export async function startTunnel(id: string, restartOnCrash = true): Promise<vo
     return;
   }
 
-  if (!existsSync(tunnel.credentialsFile)) {
-    throw new Error('Tunnel credentials not found');
+  const hasToken = typeof tunnel.token === 'string' && tunnel.token.trim().length > 0;
+  if (!hasToken && !existsSync(tunnel.credentialsFile)) {
+    throw new Error('Tunnel credentials/token not found');
   }
 
   logger.info({ tunnelId: id, name: tunnel.name }, 'Starting tunnel');
 
   // Create config file for ingress rules
-  const tunnelDir = path.dirname(tunnel.credentialsFile);
+  const tunnelDir = tunnel.credentialsFile
+    ? path.dirname(tunnel.credentialsFile)
+    : path.join(config.credentialsDir, tunnel.name);
+  await mkdir(tunnelDir, { recursive: true, mode: 0o700 });
   const configFile = path.join(tunnelDir, 'config.yml');
 
   // Generate config YAML
-  let configYaml = `tunnel: ${id}\ncredentials-file: ${tunnel.credentialsFile}\n`;
+  let configYaml = '';
+
+  if (!hasToken) {
+    configYaml += `tunnel: ${id}\ncredentials-file: ${tunnel.credentialsFile}\n`;
+  }
 
   if (config.metricsPort) {
     configYaml += `metrics: localhost:${config.metricsPort}\n`;
@@ -590,20 +663,24 @@ export async function startTunnel(id: string, restartOnCrash = true): Promise<vo
   const logs = tunnelLogs.get(id)!;
 
   // Start cloudflared
-  const args = ['tunnel', '--config', configFile, 'run', id];
+  const args = hasToken
+    ? ['tunnel', 'run', '--token', tunnel.token!.trim()]
+    : ['tunnel', '--config', configFile, 'run', id];
 
   if (config.logLevel === 'debug') {
     args.push('--log-level', 'debug');
   }
 
-  logger.debug({ args }, 'Spawning cloudflared process');
+  const safeArgs = hasToken ? ['tunnel', 'run', '--token', '***redacted***'] : args;
+  logger.debug({ args: safeArgs }, 'Spawning cloudflared process');
 
   const proc = spawn(config.cloudflaredPath, args, {
     detached: false,
   });
 
   tunnel.process = proc;
-  tunnel.status = 'active';
+  tunnel.status = 'creating';
+  tunnel.lastStatusSyncAt = undefined;
 
   // Handle stdout
   proc.stdout.on('data', (data) => {
@@ -627,6 +704,11 @@ export async function startTunnel(id: string, restartOnCrash = true): Promise<vo
       if (emitter) {
         emitter.emit('log', { type: 'stdout', message: line, timestamp: new Date().toISOString() });
       }
+
+      if (/registered tunnel connection|connection .* registered/i.test(line)) {
+        tunnel.status = 'active';
+        tunnel.lastStatusSyncAt = undefined;
+      }
     }
   });
 
@@ -649,6 +731,11 @@ export async function startTunnel(id: string, restartOnCrash = true): Promise<vo
       if (emitter) {
         emitter.emit('log', { type: 'stderr', message: line, timestamp: new Date().toISOString() });
       }
+
+      if (/registered tunnel connection|connection .* registered/i.test(line)) {
+        tunnel.status = 'active';
+        tunnel.lastStatusSyncAt = undefined;
+      }
     }
   });
 
@@ -657,6 +744,7 @@ export async function startTunnel(id: string, restartOnCrash = true): Promise<vo
     logger.info({ tunnelId: id, exitCode: code, signal }, 'Tunnel process exited');
 
     tunnel.status = code === 0 ? 'inactive' : 'error';
+    tunnel.lastStatusSyncAt = undefined;
     tunnel.process = undefined;
 
     // Auto-restart on crash if enabled
@@ -695,7 +783,7 @@ export async function startTunnel(id: string, restartOnCrash = true): Promise<vo
   // Wait a bit to check if process started successfully
   await new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => {
-      if (tunnel.status === 'active') {
+      if (isProcessRunning(proc) && tunnel.status !== 'error') {
         resolve();
       } else {
         reject(new Error('Tunnel failed to start within timeout'));
@@ -774,6 +862,8 @@ export async function getTunnelStatus(
   if (!tunnel) {
     throw new Error('Tunnel not found');
   }
+
+  await refreshTunnelStatus(tunnel);
 
   return {
     status: tunnel.status,
