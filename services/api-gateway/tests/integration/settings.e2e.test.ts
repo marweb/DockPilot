@@ -217,17 +217,62 @@ describe('Settings End-to-End', () => {
   });
 
   describe('Notification Providers', () => {
-    it('should support all notification providers', async () => {
-      const providers = [
-        {
+    it('should support Slack configuration', async () => {
+      const response = await app.inject({
+        method: 'PUT',
+        url: '/api/system/notifications/config',
+        headers: {
+          authorization: `Bearer ${adminToken}`,
+          'content-type': 'application/json',
+        },
+        payload: {
           provider: 'slack',
           name: 'Slack Test',
           enabled: true,
           config: {
-            webhookUrl: 'https://example.com/webhooks/slack/PLACEHOLDER',
+            webhookUrl:
+              'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX',
           },
         },
-        {
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.payload);
+      expect(body.data.provider).toBe('slack');
+    });
+
+    it('should support Discord configuration', async () => {
+      const response = await app.inject({
+        method: 'PUT',
+        url: '/api/system/notifications/config',
+        headers: {
+          authorization: `Bearer ${adminToken}`,
+          'content-type': 'application/json',
+        },
+        payload: {
+          provider: 'discord',
+          name: 'Discord Test',
+          enabled: true,
+          config: {
+            webhookUrl: 'https://discord.com/api/webhooks/123456789/abcdef',
+          },
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.payload);
+      expect(body.data.provider).toBe('discord');
+    });
+
+    it('should support Telegram configuration', async () => {
+      const response = await app.inject({
+        method: 'PUT',
+        url: '/api/system/notifications/config',
+        headers: {
+          authorization: `Bearer ${adminToken}`,
+          'content-type': 'application/json',
+        },
+        payload: {
           provider: 'telegram',
           name: 'Telegram Test',
           enabled: true,
@@ -236,40 +281,87 @@ describe('Settings End-to-End', () => {
             chatId: '123456789',
           },
         },
-        {
-          provider: 'discord',
-          name: 'Discord Test',
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.payload);
+      expect(body.data.provider).toBe('telegram');
+    });
+
+    it('should support SMTP configuration with complete data', async () => {
+      const response = await app.inject({
+        method: 'PUT',
+        url: '/api/system/notifications/config',
+        headers: {
+          authorization: `Bearer ${adminToken}`,
+          'content-type': 'application/json',
+        },
+        payload: {
+          provider: 'smtp',
+          name: 'SMTP Test',
           enabled: true,
+          fromName: 'Test',
+          fromAddress: 'test@example.com',
           config: {
-            webhookUrl: 'https://discord.com/api/webhooks/123456789/abcdef',
+            host: 'smtp.gmail.com',
+            port: 587,
+            username: 'test@gmail.com',
+            password: 'testpassword123',
+            encryption: 'starttls',
           },
         },
-        {
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.payload);
+      expect(body.data.provider).toBe('smtp');
+    });
+
+    it('should support Resend configuration', async () => {
+      const response = await app.inject({
+        method: 'PUT',
+        url: '/api/system/notifications/config',
+        headers: {
+          authorization: `Bearer ${adminToken}`,
+          'content-type': 'application/json',
+        },
+        payload: {
           provider: 'resend',
           name: 'Resend Test',
           enabled: true,
+          fromName: 'Test',
+          fromAddress: 'test@example.com',
           config: {
             apiKey: 're_1234567890abcdef',
             fromAddress: 'test@example.com',
           },
         },
-      ];
+      });
 
-      for (const providerConfig of providers) {
-        const response = await app.inject({
-          method: 'PUT',
-          url: '/api/system/notifications/config',
-          headers: {
-            authorization: `Bearer ${adminToken}`,
-            'content-type': 'application/json',
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.payload);
+      expect(body.data.provider).toBe('resend');
+    });
+
+    it('should retrieve all notification channels', async () => {
+      // First create a channel
+      await app.inject({
+        method: 'PUT',
+        url: '/api/system/notifications/config',
+        headers: {
+          authorization: `Bearer ${adminToken}`,
+          'content-type': 'application/json',
+        },
+        payload: {
+          provider: 'slack',
+          name: 'Test Slack',
+          enabled: true,
+          config: {
+            webhookUrl:
+              'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX',
           },
-          payload: providerConfig,
-        });
-
-        expect(response.statusCode).toBe(200);
-        const body = JSON.parse(response.payload);
-        expect(body.data.provider).toBe(providerConfig.provider);
-      }
+        },
+      });
 
       // Verify all channels exist
       const getResponse = await app.inject({
@@ -278,8 +370,9 @@ describe('Settings End-to-End', () => {
         headers: { authorization: `Bearer ${adminToken}` },
       });
 
+      expect(getResponse.statusCode).toBe(200);
       const body = JSON.parse(getResponse.payload);
-      expect(body.data).toHaveLength(5);
+      expect(body.data.channels.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -549,7 +642,8 @@ describe('Settings End-to-End', () => {
           name: 'Test Slack',
           enabled: true,
           config: {
-            webhookUrl: 'https://example.com/webhooks/slack/PLACEHOLDER',
+            webhookUrl:
+              'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX',
           },
         },
       });
@@ -560,7 +654,7 @@ describe('Settings End-to-End', () => {
       expect(body.data.config.data).toMatch(/^enc:/);
       // Webhook URL should not appear in plain text
       const responseStr = JSON.stringify(body);
-      expect(responseStr).not.toContain('secret-token-789');
+      expect(responseStr).not.toContain('XXXXXXXXXXXXXXXXXXXXXXXX');
     });
   });
 

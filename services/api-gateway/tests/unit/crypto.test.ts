@@ -277,11 +277,14 @@ describe('crypto', () => {
       expect(masked).toBe(url);
     });
 
-    it('should handle URLs with authentication in query string', () => {
-      const url = 'https://example.com/webhooks/slack/PLACEHOLDER_URL';
+    it('should mask sensitive parts of webhook URLs', () => {
+      const url = 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX';
       const masked = maskWebhookUrl(url);
-      expect(masked).toContain('PLACEHOLDER_URL');
+      // Should keep domain but mask the token
+      expect(masked).toContain('hooks.slack.com');
       expect(masked).toContain('***');
+      // The actual token should be masked
+      expect(masked).not.toBe(url);
     });
   });
 
