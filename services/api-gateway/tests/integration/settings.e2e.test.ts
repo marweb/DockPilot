@@ -372,7 +372,7 @@ describe('Settings End-to-End', () => {
 
       expect(getResponse.statusCode).toBe(200);
       const body = JSON.parse(getResponse.payload);
-      expect(body.data.channels.length).toBeGreaterThanOrEqual(1);
+      expect(body.data.length).toBeGreaterThanOrEqual(1);
     });
   });
 
