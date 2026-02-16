@@ -69,9 +69,10 @@ export interface SendTestNotificationInput {
  * @throws ApiError with code FORBIDDEN if user is not admin
  */
 export async function getNotificationChannels(): Promise<NotificationChannelResponse[]> {
-  const response =
-    await api.get<ApiResponse<NotificationChannelResponse[]>>('/notifications/channels');
-  return extractData(response);
+  const response = await api.get<ApiResponse<{ channels: NotificationChannelResponse[] }>>(
+    '/system/notifications/config'
+  );
+  return extractData(response).channels;
 }
 
 /**
@@ -86,9 +87,12 @@ export async function saveNotificationChannel(
   provider: NotificationProvider,
   config: SaveNotificationChannelInput
 ): Promise<NotificationChannelResponse> {
-  const response = await api.post<ApiResponse<NotificationChannelResponse>>(
-    `/notifications/channels/${provider}`,
-    config
+  const response = await api.put<ApiResponse<NotificationChannelResponse>>(
+    '/system/notifications/config',
+    {
+      provider,
+      ...config,
+    }
   );
   return extractData(response);
 }
@@ -107,13 +111,13 @@ export async function sendTestNotification(
   testEmail?: string,
   testMessage?: string
 ): Promise<{ success: boolean; message: string }> {
-  const payload: SendTestNotificationInput = {};
-  if (testEmail) payload.testEmail = testEmail;
-  if (testMessage) payload.testMessage = testMessage;
-
   const response = await api.post<ApiResponse<{ success: boolean; message: string }>>(
-    `/notifications/test/${provider}`,
-    payload
+    '/system/notifications/test',
+    {
+      provider,
+      testEmail,
+      testMessage,
+    }
   );
   return extractData(response);
 }
