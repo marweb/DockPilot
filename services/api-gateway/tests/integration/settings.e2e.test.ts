@@ -222,6 +222,7 @@ describe('Settings End-to-End', () => {
         {
           provider: 'slack',
           name: 'Slack Test',
+          enabled: true,
           config: {
             webhookUrl: 'https://example.com/webhooks/slack/PLACEHOLDER',
           },
@@ -229,6 +230,7 @@ describe('Settings End-to-End', () => {
         {
           provider: 'telegram',
           name: 'Telegram Test',
+          enabled: true,
           config: {
             botToken: '123456789:ABCdefGHIjklMNOpqrsTUVwxyz',
             chatId: '123456789',
@@ -237,6 +239,7 @@ describe('Settings End-to-End', () => {
         {
           provider: 'discord',
           name: 'Discord Test',
+          enabled: true,
           config: {
             webhookUrl: 'https://discord.com/api/webhooks/123456789/abcdef',
           },
@@ -244,6 +247,7 @@ describe('Settings End-to-End', () => {
         {
           provider: 'resend',
           name: 'Resend Test',
+          enabled: true,
           config: {
             apiKey: 're_1234567890abcdef',
             fromAddress: 'test@example.com',
