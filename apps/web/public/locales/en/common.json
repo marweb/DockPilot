@@ -637,12 +637,14 @@
       "notifications": "Notifications",
       "events": "Events",
       "updates": "Version & Updates",
+      "versionAndUpdates": "Version & Updates",
       "security": "Security"
     },
     "general": {
       "title": "General Settings",
       "description": "Configure your DockPilot instance details",
       "instanceInfo": "Instance Information",
+      "instanceInformation": "Instance Information",
       "instanceName": "Instance Name",
       "instanceNamePlaceholder": "My DockPilot Instance",
       "instanceNameRequired": "Instance name is required",
@@ -651,6 +653,7 @@
       "publicUrlInvalid": "Invalid URL format",
       "publicUrlHelp": "URL used for webhooks and external access",
       "instanceDetails": "Instance Details",
+      "instanceDetailsTitle": "Instance Details",
       "timezone": "Instance Timezone",
       "timezoneRequired": "Timezone is required",
       "publicIPv4": "Instance's Public IPv4",

@@ -347,12 +347,14 @@
       "notifications": "通知",
       "events": "イベント",
       "updates": "バージョンとアップデート",
+      "versionAndUpdates": "バージョンとアップデート",
       "security": "セキュリティ"
     },
     "general": {
       "title": "一般設定",
       "description": "DockPilot インスタンスの詳細を設定する",
       "instanceInfo": "インスタンス情報",
+      "instanceInformation": "インスタンス情報",
       "instanceName": "インスタンス名",
       "instanceNamePlaceholder": "マイ DockPilot インスタンス",
       "instanceNameRequired": "インスタンス名は必須です",
@@ -361,6 +363,7 @@
       "publicUrlInvalid": "無効な URL 形式",
       "publicUrlHelp": "Webhooks および外部アクセスに使用される URL",
       "instanceDetails": "インスタンス詳細",
+      "instanceDetailsTitle": "インスタンス詳細",
       "timezone": "インスタンスのタイムゾーン",
       "timezoneRequired": "タイムゾーンは必須です",
       "publicIPv4": "インスタンスの公開 IPv4",

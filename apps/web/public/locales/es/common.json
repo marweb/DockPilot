@@ -341,12 +341,14 @@
       "notifications": "Notificaciones",
       "events": "Eventos",
       "updates": "Versión y Actualizaciones",
+      "versionAndUpdates": "Versión y Actualizaciones",
       "security": "Seguridad"
     },
     "general": {
       "title": "Configuración General",
       "description": "Configura los detalles de tu instancia de DockPilot",
       "instanceInfo": "Información de la Instancia",
+      "instanceInformation": "Información de la Instancia",
       "instanceName": "Nombre de la Instancia",
       "instanceNamePlaceholder": "Mi Instancia DockPilot",
       "instanceNameRequired": "El nombre de la instancia es obligatorio",
@@ -355,6 +357,7 @@
       "publicUrlInvalid": "Formato de URL inválido",
       "publicUrlHelp": "URL utilizada para webhooks y acceso externo",
       "instanceDetails": "Detalles de la Instancia",
+      "instanceDetailsTitle": "Detalles de la Instancia",
       "timezone": "Zona Horaria de la Instancia",
       "timezoneRequired": "La zona horaria es obligatoria",
       "publicIPv4": "IPv4 Pública de la Instancia",

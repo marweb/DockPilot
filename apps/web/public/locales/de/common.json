@@ -347,12 +347,14 @@
       "notifications": "Benachrichtigungen",
       "events": "Ereignisse",
       "updates": "Version & Updates",
+      "versionAndUpdates": "Version & Updates",
       "security": "Sicherheit"
     },
     "general": {
       "title": "Allgemeine Einstellungen",
       "description": "Konfigurieren Sie die Details Ihrer DockPilot-Instanz",
       "instanceInfo": "Instanz-Informationen",
+      "instanceInformation": "Instanz-Informationen",
       "instanceName": "Instanzname",
       "instanceNamePlaceholder": "Meine DockPilot Instanz",
       "instanceNameRequired": "Instanzname ist erforderlich",
@@ -361,6 +363,7 @@
       "publicUrlInvalid": "Ungültiges URL-Format",
       "publicUrlHelp": "URL für Webhooks und externen Zugriff",
       "instanceDetails": "Instanz-Details",
+      "instanceDetailsTitle": "Instanz-Details",
       "timezone": "Instanz-Zeitzone",
       "timezoneRequired": "Zeitzone ist erforderlich",
       "publicIPv4": "Öffentliche IPv4 der Instanz",

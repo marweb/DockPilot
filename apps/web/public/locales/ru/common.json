@@ -347,12 +347,14 @@
       "notifications": "Уведомления",
       "events": "События",
       "updates": "Версия и Обновления",
+      "versionAndUpdates": "Версия и Обновления",
       "security": "Безопасность"
     },
     "general": {
       "title": "Общие Настройки",
       "description": "Настройте детали вашего экземпляра DockPilot",
       "instanceInfo": "Информация об Экземпляре",
+      "instanceInformation": "Информация об Экземпляре",
       "instanceName": "Имя Экземпляра",
       "instanceNamePlaceholder": "Мой Экземпляр DockPilot",
       "instanceNameRequired": "Имя экземпляра обязательно",
@@ -361,6 +363,7 @@
       "publicUrlInvalid": "Неверный формат URL",
       "publicUrlHelp": "URL для webhooks и внешнего доступа",
       "instanceDetails": "Детали Экземпляра",
+      "instanceDetailsTitle": "Детали Экземпляра",
       "timezone": "Часовой Пояс Экземпляра",
       "timezoneRequired": "Часовой пояс обязателен",
       "publicIPv4": "Публичный IPv4 Экземпляра",

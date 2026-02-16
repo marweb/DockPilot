@@ -347,12 +347,14 @@
       "notifications": "通知",
       "events": "事件",
       "updates": "版本和更新",
+      "versionAndUpdates": "版本和更新",
       "security": "安全"
     },
     "general": {
       "title": "常规设置",
       "description": "配置您的 DockPilot 实例详细信息",
       "instanceInfo": "实例信息",
+      "instanceInformation": "实例信息",
       "instanceName": "实例名称",
       "instanceNamePlaceholder": "我的 DockPilot 实例",
       "instanceNameRequired": "实例名称为必填项",
@@ -361,6 +363,7 @@
       "publicUrlInvalid": "URL 格式无效",
       "publicUrlHelp": "用于 webhooks 和外部访问的 URL",
       "instanceDetails": "实例详细信息",
+      "instanceDetailsTitle": "实例详细信息",
       "timezone": "实例时区",
       "timezoneRequired": "时区为必填项",
       "publicIPv4": "实例的公共 IPv4",
