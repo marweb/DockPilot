@@ -636,8 +636,9 @@
       "empty": "Логов нет"
     }
   },
-  "repositoriesPage": {
+  "repositories": {
     "title": "Репозитории",
+    "description": "Развертывание из ручных репозиториев (публичных или приватных). OAuth опционален.",
     "subtitle": "Деплой из ручных репозиториев (публичных или приватных). OAuth опционален.",
     "messages": {
       "created": "Репозиторий успешно создан",
@@ -651,7 +652,8 @@
       "gitlabStarted": "GitLab flow запущен. Подтвердите код по указанному URL.",
       "gitlabPending": "GitLab ожидает: {{error}}",
       "gitlabConnected": "GitLab подключен: {{username}}",
-      "sshCopied": "Ключ скопирован в буфер обмена"
+      "sshCopied": "Ключ скопирован в буфер обмена",
+      "webhookUpdated": "Конфигурация вебхука успешно обновлена"
     },
     "errors": {
       "create": "Ошибка создания репозитория",
@@ -664,7 +666,8 @@
       "githubPoll": "Ошибка проверки GitHub device flow",
       "gitlabStart": "Не удалось запустить GitLab device flow",
       "gitlabNotStarted": "GitLab device flow не запущен",
-      "gitlabPoll": "Ошибка проверки GitLab device flow"
+      "gitlabPoll": "Ошибка проверки GitLab device flow",
+      "webhookUpdate": "Ошибка обновления конфигурации вебхука"
     },
     "oauth": {
       "title": "OAuth интеграции (опционально)",
@@ -741,7 +744,9 @@
         "configured": "Публичный URL Настроен",
         "missing": "Публичный URL Не Настроен",
         "description": "Для webhooks требуется публичный URL. Настройте его в Настройки > Общие."
-      },
+      }
+    },
+    "webhooks": {
       "github": {
         "title": "Настройка Webhook GitHub",
         "step1": "Перейдите в ваш репозиторий на GitHub",
@@ -776,10 +781,17 @@
       "visibility": "Видимость",
       "visibilityPublic": "Публичный",
       "visibilityPrivate": "Приватный",
+      "public": "Публичный",
+      "private": "Приватный",
       "authType": "Аутентификация",
       "noAuth": "Без Аутентификации",
       "httpsToken": "HTTPS Токен",
       "autoDeploy": "Авто-деплой при push через webhook"
+    },
+    "newRepository": "Новый Репозиторий",
+    "empty": "Репозитории не найдены. Создайте один, чтобы начать.",
+    "autoDeploy": {
+      "enabled": "Авто-деплой включен"
     },
     "list": {
       "title": "Ваши Репозитории"

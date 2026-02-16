@@ -385,8 +385,9 @@
       "empty": "No logs"
     }
   },
-  "repositoriesPage": {
+  "repositories": {
     "title": "Repositories",
+    "description": "Deploy from manual repositories (public or private). OAuth is optional.",
     "subtitle": "Deploy from manual repositories (public or private). OAuth is optional.",
     "messages": {
       "created": "Repository created successfully",
@@ -400,7 +401,8 @@
       "gitlabStarted": "GitLab flow started. Complete the code in the indicated URL.",
       "gitlabPending": "GitLab pending: {{error}}",
       "gitlabConnected": "GitLab connected: {{username}}",
-      "sshCopied": "Key copied to clipboard"
+      "sshCopied": "Key copied to clipboard",
+      "webhookUpdated": "Webhook configuration updated successfully"
     },
     "errors": {
       "create": "Error creating repository",
@@ -413,7 +415,8 @@
       "githubPoll": "Error validating GitHub device flow",
       "gitlabStart": "Could not start GitLab device flow",
       "gitlabNotStarted": "GitLab device flow not started",
-      "gitlabPoll": "Error validating GitLab device flow"
+      "gitlabPoll": "Error validating GitLab device flow",
+      "webhookUpdate": "Error updating webhook configuration"
     },
     "oauth": {
       "title": "OAuth Integrations (optional)",
@@ -490,7 +493,9 @@
         "configured": "Public URL Configured",
         "missing": "Public URL Not Configured",
         "description": "A public URL is required for webhooks. Configure it in Settings > General."
-      },
+      }
+    },
+    "webhooks": {
       "github": {
         "title": "GitHub Webhook Setup",
         "step1": "Go to your repository on GitHub",
@@ -525,10 +530,17 @@
       "visibility": "Visibility",
       "visibilityPublic": "Public",
       "visibilityPrivate": "Private",
+      "public": "Public",
+      "private": "Private",
       "authType": "Authentication",
       "noAuth": "No Authentication",
       "httpsToken": "HTTPS Token",
       "autoDeploy": "Auto-deploy on webhook push"
+    },
+    "newRepository": "New Repository",
+    "empty": "No repositories found. Create one to get started.",
+    "autoDeploy": {
+      "enabled": "Auto-deploy enabled"
     },
     "list": {
       "title": "Your Repositories"

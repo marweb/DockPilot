@@ -636,8 +636,9 @@
       "empty": "Keine Protokolle"
     }
   },
-  "repositoriesPage": {
+  "repositories": {
     "title": "Repositorien",
+    "description": "Bereitstellung aus manuellen Repositorys (öffentlich oder privat). OAuth ist optional.",
     "subtitle": "Bereitstellung aus manuellen Repositorys (öffentlich oder privat). OAuth ist optional.",
     "messages": {
       "created": "Repository erfolgreich erstellt",
@@ -651,7 +652,8 @@
       "gitlabStarted": "GitLab-Flow gestartet. Vervollständigen Sie den Code in der angegebenen URL.",
       "gitlabPending": "GitLab ausstehend: {{error}}",
       "gitlabConnected": "GitLab verbunden: {{username}}",
-      "sshCopied": "Schlüssel in die Zwischenablage kopiert"
+      "sshCopied": "Schlüssel in die Zwischenablage kopiert",
+      "webhookUpdated": "Webhook-Konfiguration erfolgreich aktualisiert"
     },
     "errors": {
       "create": "Fehler beim Erstellen des Repositorys",
@@ -664,7 +666,8 @@
       "githubPoll": "Fehler beim Validieren des GitHub-Geräteflusses",
       "gitlabStart": "Der GitLab-Gerätefluss konnte nicht gestartet werden",
       "gitlabNotStarted": "GitLab-Gerätefluss nicht gestartet",
-      "gitlabPoll": "Fehler beim Validieren des GitLab-Geräteflusses"
+      "gitlabPoll": "Fehler beim Validieren des GitLab-Geräteflusses",
+      "webhookUpdate": "Fehler beim Aktualisieren der Webhook-Konfiguration"
     },
     "oauth": {
       "title": "OAuth-Integrationen (optional)",
@@ -741,7 +744,9 @@
         "configured": "Öffentliche URL Konfiguriert",
         "missing": "Öffentliche URL Nicht Konfiguriert",
         "description": "Eine öffentliche URL ist für Webhooks erforderlich. Konfigurieren Sie sie unter Einstellungen > Allgemein."
-      },
+      }
+    },
+    "webhooks": {
       "github": {
         "title": "GitHub Webhook-Konfiguration",
         "step1": "Gehen Sie zu Ihrem Repository auf GitHub",
@@ -776,10 +781,17 @@
       "visibility": "Sichtbarkeit",
       "visibilityPublic": "Öffentlich",
       "visibilityPrivate": "Privat",
+      "public": "Öffentlich",
+      "private": "Privat",
       "authType": "Authentifizierung",
       "noAuth": "Keine Authentifizierung",
       "httpsToken": "HTTPS-Token",
       "autoDeploy": "Auto-Deploy bei Webhook-Push"
+    },
+    "newRepository": "Neues Repository",
+    "empty": "Keine Repositories gefunden. Erstellen Sie eines, um zu beginnen.",
+    "autoDeploy": {
+      "enabled": "Auto-Deploy aktiviert"
     },
     "list": {
       "title": "Ihre Repositories"

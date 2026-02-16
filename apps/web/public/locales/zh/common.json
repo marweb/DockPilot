@@ -636,8 +636,9 @@
       "empty": "无日志"
     }
   },
-  "repositoriesPage": {
+  "repositories": {
     "title": "存储库",
+    "description": "从手动存储库（公共或私有）进行部署。OAuth是可选的。",
     "subtitle": "从手动存储库（公共或私有）进行部署。 OAuth 是可选的。",
     "messages": {
       "created": "存储库创建成功",
@@ -651,7 +652,8 @@
       "gitlabStarted": "GitLab 流程开始。完成指定 URL 中的代码。",
       "gitlabPending": "GitLab 待处理：{{error}}",
       "gitlabConnected": "GitLab 连接：{{username}}",
-      "sshCopied": "密钥已复制到剪贴板"
+      "sshCopied": "密钥已复制到剪贴板",
+      "webhookUpdated": "Webhook配置更新成功"
     },
     "errors": {
       "create": "创建存储库时出错",
@@ -664,7 +666,8 @@
       "githubPoll": "验证 GitHub 设备流时出错",
       "gitlabStart": "无法启动 GitLab 设备流",
       "gitlabNotStarted": "GitLab 设备流程未启动",
-      "gitlabPoll": "验证 GitLab 设备流时出错"
+      "gitlabPoll": "验证 GitLab 设备流时出错",
+      "webhookUpdate": "更新 Webhook 配置时出错"
     },
     "oauth": {
       "title": "OAuth 集成（可选）",
@@ -741,7 +744,9 @@
         "configured": "公共 URL 已配置",
         "missing": "公共 URL 未配置",
         "description": "webhooks 需要公共 URL。请在设置 > 常规中进行配置。"
-      },
+      }
+    },
+    "webhooks": {
       "github": {
         "title": "GitHub Webhook 配置",
         "step1": "转到 GitHub 上的您的仓库",
@@ -776,10 +781,17 @@
       "visibility": "可见性",
       "visibilityPublic": "公共",
       "visibilityPrivate": "私有",
+      "public": "公共",
+      "private": "私有",
       "authType": "认证",
       "noAuth": "无认证",
       "httpsToken": "HTTPS 令牌",
       "autoDeploy": "在 webhook 推送时自动部署"
+    },
+    "newRepository": "新仓库",
+    "empty": "未找到仓库。请创建一个以开始。",
+    "autoDeploy": {
+      "enabled": "自动部署已启用"
     },
     "list": {
       "title": "您的仓库"

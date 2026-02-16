@@ -629,8 +629,9 @@
       "empty": "Sin logs"
     }
   },
-  "repositoriesPage": {
+  "repositories": {
     "title": "Repositorios",
+    "description": "Despliegue desde repositorios manuales (públicos o privados). OAuth es opcional.",
     "subtitle": "Despliega desde repositorios manuales (públicos o privados). OAuth es opcional.",
     "messages": {
       "created": "Repositorio creado correctamente",
@@ -644,7 +645,8 @@
       "gitlabStarted": "Flujo de GitLab iniciado. Completa el código en la URL indicada.",
       "gitlabPending": "GitLab pendiente: {{error}}",
       "gitlabConnected": "GitLab conectado: {{username}}",
-      "sshCopied": "Clave copiada al portapapeles"
+      "sshCopied": "Clave copiada al portapapeles",
+      "webhookUpdated": "Configuración de webhook actualizada exitosamente"
     },
     "errors": {
       "create": "Error al crear repositorio",
@@ -657,7 +659,8 @@
       "githubPoll": "Error al validar GitHub device flow",
       "gitlabStart": "No se pudo iniciar GitLab device flow",
       "gitlabNotStarted": "GitLab device flow no iniciado",
-      "gitlabPoll": "Error al validar GitLab device flow"
+      "gitlabPoll": "Error al validar GitLab device flow",
+      "webhookUpdate": "Error al actualizar la configuración del webhook"
     },
     "oauth": {
       "title": "Integraciones OAuth (opcional)",
@@ -754,6 +757,26 @@
         "step2": "Establezca el token secreto si su proveedor lo requiere"
       }
     },
+    "webhooks": {
+      "github": {
+        "title": "Configuración de Webhook de GitHub",
+        "step1": "Vaya a su repositorio en GitHub",
+        "step2": "Navegue a Configuración > Webhooks > Agregar webhook",
+        "step3": "Pegue la URL del webhook arriba",
+        "step4": "Establezca el tipo de contenido en 'application/json' y agregue su secreto"
+      },
+      "gitlab": {
+        "title": "Configuración de Webhook de GitLab",
+        "step1": "Vaya a su proyecto en GitLab",
+        "step2": "Navegue a Configuración > Webhooks",
+        "step3": "Pegue la URL del webhook y agregue su token secreto"
+      },
+      "generic": {
+        "title": "Configuración de Webhook",
+        "step1": "Configure su webhook para enviar solicitudes POST a: {{url}}",
+        "step2": "Establezca el token secreto si su proveedor lo requiere"
+      }
+    },
     "publicUrl": {
       "configured": "La URL pública está configurada",
       "missing": "La URL pública no está configurada",
@@ -769,10 +792,17 @@
       "visibility": "Visibilidad",
       "visibilityPublic": "Público",
       "visibilityPrivate": "Privado",
+      "public": "Público",
+      "private": "Privado",
       "authType": "Autenticación",
       "noAuth": "Sin Autenticación",
       "httpsToken": "Token HTTPS",
       "autoDeploy": "Despliegue automático al recibir push por webhook"
+    },
+    "newRepository": "Nuevo Repositorio",
+    "empty": "No se encontraron repositorios. Cree uno para comenzar.",
+    "autoDeploy": {
+      "enabled": "Despliegue automático habilitado"
     },
     "list": {
       "title": "Tus Repositorios"

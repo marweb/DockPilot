@@ -636,8 +636,9 @@
       "empty": "Aucun journal"
     }
   },
-  "repositoriesPage": {
+  "repositories": {
     "title": "Dépôts",
+    "description": "Déployez depuis des dépôts manuels (publics ou privés). OAuth est facultatif.",
     "subtitle": "Déployez à partir de référentiels manuels (publics ou privés). OAuth est facultatif.",
     "messages": {
       "created": "Dépôt créé avec succès",
@@ -651,7 +652,8 @@
       "gitlabStarted": "Le flux GitLab a démarré. Complétez le code dans l'URL indiquée.",
       "gitlabPending": "GitLab en attente : {{error}}",
       "gitlabConnected": "GitLab connecté : {{username}}",
-      "sshCopied": "Clé copiée dans le presse-papiers"
+      "sshCopied": "Clé copiée dans le presse-papiers",
+      "webhookUpdated": "Configuration du webhook mise à jour avec succès"
     },
     "errors": {
       "create": "Erreur lors de la création du référentiel",
@@ -664,7 +666,8 @@
       "githubPoll": "Erreur lors de la validation du flux de périphérique GitHub",
       "gitlabStart": "Impossible de démarrer le flux de périphériques GitLab",
       "gitlabNotStarted": "Le flux de périphériques GitLab n'a pas démarré",
-      "gitlabPoll": "Erreur lors de la validation du flux de périphérique GitLab"
+      "gitlabPoll": "Erreur lors de la validation du flux de périphérique GitLab",
+      "webhookUpdate": "Erreur lors de la mise à jour de la configuration du webhook"
     },
     "oauth": {
       "title": "Intégrations OAuth (facultatif)",
@@ -741,7 +744,9 @@
         "configured": "URL Publique Configurée",
         "missing": "URL Publique Non Configurée",
         "description": "Une URL publique est requise pour les webhooks. Configurez-la dans Paramètres > Général."
-      },
+      }
+    },
+    "webhooks": {
       "github": {
         "title": "Configuration du Webhook GitHub",
         "step1": "Allez à votre référentiel sur GitHub",
@@ -776,10 +781,17 @@
       "visibility": "Visibilité",
       "visibilityPublic": "Publique",
       "visibilityPrivate": "Privé",
+      "public": "Publique",
+      "private": "Privé",
       "authType": "Authentification",
       "noAuth": "Sans Authentification",
       "httpsToken": "Jeton HTTPS",
       "autoDeploy": "Déploiement automatique sur push webhook"
+    },
+    "newRepository": "Nouveau Référentiel",
+    "empty": "Aucun dépôt trouvé. Créez-en un pour commencer.",
+    "autoDeploy": {
+      "enabled": "Déploiement automatique activé"
     },
     "list": {
       "title": "Vos Dépôts"
