@@ -32,7 +32,7 @@ export interface SystemSettingsInput {
  * @throws ApiError with code FORBIDDEN if user is not admin
  */
 export async function getSystemSettings(): Promise<SystemSettings> {
-  const response = await api.get<ApiResponse<SystemSettings>>('/settings/system');
+  const response = await api.get<ApiResponse<SystemSettings>>('/system/settings');
   return extractData(response);
 }
 
@@ -44,6 +44,6 @@ export async function getSystemSettings(): Promise<SystemSettings> {
  * @throws ApiError with code VALIDATION_ERROR if validation fails
  */
 export async function updateSystemSettings(settings: SystemSettingsInput): Promise<SystemSettings> {
-  const response = await api.put<ApiResponse<SystemSettings>>('/settings/system', settings);
+  const response = await api.put<ApiResponse<SystemSettings>>('/system/settings', settings);
   return extractData(response);
 }
