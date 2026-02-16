@@ -174,7 +174,7 @@ describe('SlackAdapter', () => {
   describe('validate', () => {
     it('should return true for valid config', () => {
       const validConfig = {
-        webhookUrl: 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX',
+        webhookUrl: 'https://example.com/webhooks/slack/PLACEHOLDER',
       };
 
       expect(adapter.validate(validConfig)).toBe(true);

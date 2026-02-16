@@ -362,7 +362,7 @@ if (record.meta && record.meta.notification_config) {
       "type": "slack",
       "enabled": true,
       "config": {
-        "webhookUrl": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+        "webhookUrl": "https://example.com/webhooks/slack/PLACEHOLDER"
       }
     }
   ]

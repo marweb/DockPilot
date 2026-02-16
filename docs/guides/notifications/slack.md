@@ -29,7 +29,7 @@ Configure DockPilot to send notifications to Slack channels.
 You'll see a URL like:
 
 ```
-https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+https://hooks.slack.example.com/services/T00/B00/PLACEHOLDER
 ```
 
 Copy this URL (keep it secret!).

@@ -223,8 +223,7 @@ describe('Settings End-to-End', () => {
           provider: 'slack',
           name: 'Slack Test',
           config: {
-            webhookUrl:
-              'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX',
+            webhookUrl: 'https://example.com/webhooks/slack/PLACEHOLDER',
           },
         },
         {
@@ -546,7 +545,7 @@ describe('Settings End-to-End', () => {
           name: 'Test Slack',
           enabled: true,
           config: {
-            webhookUrl: 'https://hooks.slack.com/services/T123/B456/secret-token-789',
+            webhookUrl: 'https://example.com/webhooks/slack/PLACEHOLDER',
           },
         },
       });

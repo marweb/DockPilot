@@ -219,7 +219,7 @@ describe('crypto', () => {
 
   describe('maskApiKey', () => {
     it('should show prefix and last 4 characters', () => {
-      const key = 'sk_live_abcdefghijklmnopqrstuvwxyz';
+      const key = 'sk_test_PLACEHOLDER_KEY_NOT_REAL_12345';
       const masked = maskApiKey(key);
       expect(masked.startsWith('sk_live_')).toBe(true);
       expect(masked.endsWith('wxyz')).toBe(true);
@@ -278,7 +278,7 @@ describe('crypto', () => {
     });
 
     it('should handle URLs with authentication in query string', () => {
-      const url = 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX';
+      const url = 'https://example.com/webhooks/slack/PLACEHOLDER_URL';
       const masked = maskWebhookUrl(url);
       expect(masked).toContain('services/T00000000/B00000000/');
       expect(masked).toContain('****');
