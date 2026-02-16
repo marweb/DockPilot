@@ -141,6 +141,24 @@ export async function sendTestNotification(
 }
 
 /**
+ * Save general notification settings (fromName, fromAddress)
+ * Updates all existing email providers with these general settings
+ * @param settings Object containing fromName and fromAddress
+ * @returns Result with success status and count of updated providers
+ * @throws ApiError with code FORBIDDEN if user is not admin
+ * @throws ApiError with code VALIDATION_ERROR if validation fails
+ */
+export async function saveGeneralNotificationSettings(settings: {
+  fromName: string;
+  fromAddress: string;
+}): Promise<{ fromName: string; fromAddress: string; updatedProviders: number }> {
+  const response = await api.put<
+    ApiResponse<{ fromName: string; fromAddress: string; updatedProviders: number }>
+  >('/system/notifications/general', settings);
+  return extractData(response);
+}
+
+/**
  * Get SMTP configuration
  * @returns SMTP channel configuration or null if not found
  * @throws ApiError with code FORBIDDEN if user is not admin

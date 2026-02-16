@@ -26,6 +26,7 @@ import {
   getNotificationChannels,
   saveNotificationChannel,
   sendTestNotification,
+  saveGeneralNotificationSettings,
   type NotificationProvider,
   type SaveNotificationChannelInput,
 } from '../../api/notifications';
@@ -367,7 +368,7 @@ export default function NotificationsSection() {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('email');
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState<NotificationProvider | null>(null);
+  const [saving, setSaving] = useState<NotificationProvider | 'general' | null>(null);
   const [lastTestTime, setLastTestTime] = useState<Record<NotificationProvider, number>>({
     smtp: 0,
     resend: 0,
@@ -529,6 +530,68 @@ export default function NotificationsSection() {
   const hasChanges = useCallback((form: object, original: object) => {
     return JSON.stringify(form) !== JSON.stringify(original);
   }, []);
+
+  // Save general notification settings (fromName, fromAddress)
+  const saveGeneralSettings = async () => {
+    setErrors({});
+
+    // Validate fromName and fromAddress
+    const errors: Record<string, string> = {};
+    if (!smtpForm.fromName?.trim()) {
+      errors.fromName = 'From name is required';
+    }
+    if (!smtpForm.fromAddress?.trim()) {
+      errors.fromAddress = 'From address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(smtpForm.fromAddress)) {
+      errors.fromAddress = 'Invalid email address';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setErrors(errors);
+      return;
+    }
+
+    setSaving('general');
+    try {
+      const result = await saveGeneralNotificationSettings({
+        fromName: smtpForm.fromName,
+        fromAddress: smtpForm.fromAddress,
+      });
+
+      // Update both forms with the saved values
+      setSmtpForm((prev) => ({
+        ...prev,
+        fromName: result.fromName,
+        fromAddress: result.fromAddress,
+      }));
+      setResendForm((prev) => ({
+        ...prev,
+        fromName: result.fromName,
+        fromAddress: result.fromAddress,
+      }));
+      setOriginalSmtp((prev) => ({
+        ...prev,
+        fromName: result.fromName,
+        fromAddress: result.fromAddress,
+      }));
+      setOriginalResend((prev) => ({
+        ...prev,
+        fromName: result.fromName,
+        fromAddress: result.fromAddress,
+      }));
+
+      showToast(
+        result.updatedProviders > 0
+          ? `General settings saved. Updated ${result.updatedProviders} provider(s).`
+          : 'General settings saved. Configure a provider to use these settings.',
+        'success'
+      );
+    } catch (error) {
+      showToast('Failed to save general notification settings', 'error');
+    } finally {
+      setSaving(null);
+    }
+  };
 
   // Validate and save SMTP
   const saveSMTP = async () => {
@@ -864,19 +927,11 @@ export default function NotificationsSection() {
             </div>
             <div className="mt-4 flex justify-end">
               <Button
-                onClick={async () => {
-                  // Save general settings to all email providers
-                  if (smtpForm.configured || smtpForm.host) {
-                    await saveSMTP();
-                  }
-                  if (resendForm.configured || resendForm.apiKey) {
-                    await saveResend();
-                  }
-                }}
+                onClick={saveGeneralSettings}
                 leftIcon={<Save className="h-4 w-4" />}
-                disabled={saving === 'smtp' || saving === 'resend'}
+                disabled={saving === 'general'}
               >
-                {saving === 'smtp' || saving === 'resend' ? 'Saving...' : 'Save General Settings'}
+                {saving === 'general' ? 'Saving...' : 'Save General Settings'}
               </Button>
             </div>
           </div>

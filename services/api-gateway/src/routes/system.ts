@@ -768,6 +768,105 @@ export async function systemRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
+  // PUT /system/notifications/general - Save general notification settings (applies to all email providers)
+  fastify.put(
+    '/system/notifications/general',
+    {
+      preHandler: [requireAdmin],
+    },
+    async (request, reply) => {
+      const body = request.body as {
+        fromName: string;
+        fromAddress: string;
+      };
+      const user = getUser(request);
+
+      if (!user) {
+        return reply.status(401).send({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'User not authenticated',
+          },
+        });
+      }
+
+      try {
+        // Validate email format
+        if (!body.fromAddress || !isValidEmail(body.fromAddress)) {
+          return reply.status(400).send({
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'Invalid fromAddress email format',
+            },
+          });
+        }
+
+        // Update all existing email providers
+        const emailProviders = ['smtp', 'resend'] as const;
+        const updatedChannels: Awaited<ReturnType<typeof getNotificationChannel>>[] = [];
+
+        for (const provider of emailProviders) {
+          const existingChannel = await getNotificationChannel(provider);
+
+          if (existingChannel) {
+            // Update existing channel with new fromName/fromAddress
+            const updatedChannel = await saveNotificationChannel({
+              id: existingChannel.id,
+              provider: provider,
+              name: existingChannel.name,
+              enabled: existingChannel.enabled,
+              fromName: body.fromName || existingChannel.fromName,
+              fromAddress: body.fromAddress,
+              config: existingChannel.config,
+            });
+            updatedChannels.push(updatedChannel);
+          }
+          // Note: We don't create new channels here, only update existing ones
+        }
+
+        // Log the action
+        await logAuditEntry({
+          userId: user.id,
+          username: user.username,
+          action: 'notification.general.update',
+          resource: 'notification',
+          details: {
+            fromName: body.fromName,
+            fromAddress: body.fromAddress,
+            updatedProviders: updatedChannels.length,
+          },
+          ip: request.ip,
+          userAgent: request.headers['user-agent'] || 'unknown',
+          success: true,
+        });
+
+        return reply.send({
+          success: true,
+          message: `General notification settings saved. Updated ${updatedChannels.length} provider(s).`,
+          data: {
+            fromName: body.fromName,
+            fromAddress: body.fromAddress,
+            updatedProviders: updatedChannels.length,
+          },
+        });
+      } catch (error) {
+        fastify.log.error(error, 'Failed to save general notification settings');
+        return reply.status(500).send({
+          success: false,
+          error: {
+            code: 'INTERNAL_ERROR',
+            message:
+              error instanceof Error
+                ? error.message
+                : 'Failed to save general notification settings',
+          },
+        });
+      }
+    }
+  );
+
   // POST /system/notifications/test - Test notification channel
   fastify.post(
     '/system/notifications/test',
