@@ -3,7 +3,6 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import websocket from '@fastify/websocket';
 import { validatorCompiler, serializerCompiler } from 'fastify-type-provider-zod';
-import type { Duplex } from 'stream';
 import type { Config } from './config/index.js';
 import { initDocker } from './services/docker.js';
 import { containerRoutes } from './routes/containers.js';
@@ -84,16 +83,17 @@ export async function createApp(config: Config) {
 
   // Error handler
   fastify.setErrorHandler((error, request, reply) => {
-    request.log.error({ error: error.message, stack: error.stack }, 'Request error');
+    const err = error as Error & { statusCode?: number; stack?: string };
+    request.log.error({ error: err.message, stack: err.stack }, 'Request error');
 
-    const statusCode = error.statusCode || 500;
+    const statusCode = err.statusCode || 500;
 
     reply.status(statusCode).send({
       success: false,
       error: {
         code: 'INTERNAL_ERROR',
-        message: error.message,
-        details: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+        message: err.message,
+        details: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
       },
     });
   });
@@ -121,120 +121,6 @@ export async function createApp(config: Config) {
 
     // Build stream JSON WebSocket - /api/builds/:id/stream/json
     await registerBuildStreamJsonWebSocket(fastify);
-  });
-
-  // Legacy WebSocket routes (for backward compatibility)
-  fastify.register(async function (fastify) {
-    fastify.get('/ws/containers/:id/logs', { websocket: true }, async (socket, request) => {
-      const { id } = request.params as { id: string };
-      const { tail = 100 } = request.query as { tail?: number };
-
-      try {
-        const { getDocker } = await import('./services/docker.js');
-        const docker = getDocker();
-        const container = docker.getContainer(id);
-
-        const logStream = (await container.logs({
-          stdout: true,
-          stderr: true,
-          tail,
-          follow: true,
-          timestamps: true,
-        })) as unknown as Duplex;
-
-        logStream.on('data', (chunk: Buffer) => {
-          const message = chunk.toString('utf-8').replace(/\x00/g, '');
-          socket.send(JSON.stringify({ type: 'log', data: message }));
-        });
-
-        logStream.on('error', (err: Error) => {
-          socket.send(JSON.stringify({ type: 'error', data: err.message }));
-          socket.close();
-        });
-
-        socket.on('close', () => {
-          logStream.destroy();
-        });
-      } catch (error) {
-        const err = error as Error;
-        socket.send(JSON.stringify({ type: 'error', data: err.message }));
-        socket.close();
-      }
-    });
-
-    fastify.get('/ws/containers/:id/exec', { websocket: true }, async (socket, request) => {
-      const { id } = request.params as { id: string };
-      const { cmd = '/bin/sh' } = request.query as { cmd?: string };
-
-      try {
-        const { getDocker } = await import('./services/docker.js');
-        const docker = getDocker();
-        const container = docker.getContainer(id);
-
-        const exec = await container.exec({
-          Cmd: [cmd],
-          AttachStdin: true,
-          AttachStdout: true,
-          AttachStderr: true,
-          Tty: true,
-        });
-
-        const execStream = await (
-          exec as {
-            start: (opts: {
-              hijack: boolean;
-              stdin: boolean;
-              stdout: boolean;
-              stderr: boolean;
-            }) => Promise<Duplex>;
-          }
-        ).start({
-          hijack: true,
-          stdin: true,
-          stdout: true,
-          stderr: true,
-        });
-
-        socket.on('message', (data: unknown) => {
-          const message =
-            typeof data === 'string'
-              ? data
-              : Buffer.isBuffer(data)
-                ? data.toString()
-                : Array.isArray(data)
-                  ? Buffer.concat(data.filter(Buffer.isBuffer)).toString()
-                  : data instanceof ArrayBuffer
-                    ? Buffer.from(data).toString()
-                    : '';
-          if (message) {
-            execStream.write(message);
-          }
-        });
-
-        execStream.on('data', (chunk: Buffer) => {
-          socket.send(chunk.toString());
-        });
-
-        execStream.on('error', (err: Error) => {
-          socket.send(JSON.stringify({ type: 'error', data: err.message }));
-          socket.close();
-        });
-
-        socket.on('close', () => {
-          execStream.destroy();
-        });
-      } catch (error) {
-        const err = error as Error;
-        socket.send(JSON.stringify({ type: 'error', data: err.message }));
-        socket.close();
-      }
-    });
-
-    fastify.get('/ws/builds/:id', { websocket: true }, async (socket, request) => {
-      const { id } = request.params as { id: string };
-
-      socket.send(JSON.stringify({ type: 'connected', buildId: id }));
-    });
   });
 
   return fastify;

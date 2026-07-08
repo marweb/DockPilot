@@ -25,6 +25,29 @@ export function initCredentials(cfg: Config): void {
   config = cfg;
 }
 
+export async function migratePlainCredentials(): Promise<number> {
+  if (!config.masterKey) {
+    return 0;
+  }
+
+  const accounts = await listStoredAccounts();
+  let migrated = 0;
+
+  for (const accountId of accounts) {
+    const credentialsDir = path.join(config.credentialsDir, 'accounts');
+    const filePath = path.join(credentialsDir, `${accountId}.json`);
+    const content = await readFile(filePath, 'utf-8');
+    const data = JSON.parse(content);
+
+    if (!data.encrypted) {
+      await saveCredentials(accountId, data as CredentialsData);
+      migrated++;
+    }
+  }
+
+  return migrated;
+}
+
 export async function saveCredentials(accountId: string, data: CredentialsData): Promise<void> {
   const credentialsDir = path.join(config.credentialsDir, 'accounts');
 

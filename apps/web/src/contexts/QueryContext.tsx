@@ -1,16 +1,13 @@
 import { createContext, useContext, ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from 'react-query';
-import { ReactQueryDevtools } from 'react-query/devtools';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// Cliente de React Query
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
       staleTime: 30000,
-      cacheTime: 600000,
-      suspense: false,
+      gcTime: 600000,
     },
     mutations: {
       retry: 0,
@@ -28,25 +25,14 @@ interface QueryProviderProps {
   children: ReactNode;
 }
 
-/**
- * QueryContext Provider
- * Proporciona React Query a toda la aplicación
- * Incluye configuración global y devtools en desarrollo
- */
 export function QueryProvider({ children }: QueryProviderProps) {
   return (
     <QueryContext.Provider value={{ client: queryClient }}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </QueryContext.Provider>
   );
 }
 
-/**
- * Hook para usar el contexto de queries
- */
 export function useQueryClient() {
   const context = useContext(QueryContext);
   return context.client;

@@ -1,9 +1,82 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Settings from '../Settings';
 import * as systemApi from '../../api/system';
 import * as toastContext from '../../contexts/ToastContext';
+import api from '../../api/client';
+
+const settingsTranslations: Record<string, string> = {
+  'settings.title': 'Settings',
+  'settings.tabs.general': 'General',
+  'settings.tabs.notifications': 'Notifications',
+  'settings.tabs.versionAndUpdates': 'Version & Updates',
+  'settings.tabs.security': 'Security',
+  'settings.tabs.events': 'Events',
+  'settings.general.instanceInformation': 'Instance Information',
+  'settings.general.instanceName': 'Instance Name',
+  'settings.general.instanceNamePlaceholder': 'My DockPilot Instance',
+  'settings.general.instanceNameRequired': 'Instance name is required',
+  'settings.general.publicUrl': 'Public URL',
+  'settings.general.publicUrlPlaceholder': 'https://dockpilot.example.com',
+  'settings.general.publicUrlInvalid': 'Invalid URL format',
+  'settings.general.publicUrlHelp': 'URL used for webhooks and external access',
+  'settings.general.instanceDetails': 'Instance Details',
+  'settings.general.timezone': 'Instance Timezone',
+  'settings.general.timezoneSearch': 'Search timezone...',
+  'settings.general.publicIPv4': "Instance's Public IPv4",
+  'settings.general.publicIPv4Placeholder': 'xxx.xxx.xxx.xxx',
+  'settings.general.publicIPv4Invalid': 'Invalid IPv4 address',
+  'settings.general.publicIPv6': "Instance's Public IPv6",
+  'settings.general.publicIPv6Placeholder': 'xxxx:xxxx:xxxx:xxxx',
+  'settings.general.publicIPv6Invalid': 'Invalid IPv6 address',
+  'settings.general.saveChanges': 'Save Changes',
+  'settings.general.saving': 'Saving...',
+  'settings.general.unsavedChanges':
+    'You have unsaved changes. Are you sure you want to leave?',
+  'settings.versionAndUpdates': 'Version & Updates',
+  'settings.currentVersion': 'Current Version',
+  'settings.checkForUpdates': 'Check for Updates',
+  'settings.autoUpdate': 'Automatic Updates',
+  'settings.autoUpdateLabel': 'Enable automatic updates',
+  'settings.autoUpdateDescription':
+    'When enabled, DockPilot will automatically check for and install updates daily at 00:00 UTC.',
+  'settings.autoUpdateActive': 'Automatic updates are enabled.',
+  'settings.autoUpdateDisabled': 'Automatic updates are disabled.',
+  'settings.settingsSaved': 'Settings saved successfully',
+  'settings.settingsSaveFailed': 'Failed to save settings',
+  'settings.changePassword': 'Change Password',
+  'settings.currentPassword': 'Current password',
+  'settings.newPassword': 'New password',
+  'settings.confirmNewPassword': 'Confirm new password',
+  'settings.saveNewPassword': 'Save new password',
+  'settings.changingPassword': 'Changing password...',
+  'settings.passwordAllRequired': 'Please complete all password fields',
+  'settings.passwordMismatch': 'New passwords do not match',
+  'settings.passwordMinLength': 'New password must be at least 8 characters',
+  'settings.passwordChanged': 'Password changed successfully',
+  'settings.passwordChangeFailed': 'Could not change password',
+};
+
+const stableTranslate = (key: string, params?: Record<string, string>) => {
+  let result = settingsTranslations[key] || key;
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      result = result.replace(`{{${k}}}`, v);
+    });
+  }
+  return result;
+};
+
+// Mock child settings sections
+vi.mock('../Settings/NotificationsSection', () => ({
+  default: () => <div>Notification Settings</div>,
+}));
+
+vi.mock('../Settings/EventsMatrix', () => ({
+  default: () => <div>Events Matrix</div>,
+}));
 
 // Mock the API
 vi.mock('../../api/client', () => ({
@@ -25,72 +98,11 @@ vi.mock('../../contexts/ToastContext', () => ({
   useToast: vi.fn(),
 }));
 
-// Mock react-i18next
+// Mock react-i18next with stable translation function
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, params?: Record<string, string>) => {
-      const translations: Record<string, string> = {
-        'settings.title': 'Settings',
-        'settings.tabs.general': 'General',
-        'settings.tabs.notifications': 'Notifications',
-        'settings.tabs.versionAndUpdates': 'Version & Updates',
-        'settings.tabs.security': 'Security',
-        'settings.general.title': 'General Settings',
-        'settings.general.instanceInformation': 'Instance Information',
-        'settings.general.instanceName': 'Instance Name',
-        'settings.general.instanceNamePlaceholder': 'My DockPilot Instance',
-        'settings.general.instanceNameRequired': 'Instance name is required',
-        'settings.general.publicUrl': 'Public URL',
-        'settings.general.publicUrlPlaceholder': 'https://dockpilot.example.com',
-        'settings.general.publicUrlInvalid': 'Invalid URL format',
-        'settings.general.publicUrlHelp': 'URL used for webhooks and external access',
-        'settings.general.instanceDetails': 'Instance Details',
-        'settings.general.timezone': 'Instance Timezone',
-        'settings.general.timezoneDefault': 'UTC',
-        'settings.general.timezoneSearch': 'Search timezone...',
-        'settings.general.publicIPv4': "Instance's Public IPv4",
-        'settings.general.publicIPv4Placeholder': 'xxx.xxx.xxx.xxx',
-        'settings.general.publicIPv4Invalid': 'Invalid IPv4 address',
-        'settings.general.publicIPv6': "Instance's Public IPv6",
-        'settings.general.publicIPv6Placeholder': 'xxxx:xxxx:xxxx:xxxx',
-        'settings.general.publicIPv6Invalid': 'Invalid IPv6 address',
-        'settings.general.saveChanges': 'Save Changes',
-        'settings.general.saving': 'Saving...',
-        'settings.general.unsavedChanges':
-          'You have unsaved changes. Are you sure you want to leave?',
-        'settings.notifications.title': 'Notification Settings',
-        'settings.notifications.comingSoon': 'Notification settings will be available soon.',
-        'settings.versionAndUpdates': 'Version & Updates',
-        'settings.currentVersion': 'Current Version',
-        'settings.checkForUpdates': 'Check for Updates',
-        'settings.autoUpdate': 'Automatic Updates',
-        'settings.autoUpdateLabel': 'Enable automatic updates',
-        'settings.autoUpdateDescription':
-          'When enabled, DockPilot will automatically check for and install updates daily at 00:00 UTC.',
-        'settings.autoUpdateActive': 'Automatic updates are enabled.',
-        'settings.autoUpdateDisabled': 'Automatic updates are disabled.',
-        'settings.settingsSaved': 'Settings saved successfully',
-        'settings.settingsSaveFailed': 'Failed to save settings',
-        'settings.changePassword': 'Change Password',
-        'settings.currentPassword': 'Current password',
-        'settings.newPassword': 'New password',
-        'settings.confirmNewPassword': 'Confirm new password',
-        'settings.saveNewPassword': 'Save new password',
-        'settings.passwordAllRequired': 'Please complete all password fields',
-        'settings.passwordMismatch': 'New passwords do not match',
-        'settings.passwordMinLength': 'New password must be at least 8 characters',
-        'settings.passwordChanged': 'Password changed successfully',
-        'settings.passwordChangeFailed': 'Could not change password',
-        'common.optional': 'optional',
-      };
-      let result = translations[key] || key;
-      if (params) {
-        Object.entries(params).forEach(([k, v]) => {
-          result = result.replace(`{{${k}}}`, v);
-        });
-      }
-      return result;
-    },
+    t: stableTranslate,
+    i18n: { changeLanguage: vi.fn() },
   }),
 }));
 
@@ -103,6 +115,17 @@ describe('Settings Page', () => {
       showToast: mockShowToast,
       hideToast: vi.fn(),
       toasts: [],
+    });
+    (api.get as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: {
+        success: true,
+        data: {
+          currentVersion: '2.0.8',
+          latestVersion: '2.0.8',
+          updateAvailable: false,
+          checkedAt: new Date().toISOString(),
+        },
+      },
     });
   });
 
@@ -124,10 +147,21 @@ describe('Settings Page', () => {
       expect(screen.getByText('Security')).toBeInTheDocument();
     });
 
-    it('should show General tab by default', () => {
+    it('should show General tab by default', async () => {
+      (systemApi.getSystemSettings as ReturnType<typeof vi.fn>).mockResolvedValue({
+        instanceName: 'Test',
+        publicUrl: '',
+        timezone: 'UTC',
+        publicIPv4: '',
+        publicIPv6: '',
+        autoUpdate: false,
+      });
+
       renderSettings();
 
-      expect(screen.getByText('General Settings')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Instance Information')).toBeInTheDocument();
+      });
     });
 
     it('should switch to Notifications tab when clicked', () => {
@@ -136,7 +170,6 @@ describe('Settings Page', () => {
       fireEvent.click(screen.getByText('Notifications'));
 
       expect(screen.getByText('Notification Settings')).toBeInTheDocument();
-      expect(screen.getByText('Notification settings will be available soon.')).toBeInTheDocument();
     });
 
     it('should switch to Security tab when clicked', () => {
@@ -182,10 +215,12 @@ describe('Settings Page', () => {
       expect(screen.getByLabelText(/Public URL/i)).toBeInTheDocument();
     });
 
-    it('should have Timezone dropdown', () => {
+    it('should have Timezone dropdown', async () => {
       renderSettings();
 
-      expect(screen.getByLabelText(/Instance Timezone/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Instance Timezone')).toBeInTheDocument();
+      });
     });
 
     it('should have Public IPv4 field with visibility toggle', () => {
@@ -428,8 +463,8 @@ describe('Settings Page', () => {
       fireEvent.change(screen.getByLabelText(/Current password/i), {
         target: { value: 'oldpass' },
       });
-      fireEvent.change(screen.getByLabelText(/New password/i), { target: { value: 'newpass123' } });
-      fireEvent.change(screen.getByLabelText(/Confirm new password/i), {
+      fireEvent.change(document.getElementById('newPassword')!, { target: { value: 'newpass123' } });
+      fireEvent.change(document.getElementById('confirmNewPassword')!, {
         target: { value: 'different' },
       });
 
@@ -449,8 +484,8 @@ describe('Settings Page', () => {
       fireEvent.change(screen.getByLabelText(/Current password/i), {
         target: { value: 'oldpass' },
       });
-      fireEvent.change(screen.getByLabelText(/New password/i), { target: { value: 'short' } });
-      fireEvent.change(screen.getByLabelText(/Confirm new password/i), {
+      fireEvent.change(document.getElementById('newPassword')!, { target: { value: 'short' } });
+      fireEvent.change(document.getElementById('confirmNewPassword')!, {
         target: { value: 'short' },
       });
 

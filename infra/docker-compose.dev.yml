@@ -15,7 +15,7 @@ services:
   # API Gateway - Development mode with hot reload
   api-gateway:
     build:
-      context: ../..
+      context: ..
       dockerfile: services/api-gateway/Dockerfile
       target: builder
     container_name: dockpilot-api-gateway-dev
@@ -36,10 +36,12 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-debug}
       - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-1000}
       - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-1 minute}
+      - MASTER_KEY=${MASTER_KEY:-dev-master-key-32-chars-minimum}
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-dev-internal-api-secret-minimum-32-chars}
     volumes:
       # Bind mount for hot reload
-      - ../../services/api-gateway:/app/services/api-gateway
-      - ../../packages/types:/app/packages/types
+      - ../services/api-gateway:/app/services/api-gateway
+      - ../packages/types:/app/packages/types
       # Named volume for data persistence
       - api-gateway-data-dev:/data
       # Node modules (anonymous volume to prevent overwriting)
@@ -63,7 +65,7 @@ services:
   # Docker Control Service - Development mode
   docker-control:
     build:
-      context: ../..
+      context: ..
       dockerfile: services/docker-control/Dockerfile
       target: builder
     container_name: dockpilot-docker-control-dev
@@ -88,10 +90,12 @@ services:
       - GITLAB_BASE_URL=${GITLAB_BASE_URL:-https://gitlab.com}
       - GITLAB_OAUTH_CLIENT_ID=${GITLAB_OAUTH_CLIENT_ID:-}
       - GITLAB_OAUTH_CLIENT_SECRET=${GITLAB_OAUTH_CLIENT_SECRET:-}
+      - API_GATEWAY_URL=${API_GATEWAY_URL:-http://api-gateway:3000}
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-dev-internal-api-secret-minimum-32-chars}
     volumes:
       # Bind mount for hot reload
-      - ../../services/docker-control:/app/services/docker-control
-      - ../../packages/types:/app/packages/types
+      - ../services/docker-control:/app/services/docker-control
+      - ../packages/types:/app/packages/types
       # Named volume for data persistence
       - docker-control-data-dev:/data
       # Docker socket access
@@ -108,14 +112,13 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    privileged: true
     stdin_open: true
     tty: true
 
   # Tunnel Control Service - Development mode
   tunnel-control:
     build:
-      context: ../..
+      context: ..
       dockerfile: services/tunnel-control/Dockerfile
       target: builder
     container_name: dockpilot-tunnel-control-dev
@@ -129,10 +132,11 @@ services:
       - CLOUDFLARED_PATH=${CLOUDFLARED_PATH:-/usr/local/bin/cloudflared}
       - CREDENTIALS_DIR=${CREDENTIALS_DIR:-/data/tunnels}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - MASTER_KEY=${MASTER_KEY:-dev-master-key-32-chars-minimum}
     volumes:
       # Bind mount for hot reload
-      - ../../services/tunnel-control:/app/services/tunnel-control
-      - ../../packages/types:/app/packages/types
+      - ../services/tunnel-control:/app/services/tunnel-control
+      - ../packages/types:/app/packages/types
       # Named volume for data persistence
       - tunnel-control-data-dev:/data
       # Node modules (anonymous volume)
@@ -154,10 +158,10 @@ services:
 
   # Web Frontend - Development mode with Vite dev server
   web:
-    image: node:20-alpine
+    image: node:22-alpine
     container_name: dockpilot-web-dev
     working_dir: /app
-    command: sh -c "corepack enable && corepack prepare pnpm@9.15.9 --activate && pnpm install && pnpm --filter @dockpilot/web dev --host"
+    command: sh -c "corepack enable && corepack prepare pnpm@10.12.1 --activate && pnpm install && pnpm --filter @dockpilot/web dev --host"
     ports:
       - '${WEB_PORT:-5173}:5173'
     environment:
@@ -165,12 +169,12 @@ services:
       - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
     volumes:
       # Bind mount for hot reload
-      - ../../apps/web:/app/apps/web
-      - ../../packages/types:/app/packages/types
-      - ../../package.json:/app/package.json
-      - ../../pnpm-lock.yaml:/app/pnpm-lock.yaml
-      - ../../tsconfig.json:/app/tsconfig.json
-      - ../../turbo.json:/app/turbo.json
+      - ../apps/web:/app/apps/web
+      - ../packages/types:/app/packages/types
+      - ../package.json:/app/package.json
+      - ../pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ../tsconfig.json:/app/tsconfig.json
+      - ../turbo.json:/app/turbo.json
       # Node modules (anonymous volume)
       - /app/node_modules
       - /app/apps/web/node_modules

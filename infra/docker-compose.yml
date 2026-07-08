@@ -34,6 +34,8 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-100}
       - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-1 minute}
+      - MASTER_KEY=${MASTER_KEY:-}
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
       - DOCKPILOT_VERSION=${DOCKPILOT_VERSION:-latest}
     volumes:
       - api-gateway-data:/data
@@ -84,6 +86,8 @@ services:
       - GITLAB_OAUTH_CLIENT_SECRET=${GITLAB_OAUTH_CLIENT_SECRET:-}
       - DOCKPILOT_VERSION=${DOCKPILOT_VERSION:-latest}
       - DOCKPILOT_SOURCE_DIR=${DOCKPILOT_HOME:-/data/dockpilot}/source
+      - API_GATEWAY_URL=${API_GATEWAY_URL:-http://api-gateway:3000}
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
     volumes:
       - docker-control-data:/data
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -95,7 +99,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    privileged: true
     logging:
       driver: 'json-file'
       options:
@@ -117,6 +120,7 @@ services:
       - CLOUDFLARED_PATH=${CLOUDFLARED_PATH:-/usr/local/bin/cloudflared}
       - CREDENTIALS_DIR=${CREDENTIALS_DIR:-/data/tunnels}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      - MASTER_KEY=${MASTER_KEY:-}
     volumes:
       - tunnel-control-data:/data
     networks:

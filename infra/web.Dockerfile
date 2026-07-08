@@ -1,11 +1,11 @@
 # Build stage for the web application
 ARG BUILDPLATFORM
-FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+RUN corepack enable && corepack prepare pnpm@10.12.1 --activate
 
 # Copy package files
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
@@ -30,7 +30,7 @@ RUN pnpm --filter @dockpilot/types build
 RUN pnpm --filter @dockpilot/web build
 
 # Production stage with nginx
-FROM nginx:1.25-alpine
+FROM nginx:1.29-alpine
 
 # Copy built files to nginx html directory
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html

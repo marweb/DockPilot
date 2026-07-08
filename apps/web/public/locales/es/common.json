@@ -66,7 +66,9 @@
     "prune": "Limpiar Sistema",
     "pruneConfirmBody": "Unused Docker resources will be removed (stopped containers, dangling images, unused volumes and networks).",
     "pruneSuccess": "Prune System: {{total}} items removed",
-    "pruneError": "Could not complete system cleanup"
+    "pruneError": "Could not complete system cleanup",
+    "enabled": "Habilitado",
+    "disabled": "Deshabilitado"
   },
   "containers": {
     "title": "Contenedores",
@@ -113,7 +115,20 @@
       "message": "¿Seguro que quieres eliminar {{name}}?"
     },
     "stats": {
-      "comingSoon": "La vista de estadísticas estará disponible próximamente"
+      "cpuUsage": "Uso de CPU",
+      "cores": "{{count}} núcleos",
+      "memory": "Memoria",
+      "networkIo": "E/S de red",
+      "txRate": "TX: {{rate}}/s",
+      "processes": "Procesos",
+      "activePids": "PIDs activos",
+      "cpuMemoryChart": "CPU y memoria (24h)",
+      "networkChart": "E/S de red (24h)",
+      "cpuPercent": "CPU %",
+      "memoryPercent": "Memoria %",
+      "read": "Lectura",
+      "write": "Escritura",
+      "diskIo": "E/S de disco"
     },
     "logs": {
       "title": "Logs del contenedor",
@@ -965,5 +980,11 @@
         "description": "Código fuente, changelog y mejores prácticas de despliegue."
       }
     }
+  },
+  "resourceChart": {
+    "cpu": "CPU",
+    "memory": "Memoria",
+    "disk": "Disco",
+    "networkIo": "E/S de red"
   }
 }

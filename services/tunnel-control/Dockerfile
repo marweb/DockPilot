@@ -1,12 +1,12 @@
 # Build stage
 # Build on BUILDPLATFORM to avoid QEMU crashes while installing dependencies
 # during multi-arch builds (linux/arm64 under emulation).
-FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+RUN corepack enable && corepack prepare pnpm@10.12.1 --activate
 
 # Copy package files
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
@@ -32,7 +32,7 @@ RUN pnpm --filter @dockpilot/types build
 RUN pnpm --filter @dockpilot/tunnel-control build
 
 # Production stage
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 WORKDIR /app
 

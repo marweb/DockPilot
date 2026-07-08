@@ -5,11 +5,22 @@ import {
   checkCloudflaredInstalled,
   startConfiguredAutoStartTunnels,
 } from './services/cloudflared.js';
+import { initCredentials, migratePlainCredentials } from './services/credentials.js';
 
 async function main() {
   const config = loadConfig();
+  initCredentials(config);
   const app = await createApp(config);
   const logger = getLogger();
+
+  try {
+    const migrated = await migratePlainCredentials();
+    if (migrated > 0) {
+      logger.info(`Migrated ${migrated} plain-text Cloudflare credential(s) to encrypted storage`);
+    }
+  } catch (error) {
+    logger.warn({ error }, 'Failed to migrate plain-text credentials');
+  }
 
   // Check cloudflared on startup
   const cloudflaredInstalled = await checkCloudflaredInstalled();

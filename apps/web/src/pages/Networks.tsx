@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, RefreshCw, Plus } from 'lucide-react';
 import type { Network as NetworkType } from '@dockpilot/types';
 import api from '../api/client';
@@ -132,7 +132,7 @@ export default function Networks() {
         isLoading={isLoading}
         onDelete={(id) => deleteMutation.mutate(id)}
         onSelect={setSelectedNetwork}
-        isDeleting={deleteMutation.isLoading}
+        isDeleting={deleteMutation.isPending}
       />
 
       {/* Create Modal */}
@@ -207,10 +207,10 @@ export default function Networks() {
                   </button>
                   <button
                     type="submit"
-                    disabled={!newNetworkName.trim() || createMutation.isLoading}
+                    disabled={!newNetworkName.trim() || createMutation.isPending}
                     className="btn btn-primary"
                   >
-                    {createMutation.isLoading ? (
+                    {createMutation.isPending ? (
                       <RefreshCw className="h-4 w-4 animate-spin" />
                     ) : (
                       t('networks.createButton')

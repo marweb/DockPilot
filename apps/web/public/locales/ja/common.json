@@ -65,11 +65,12 @@
     "prune": "システムクリーンアップ",
     "pruneConfirmBody": "Unused Docker resources will be removed (stopped containers, dangling images, unused volumes and networks).",
     "pruneSuccess": "Prune System: {{total}} items removed",
-    "pruneError": "Could not complete system cleanup"
+    "pruneError": "Could not complete system cleanup",
+    "enabled": "有効",
+    "disabled": "無効"
   },
   "containers": {
     "title": "コンテナ",
-    "comingSoon": "コンテナ管理は近日公開予定...",
     "create": "作成する",
     "searchPlaceholder": "名前、画像、ID で検索...",
     "containers": "コンテナ",
@@ -113,7 +114,20 @@
       "message": "{{name}} を削除してもよろしいですか?"
     },
     "stats": {
-      "comingSoon": "統計ビューは近日公開予定です"
+      "cpuUsage": "CPU使用率",
+      "cores": "{{count}} コア",
+      "memory": "メモリ",
+      "networkIo": "ネットワーク I/O",
+      "txRate": "送信: {{rate}}/s",
+      "processes": "プロセス",
+      "activePids": "アクティブ PID",
+      "cpuMemoryChart": "CPU とメモリ (24h)",
+      "networkChart": "ネットワーク I/O (24h)",
+      "cpuPercent": "CPU %",
+      "memoryPercent": "メモリ %",
+      "read": "読み取り",
+      "write": "書き込み",
+      "diskIo": "ディスク I/O"
     },
     "logs": {
       "title": "コンテナログ",
@@ -172,7 +186,6 @@
   },
   "images": {
     "title": "イメージ",
-    "comingSoon": "イメージ管理は近日公開予定...",
     "totalSize": "合計サイズ: {{size}}",
     "pullButton": "イメージをプルする",
     "searchPlaceholder": "リポジトリ、タグ、ID で検索...",
@@ -214,7 +227,6 @@
   },
   "volumes": {
     "title": "ボリューム",
-    "comingSoon": "ボリューム管理は近日公開予定...",
     "create": "ボリュームの作成",
     "createTitle": "新しいボリュームを作成する",
     "createButton": "作成する",
@@ -263,7 +275,6 @@
   },
   "networks": {
     "title": "ネットワーク",
-    "comingSoon": "ネットワーク管理は近日公開予定...",
     "create": "ネットワークの作成",
     "createTitle": "新しいネットワークを作成する",
     "createButton": "作成する",
@@ -310,7 +321,6 @@
   },
   "builds": {
     "title": "ビルド",
-    "comingSoon": "ビルド管理は近日公開予定...",
     "empty": "実行中のビルドはありません",
     "status": "状態",
     "tags": "タグ",
@@ -320,7 +330,6 @@
   },
   "compose": {
     "title": "Composeスタック",
-    "comingSoon": "Compose管理は近日公開予定...",
     "empty": "作成スタックが見つかりません",
     "name": "名前",
     "status": "状態",
@@ -331,7 +340,6 @@
   },
   "tunnels": {
     "title": "Cloudflareトンネル",
-    "comingSoon": "トンネル管理は近日公開予定...",
     "empty": "トンネルが見つかりませんでした",
     "name": "名前",
     "status": "状態",
@@ -954,5 +962,11 @@
         "description": "ソース コード、変更ログ、および展開のベスト プラクティス。"
       }
     }
+  },
+  "resourceChart": {
+    "cpu": "CPU",
+    "memory": "メモリ",
+    "disk": "ディスク",
+    "networkIo": "ネットワーク I/O"
   }
 }

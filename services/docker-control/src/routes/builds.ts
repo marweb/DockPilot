@@ -13,12 +13,12 @@ const buildBody = z.object({
   context: z.string().min(1, 'Build context path is required'),
   dockerfile: z.string().optional(),
   tags: z.array(z.string()).min(1, 'At least one tag is required'),
-  buildArgs: z.record(z.string()).optional(),
+  buildArgs: z.record(z.string(), z.string()).optional(),
   target: z.string().optional(),
   platform: z.string().optional(),
   noCache: z.boolean().default(false),
   pull: z.boolean().default(false),
-  labels: z.record(z.string()).optional(),
+  labels: z.record(z.string(), z.string()).optional(),
   push: z.boolean().default(false),
 });
 

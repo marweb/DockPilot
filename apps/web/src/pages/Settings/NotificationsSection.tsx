@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import {
   Mail,
-  Slack,
+  Hash,
   Send,
   MessageSquare,
   CheckCircle,
@@ -365,6 +366,7 @@ function CollapsibleCard({
 // ============================================================================
 
 export default function NotificationsSection() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('email');
   const [loading, setLoading] = useState(false);
@@ -626,7 +628,7 @@ export default function NotificationsSection() {
 
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((err: { path: (string | number)[]; message: string }) => {
+      result.error.issues.forEach((err: { path: (string | number)[]; message: string }) => {
         fieldErrors[err.path[0]] = err.message;
       });
       setErrors(fieldErrors);
@@ -664,7 +666,7 @@ export default function NotificationsSection() {
 
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((err: { path: (string | number)[]; message: string }) => {
+      result.error.issues.forEach((err: { path: (string | number)[]; message: string }) => {
         fieldErrors[err.path[0]] = err.message;
       });
       setErrors(fieldErrors);
@@ -698,7 +700,7 @@ export default function NotificationsSection() {
 
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((err: { path: (string | number)[]; message: string }) => {
+      result.error.issues.forEach((err: { path: (string | number)[]; message: string }) => {
         fieldErrors[err.path[0]] = err.message;
       });
       setErrors(fieldErrors);
@@ -730,7 +732,7 @@ export default function NotificationsSection() {
 
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((err: { path: (string | number)[]; message: string }) => {
+      result.error.issues.forEach((err: { path: (string | number)[]; message: string }) => {
         fieldErrors[err.path[0]] = err.message;
       });
       setErrors(fieldErrors);
@@ -763,7 +765,7 @@ export default function NotificationsSection() {
 
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((err: { path: (string | number)[]; message: string }) => {
+      result.error.issues.forEach((err: { path: (string | number)[]; message: string }) => {
         fieldErrors[err.path[0]] = err.message;
       });
       setErrors(fieldErrors);
@@ -848,10 +850,10 @@ export default function NotificationsSection() {
 
   // Tab configuration
   const tabs = [
-    { id: 'email' as TabType, label: 'Transactional Email', icon: Mail },
-    { id: 'slack' as TabType, label: 'Slack', icon: Slack },
-    { id: 'telegram' as TabType, label: 'Telegram', icon: Send },
-    { id: 'discord' as TabType, label: 'Discord', icon: MessageSquare },
+    { id: 'email' as TabType, label: t('settings.notifications.transactionalEmail'), icon: Mail },
+    { id: 'slack' as TabType, label: t('settings.notifications.slack'), icon: Hash },
+    { id: 'telegram' as TabType, label: t('settings.notifications.telegram'), icon: Send },
+    { id: 'discord' as TabType, label: t('settings.notifications.discord'), icon: MessageSquare },
   ];
 
   if (loading) {
@@ -867,9 +869,11 @@ export default function NotificationsSection() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Notifications</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {t('settings.notifications.title')}
+          </h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Configure notification channels for alerts and system events
+            {t('settings.notifications.description')}
           </p>
         </div>
       </div>

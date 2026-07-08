@@ -78,7 +78,7 @@ export async function ingressRoutes(fastify: FastifyInstance) {
               success: false,
               error: {
                 code: 'VALIDATION_ERROR',
-                message: `Invalid ingress rule: ${result.error.errors.map((e) => e.message).join(', ')}`,
+                message: `Invalid ingress rule: ${result.error.issues.map((e) => e.message).join(', ')}`,
               },
             });
           }

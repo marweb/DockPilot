@@ -48,44 +48,18 @@ interface StatsOverviewProps {
   className?: string;
 }
 
-const defaultContainerStats: ContainerStats = {
-  running: 12,
-  stopped: 5,
-  total: 17,
-};
-
-const defaultImageStats: ImageStats = {
-  total: 45,
-  totalSize: '12.5 GB',
-};
-
-const defaultVolumeStats: VolumeStats = {
-  count: 23,
-  usedSpace: '8.2 GB',
-};
-
-const defaultNetworkStats: NetworkStats = {
-  count: 8,
-};
-
-const defaultBuildStats: BuildStats = {
-  success: 156,
-  failed: 8,
-  pending: 3,
-};
-
 const generateSparklineData = (baseValue: number, variance: number, points: number = 10) => {
   return Array.from({ length: points }, (_, i) => ({
-    value: baseValue + Math.random() * variance - variance / 2 + (Math.sin(i / 2) * variance) / 4,
+    value: baseValue + Math.sin(i / 2) * (variance / 4),
   }));
 };
 
 const StatsOverview: React.FC<StatsOverviewProps> = ({
-  containers = defaultContainerStats,
-  images = defaultImageStats,
-  volumes = defaultVolumeStats,
-  networks = defaultNetworkStats,
-  builds = defaultBuildStats,
+  containers = { running: 0, stopped: 0, total: 0 },
+  images = { total: 0, totalSize: '-' },
+  volumes = { count: 0, usedSpace: '-' },
+  networks = { count: 0 },
+  builds = { success: 0, failed: 0, pending: 0 },
   className,
 }) => {
   const containerSparkline = useMemo(

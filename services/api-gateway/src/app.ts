@@ -14,7 +14,7 @@ import { healthRoutes } from './routes/health.js';
 import { systemRoutes } from './routes/system.js';
 import { notificationRulesRoutes } from './routes/notifications.js';
 import { authMiddleware, routePermissionMiddleware } from './middleware/auth.js';
-import { auditMiddleware } from './middleware/audit.js';
+import { auditMiddleware, auditRoutes } from './middleware/audit.js';
 import {
   startRateLimitCleanup,
   heavyOperationRateLimitMiddleware,
@@ -260,6 +260,9 @@ export async function createApp(config: Config) {
   // Register notification routes
   await fastify.register(notificationRulesRoutes, { prefix: '/api' });
 
+  // Register audit routes
+  await fastify.register(auditRoutes, { prefix: '/api' });
+
   // Proxy upgrade request to docker-control
   fastify.post('/api/system/upgrade', async (request, reply) => {
     await proxyRequest(request, reply, `${config.dockerControlUrl}/system/upgrade`);
@@ -272,16 +275,17 @@ export async function createApp(config: Config) {
 
   // Error handler
   fastify.setErrorHandler((error, request, reply) => {
-    request.log.error({ error: error.message, stack: error.stack }, 'Request error');
+    const err = error as Error & { statusCode?: number; stack?: string };
+    request.log.error({ error: err.message, stack: err.stack }, 'Request error');
 
-    const statusCode = error.statusCode || 500;
+    const statusCode = err.statusCode || 500;
 
     reply.status(statusCode).send({
       success: false,
       error: {
         code: 'INTERNAL_ERROR',
-        message: error.message,
-        details: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+        message: err.message,
+        details: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
       },
     });
   });

@@ -109,6 +109,7 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
       '/api/auth/refresh',
       '/api/auth/logout',
       '/api/health',
+      '/api/notifications/events',
       '/healthz',
       '/ws/',
     ];
@@ -321,6 +322,7 @@ export async function routePermissionMiddleware(
     request.url.startsWith('/api/auth') ||
     request.url.startsWith('/api/health') ||
     request.url.startsWith('/api/repos/webhooks/') ||
+    request.url.startsWith('/api/notifications/events') ||
     request.url === '/healthz' ||
     request.url.startsWith('/ws/')
   ) {

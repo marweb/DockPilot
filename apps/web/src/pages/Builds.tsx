@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQuery, useQueryClient } from 'react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, XCircle } from 'lucide-react';
 import api from '../api/client';
 
@@ -90,7 +90,7 @@ export default function Builds() {
                           <button
                             onClick={() => cancelMutation.mutate(build.id)}
                             className="btn btn-danger btn-sm"
-                            disabled={cancelMutation.isLoading}
+                            disabled={cancelMutation.isPending}
                           >
                             <XCircle className="h-4 w-4 mr-1" />
                             {t('builds.cancel')}

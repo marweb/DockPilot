@@ -9,12 +9,16 @@ import {
 } from '../system';
 
 // Mock the api client
-vi.mock('../client', () => ({
-  default: {
-    get: vi.fn(),
-    put: vi.fn(),
-  },
-}));
+vi.mock('../client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../client')>();
+  return {
+    ...actual,
+    default: {
+      get: vi.fn(),
+      put: vi.fn(),
+    },
+  };
+});
 
 describe('System Settings API', () => {
   const mockApi = api as unknown as { get: Mock; put: Mock };
@@ -43,22 +47,15 @@ describe('System Settings API', () => {
 
       const result = await getSystemSettings();
 
-      expect(mockApi.get).toHaveBeenCalledWith('/settings/system');
+      expect(mockApi.get).toHaveBeenCalledWith('/system/settings');
       expect(result).toEqual(mockSettings);
     });
 
     it('should handle 403 Forbidden error', async () => {
       mockApi.get.mockRejectedValueOnce({
-        response: {
-          status: 403,
-          data: {
-            success: false,
-            error: {
-              code: 'FORBIDDEN',
-              message: 'Admin access required',
-            },
-          },
-        },
+        statusCode: 403,
+        code: 'FORBIDDEN',
+        message: 'Admin access required',
       });
 
       await expect(getSystemSettings()).rejects.toMatchObject({
@@ -69,16 +66,9 @@ describe('System Settings API', () => {
 
     it('should handle 404 Not Found', async () => {
       mockApi.get.mockRejectedValueOnce({
-        response: {
-          status: 404,
-          data: {
-            success: false,
-            error: {
-              code: 'NOT_FOUND',
-              message: 'Settings not found',
-            },
-          },
-        },
+        statusCode: 404,
+        code: 'NOT_FOUND',
+        message: 'Settings not found',
       });
 
       await expect(getSystemSettings()).rejects.toMatchObject({
@@ -88,16 +78,9 @@ describe('System Settings API', () => {
 
     it('should handle server errors', async () => {
       mockApi.get.mockRejectedValueOnce({
-        response: {
-          status: 500,
-          data: {
-            success: false,
-            error: {
-              code: 'INTERNAL_ERROR',
-              message: 'Server error, please try again',
-            },
-          },
-        },
+        statusCode: 500,
+        code: 'INTERNAL_ERROR',
+        message: 'Server error, please try again',
       });
 
       await expect(getSystemSettings()).rejects.toMatchObject({
@@ -141,7 +124,7 @@ describe('System Settings API', () => {
 
       const result = await updateSystemSettings(input);
 
-      expect(mockApi.put).toHaveBeenCalledWith('/settings/system', input);
+      expect(mockApi.put).toHaveBeenCalledWith('/system/settings', input);
       expect(result).toEqual(mockResponse);
     });
 
@@ -168,7 +151,7 @@ describe('System Settings API', () => {
 
       const result = await updateSystemSettings(input);
 
-      expect(mockApi.put).toHaveBeenCalledWith('/settings/system', input);
+      expect(mockApi.put).toHaveBeenCalledWith('/system/settings', input);
       expect(result.instanceName).toBe('Updated Name');
     });
 
@@ -178,16 +161,9 @@ describe('System Settings API', () => {
       };
 
       mockApi.put.mockRejectedValueOnce({
-        response: {
-          status: 422,
-          data: {
-            success: false,
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: 'Invalid URL format',
-            },
-          },
-        },
+        statusCode: 422,
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid URL format',
       });
 
       await expect(updateSystemSettings(input)).rejects.toMatchObject({
@@ -198,16 +174,9 @@ describe('System Settings API', () => {
 
     it('should handle 403 Forbidden error', async () => {
       mockApi.put.mockRejectedValueOnce({
-        response: {
-          status: 403,
-          data: {
-            success: false,
-            error: {
-              code: 'FORBIDDEN',
-              message: 'Admin access required',
-            },
-          },
-        },
+        statusCode: 403,
+        code: 'FORBIDDEN',
+        message: 'Admin access required',
       });
 
       await expect(updateSystemSettings({})).rejects.toMatchObject({

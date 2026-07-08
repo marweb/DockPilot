@@ -51,6 +51,7 @@ interface RolePermissions {
 
 const rolePermissions: RolePermissions = {
   admin: [
+    '*:*',
     'containers:*',
     'images:*',
     'volumes:*',

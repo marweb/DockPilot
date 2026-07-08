@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQueryClient } from 'react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Network as NetworkIcon, Link as LinkIcon, Unlink, Copy, Check } from 'lucide-react';
 import type { Network as NetworkType } from '@dockpilot/types';
 import api from '../../api/client';
@@ -188,10 +188,10 @@ export default function NetworkDetails({ network, onClose }: NetworkDetailsProps
                     />
                     <button
                       type="submit"
-                      disabled={!containerToConnect.trim() || connectMutation.isLoading}
+                      disabled={!containerToConnect.trim() || connectMutation.isPending}
                       className="btn btn-primary"
                     >
-                      {connectMutation.isLoading ? (
+                      {connectMutation.isPending ? (
                         <span className="animate-spin">...</span>
                       ) : (
                         <LinkIcon className="h-4 w-4" />
@@ -226,7 +226,7 @@ export default function NetworkDetails({ network, onClose }: NetworkDetailsProps
                       </div>
                       <button
                         onClick={() => handleDisconnect(containerId)}
-                        disabled={disconnectMutation.isLoading}
+                        disabled={disconnectMutation.isPending}
                         className="btn btn-ghost btn-icon btn-sm"
                         title={t('networks.disconnect')}
                       >

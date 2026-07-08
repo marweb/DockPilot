@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import {
   LineChart,
@@ -116,13 +117,14 @@ const ResourceChart: React.FC<ResourceChartProps> = ({
   onTimeRangeChange,
   className,
 }) => {
+  const { t } = useTranslation();
   const [selectedRange, setSelectedRange] = useState<TimeRange>('1h');
   const [internalData, setInternalData] = useState<ResourceDataPoint[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
-  // Initialize data
+  // Initialize fallback data only when no external data is provided
   useEffect(() => {
-    if (!externalData) {
+    if (externalData === undefined) {
       const { points } = timeRangeConfig[selectedRange];
       setInternalData(generateMockData(points, selectedRange));
     }
@@ -164,7 +166,7 @@ const ResourceChart: React.FC<ResourceChartProps> = ({
   );
 
   const chartData = useMemo(() => {
-    const data = externalData || internalData;
+    const data = externalData ?? internalData;
     return data.map((point) => ({
       ...point,
       time: formatTimestamp(point.timestamp, selectedRange),
@@ -282,7 +284,7 @@ const ResourceChart: React.FC<ResourceChartProps> = ({
             <Area
               type="monotone"
               dataKey="cpu"
-              name="CPU"
+              name={t('resourceChart.cpu')}
               stroke="#3b82f6"
               fill="url(#cpuGradient)"
               strokeWidth={2}
@@ -291,7 +293,7 @@ const ResourceChart: React.FC<ResourceChartProps> = ({
             <Area
               type="monotone"
               dataKey="memory"
-              name="Memory"
+              name={t('resourceChart.memory')}
               stroke="#10b981"
               fill="url(#memoryGradient)"
               strokeWidth={2}
@@ -300,7 +302,7 @@ const ResourceChart: React.FC<ResourceChartProps> = ({
             <Line
               type="monotone"
               dataKey="disk"
-              name="Disk"
+              name={t('resourceChart.disk')}
               stroke="#f59e0b"
               strokeWidth={2}
               dot={false}
@@ -312,7 +314,7 @@ const ResourceChart: React.FC<ResourceChartProps> = ({
 
       {/* Network I/O mini chart */}
       <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Network I/O</h4>
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('resourceChart.networkIo')}</h4>
         <div className="h-24">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>

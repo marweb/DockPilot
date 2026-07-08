@@ -14,16 +14,20 @@ import {
   type SaveNotificationChannelInput,
 } from '../notifications';
 
-// Mock the api client
-vi.mock('../client', () => ({
-  default: {
-    get: vi.fn(),
-    post: vi.fn(),
-  },
-}));
+vi.mock('../client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../client')>();
+  return {
+    ...actual,
+    default: {
+      get: vi.fn(),
+      put: vi.fn(),
+      post: vi.fn(),
+    },
+  };
+});
 
 describe('Notifications API', () => {
-  const mockApi = api as unknown as { get: Mock; post: Mock };
+  const mockApi = api as unknown as { get: Mock; put: Mock; post: Mock };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -57,28 +61,21 @@ describe('Notifications API', () => {
       mockApi.get.mockResolvedValueOnce({
         data: {
           success: true,
-          data: mockChannels,
+          data: { channels: mockChannels },
         },
       });
 
       const result = await getNotificationChannels();
 
-      expect(mockApi.get).toHaveBeenCalledWith('/notifications/channels');
+      expect(mockApi.get).toHaveBeenCalledWith('/system/notifications/config');
       expect(result).toEqual(mockChannels);
     });
 
     it('should handle 403 Forbidden error', async () => {
       mockApi.get.mockRejectedValueOnce({
-        response: {
-          status: 403,
-          data: {
-            success: false,
-            error: {
-              code: 'FORBIDDEN',
-              message: 'Admin access required',
-            },
-          },
-        },
+        statusCode: 403,
+        code: 'FORBIDDEN',
+        message: 'Admin access required',
       });
 
       await expect(getNotificationChannels()).rejects.toMatchObject({
@@ -120,7 +117,7 @@ describe('Notifications API', () => {
         updatedAt: '2024-01-01T00:00:00Z',
       };
 
-      mockApi.post.mockResolvedValueOnce({
+      mockApi.put.mockResolvedValueOnce({
         data: {
           success: true,
           data: mockResponse,
@@ -129,22 +126,28 @@ describe('Notifications API', () => {
 
       const result = await saveNotificationChannel('smtp', mockConfig);
 
-      expect(mockApi.post).toHaveBeenCalledWith('/notifications/channels/smtp', mockConfig);
+      expect(mockApi.put).toHaveBeenCalledWith('/system/notifications/config', {
+        provider: 'smtp',
+        name: mockConfig.name,
+        enabled: mockConfig.enabled,
+        fromName: undefined,
+        fromAddress: undefined,
+        config: {
+          host: mockConfig.host,
+          port: mockConfig.port,
+          username: mockConfig.username,
+          password: mockConfig.password,
+          useTLS: mockConfig.useTLS,
+        },
+      });
       expect(result).toEqual(mockResponse);
     });
 
     it('should handle validation errors', async () => {
-      mockApi.post.mockRejectedValueOnce({
-        response: {
-          status: 422,
-          data: {
-            success: false,
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: 'Invalid port number',
-            },
-          },
-        },
+      mockApi.put.mockRejectedValueOnce({
+        statusCode: 422,
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid port number',
       });
 
       await expect(saveNotificationChannel('smtp', mockConfig)).rejects.toMatchObject({
@@ -164,7 +167,7 @@ describe('Notifications API', () => {
           enabled: true,
         };
 
-        mockApi.post.mockResolvedValueOnce({
+        mockApi.put.mockResolvedValueOnce({
           data: {
             success: true,
             data: {
@@ -180,7 +183,10 @@ describe('Notifications API', () => {
         });
 
         await saveNotificationChannel(provider, config);
-        expect(mockApi.post).toHaveBeenCalledWith(`/notifications/channels/${provider}`, config);
+        expect(mockApi.put).toHaveBeenCalledWith(
+          '/system/notifications/config',
+          expect.objectContaining({ provider, name: config.name, enabled: config.enabled })
+        );
       }
     });
   });
@@ -199,8 +205,10 @@ describe('Notifications API', () => {
 
       const result = await sendTestNotification('smtp', 'test@example.com');
 
-      expect(mockApi.post).toHaveBeenCalledWith('/notifications/test/smtp', {
+      expect(mockApi.post).toHaveBeenCalledWith('/system/notifications/test', {
+        provider: 'smtp',
         testEmail: 'test@example.com',
+        testMessage: undefined,
       });
       expect(result).toEqual({
         success: true,
@@ -221,23 +229,18 @@ describe('Notifications API', () => {
 
       await sendTestNotification('slack', undefined, 'Custom test');
 
-      expect(mockApi.post).toHaveBeenCalledWith('/notifications/test/slack', {
+      expect(mockApi.post).toHaveBeenCalledWith('/system/notifications/test', {
+        provider: 'slack',
+        testEmail: undefined,
         testMessage: 'Custom test',
       });
     });
 
     it('should handle provider not configured error', async () => {
       mockApi.post.mockRejectedValueOnce({
-        response: {
-          status: 400,
-          data: {
-            success: false,
-            error: {
-              code: 'BAD_REQUEST',
-              message: 'Provider not configured',
-            },
-          },
-        },
+        statusCode: 400,
+        code: 'BAD_REQUEST',
+        message: 'Provider not configured',
       });
 
       await expect(sendTestNotification('smtp')).rejects.toMatchObject({
@@ -248,16 +251,9 @@ describe('Notifications API', () => {
 
     it('should handle server errors', async () => {
       mockApi.post.mockRejectedValueOnce({
-        response: {
-          status: 500,
-          data: {
-            success: false,
-            error: {
-              code: 'INTERNAL_ERROR',
-              message: 'Server error, please try again',
-            },
-          },
-        },
+        statusCode: 500,
+        code: 'INTERNAL_ERROR',
+        message: 'Server error, please try again',
       });
 
       await expect(sendTestNotification('smtp')).rejects.toMatchObject({
@@ -292,7 +288,7 @@ describe('Notifications API', () => {
       mockApi.get.mockResolvedValue({
         data: {
           success: true,
-          data: mockChannels,
+          data: { channels: mockChannels },
         },
       });
     });
@@ -307,7 +303,7 @@ describe('Notifications API', () => {
         mockApi.get.mockResolvedValueOnce({
           data: {
             success: true,
-            data: [],
+            data: { channels: [] },
           },
         });
 
@@ -333,7 +329,7 @@ describe('Notifications API', () => {
         mockApi.get.mockResolvedValueOnce({
           data: {
             success: true,
-            data: channels,
+            data: { channels },
           },
         });
 
@@ -354,7 +350,7 @@ describe('Notifications API', () => {
         mockApi.get.mockResolvedValueOnce({
           data: {
             success: true,
-            data: [],
+            data: { channels: [] },
           },
         });
 
@@ -395,7 +391,7 @@ describe('Notifications API', () => {
         updatedAt: '2024-01-01T00:00:00Z',
       };
 
-      mockApi.post.mockResolvedValueOnce({
+      mockApi.put.mockResolvedValueOnce({
         data: {
           success: true,
           data: mockResponse,
@@ -409,7 +405,6 @@ describe('Notifications API', () => {
         password: 'secret',
       });
 
-      // Verify that secrets are not in the response
       expect(result).not.toHaveProperty('apiKey');
       expect(result).not.toHaveProperty('password');
       expect(result).not.toHaveProperty('botToken');

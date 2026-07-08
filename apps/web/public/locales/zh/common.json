@@ -65,11 +65,12 @@
     "prune": "清理系统",
     "pruneConfirmBody": "Unused Docker resources will be removed (stopped containers, dangling images, unused volumes and networks).",
     "pruneSuccess": "Prune System: {{total}} items removed",
-    "pruneError": "Could not complete system cleanup"
+    "pruneError": "Could not complete system cleanup",
+    "enabled": "已启用",
+    "disabled": "已禁用"
   },
   "containers": {
     "title": "容器",
-    "comingSoon": "容器管理即将推出...",
     "create": "创造",
     "searchPlaceholder": "按名称、图像或 ID 搜索...",
     "containers": "容器",
@@ -113,7 +114,20 @@
       "message": "您确定要删除 {{name}} 吗？"
     },
     "stats": {
-      "comingSoon": "统计视图即将推出"
+      "cpuUsage": "CPU 使用率",
+      "cores": "{{count}} 核心",
+      "memory": "内存",
+      "networkIo": "网络 I/O",
+      "txRate": "发送: {{rate}}/s",
+      "processes": "进程",
+      "activePids": "活动 PID",
+      "cpuMemoryChart": "CPU 与内存 (24h)",
+      "networkChart": "网络 I/O (24h)",
+      "cpuPercent": "CPU %",
+      "memoryPercent": "内存 %",
+      "read": "读取",
+      "write": "写入",
+      "diskIo": "磁盘 I/O"
     },
     "logs": {
       "title": "集装箱日志",
@@ -172,7 +186,6 @@
   },
   "images": {
     "title": "镜像",
-    "comingSoon": "镜像管理即将推出...",
     "totalSize": "总大小：{{size}}",
     "pullButton": "拉取镜像",
     "searchPlaceholder": "按存储库、标签或 ID 搜索...",
@@ -214,7 +227,6 @@
   },
   "volumes": {
     "title": "卷",
-    "comingSoon": "卷管理即将推出...",
     "create": "创建卷",
     "createTitle": "创建新卷",
     "createButton": "创造",
@@ -263,7 +275,6 @@
   },
   "networks": {
     "title": "网络",
-    "comingSoon": "网络管理即将推出...",
     "create": "创建网络",
     "createTitle": "创建新网络",
     "createButton": "创造",
@@ -310,7 +321,6 @@
   },
   "builds": {
     "title": "构建",
-    "comingSoon": "构建管理即将推出...",
     "empty": "没有正在运行的构建",
     "status": "地位",
     "tags": "标签",
@@ -320,7 +330,6 @@
   },
   "compose": {
     "title": "Compose堆栈",
-    "comingSoon": "Compose管理即将推出...",
     "empty": "未找到撰写堆栈",
     "name": "姓名",
     "status": "地位",
@@ -331,7 +340,6 @@
   },
   "tunnels": {
     "title": "Cloudflare隧道",
-    "comingSoon": "隧道管理即将推出...",
     "empty": "未找到隧道",
     "name": "姓名",
     "status": "地位",
@@ -954,5 +962,11 @@
         "description": "源代码、变更日志和部署最佳实践。"
       }
     }
+  },
+  "resourceChart": {
+    "cpu": "CPU",
+    "memory": "内存",
+    "disk": "磁盘",
+    "networkIo": "网络 I/O"
   }
 }

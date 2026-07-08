@@ -30,7 +30,7 @@ const execBody = z.object({
 });
 
 const updateContainerEnvBody = z.object({
-  env: z.record(z.string()),
+  env: z.record(z.string(), z.string()),
   recreate: z.boolean().default(true),
   rollbackOnFailure: z.boolean().default(true),
   keepRollbackContainer: z.boolean().default(true),

@@ -1,6 +1,6 @@
 {
   "name": "@dockpilot/types",
-  "version": "1.0.0",
+  "version": "2.0.8",
   "description": "Shared TypeScript types for DockPilot",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,9 +11,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "zod": "^3.22.4"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "typescript": "^5.3.3"
+    "typescript": "^5.9.3"
   }
 }

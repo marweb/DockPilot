@@ -65,11 +65,12 @@
     "prune": "System bereinigen",
     "pruneConfirmBody": "Unused Docker resources will be removed (stopped containers, dangling images, unused volumes and networks).",
     "pruneSuccess": "Prune System: {{total}} items removed",
-    "pruneError": "Could not complete system cleanup"
+    "pruneError": "Could not complete system cleanup",
+    "enabled": "Aktiviert",
+    "disabled": "Deaktiviert"
   },
   "containers": {
     "title": "Container",
-    "comingSoon": "Container-Verwaltung folgt bald...",
     "create": "Erstellen",
     "searchPlaceholder": "Suche nach Name, Bild oder ID...",
     "containers": "Behälter",
@@ -113,7 +114,20 @@
       "message": "Sind Sie sicher, dass Sie {{name}} entfernen möchten?"
     },
     "stats": {
-      "comingSoon": "Die Statistikansicht ist bald verfügbar"
+      "cpuUsage": "CPU-Auslastung",
+      "cores": "{{count}} Kerne",
+      "memory": "Speicher",
+      "networkIo": "Netzwerk-I/O",
+      "txRate": "TX: {{rate}}/s",
+      "processes": "Prozesse",
+      "activePids": "Aktive PIDs",
+      "cpuMemoryChart": "CPU & Speicher (24h)",
+      "networkChart": "Netzwerk-I/O (24h)",
+      "cpuPercent": "CPU %",
+      "memoryPercent": "Speicher %",
+      "read": "Lesen",
+      "write": "Schreiben",
+      "diskIo": "Festplatten-I/O"
     },
     "logs": {
       "title": "Containerprotokolle",
@@ -172,7 +186,6 @@
   },
   "images": {
     "title": "Bilder",
-    "comingSoon": "Image-Verwaltung folgt bald...",
     "totalSize": "Gesamtgröße: {{size}}",
     "pullButton": "Bild ziehen",
     "searchPlaceholder": "Suche nach Repository, Tag oder ID...",
@@ -214,7 +227,6 @@
   },
   "volumes": {
     "title": "Bände",
-    "comingSoon": "Volume-Verwaltung folgt bald...",
     "create": "Volumen schaffen",
     "createTitle": "Neues Volume erstellen",
     "createButton": "Erstellen",
@@ -263,7 +275,6 @@
   },
   "networks": {
     "title": "Netzwerke",
-    "comingSoon": "Netzwerk-Verwaltung folgt bald...",
     "create": "Netzwerk erstellen",
     "createTitle": "Neues Netzwerk erstellen",
     "createButton": "Erstellen",
@@ -310,7 +321,6 @@
   },
   "builds": {
     "title": "Baut",
-    "comingSoon": "Build-Verwaltung folgt bald...",
     "empty": "Es werden keine Builds ausgeführt",
     "status": "Status",
     "tags": "Schlagworte",
@@ -320,7 +330,6 @@
   },
   "compose": {
     "title": "Compose Stapel",
-    "comingSoon": "Compose-Verwaltung folgt bald...",
     "empty": "Keine Compose-Stapel gefunden",
     "name": "Name",
     "status": "Status",
@@ -331,7 +340,6 @@
   },
   "tunnels": {
     "title": "Cloudflare Tunnel",
-    "comingSoon": "Tunnel-Verwaltung folgt bald...",
     "empty": "Keine Tunnel gefunden",
     "name": "Name",
     "status": "Status",
@@ -954,5 +962,11 @@
         "description": "Quellcode, Änderungsprotokoll und Best Practices für die Bereitstellung."
       }
     }
+  },
+  "resourceChart": {
+    "cpu": "CPU",
+    "memory": "Speicher",
+    "disk": "Festplatte",
+    "networkIo": "Netzwerk-I/O"
   }
 }

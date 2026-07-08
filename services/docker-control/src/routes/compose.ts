@@ -12,7 +12,7 @@ import type { ComposeStack, ComposeService } from '@dockpilot/types';
 const composeUpBody = z.object({
   name: z.string(),
   yaml: z.string(),
-  env: z.record(z.string()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
   preflightFingerprint: z.string().optional(),
   detach: z.boolean().default(true),
   build: z.boolean().default(false),
@@ -36,12 +36,12 @@ const validateNameBody = z.object({
 const preflightBody = z.object({
   name: z.string(),
   yaml: z.string(),
-  env: z.record(z.string()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
   mode: z.enum(['create', 'update']).default('create'),
 });
 
 const envUpdateBody = z.object({
-  env: z.record(z.string()),
+  env: z.record(z.string(), z.string()),
   replace: z.boolean().default(true),
 });
 

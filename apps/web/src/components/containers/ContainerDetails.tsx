@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Box, Hash, Command, HardDrive, Tag, Copy, Check } from 'lucide-react';
 import type { ContainerInspect } from '@dockpilot/types';
 import api from '../../api/client';

@@ -1,4 +1,6 @@
 packages:
-  - "services/*"
-  - "apps/*"
-  - "packages/*"
+  - services/*
+  - apps/*
+  - packages/*
+
+onlyBuiltDependencies: '["argon2","better-sqlite3","esbuild","protobufjs"]'

@@ -767,12 +767,17 @@ export interface NotificationEventConfig {
 /**
  * Zod schema for validating system settings
  */
+const ipv4Regex =
+  /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+const ipv6Regex =
+  /^(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}$|^(?:[A-Fa-f0-9]{1,4}:){1,7}:$|^(?:[A-Fa-f0-9]{1,4}:){1,6}:[A-Fa-f0-9]{1,4}$/;
+
 export const systemSettingsSchema = z.object({
   instanceName: z.string().min(1).max(100).describe('Unique name for this DockPilot instance'),
   publicUrl: z.string().url().describe('Public URL where the instance is accessible'),
   timezone: z.string().min(1).describe('Timezone for the instance (e.g., America/New_York)'),
-  publicIPv4: z.string().ip({ version: 'v4' }).describe('Public IPv4 address'),
-  publicIPv6: z.string().ip({ version: 'v6' }).describe('Public IPv6 address'),
+  publicIPv4: z.string().regex(ipv4Regex).describe('Public IPv4 address'),
+  publicIPv6: z.string().regex(ipv6Regex).describe('Public IPv6 address'),
   autoUpdate: z.boolean().describe('Whether automatic updates are enabled'),
   updatedAt: z.string().datetime().describe('ISO 8601 timestamp of last update'),
 });
@@ -893,7 +898,6 @@ export const notificationEventConfigSchema = z.object({
     'auth.login.success',
     'auth.logout',
     'auth.password.changed',
-    'auth.mfa.enabled',
     // System events
     'system.startup',
     'system.upgrade.started',
@@ -958,11 +962,6 @@ export const NOTIFICATION_EVENTS = {
     category: 'auth',
     severity: 'info',
     description: 'Password changed',
-  },
-  'auth.mfa.enabled': {
-    category: 'auth',
-    severity: 'info',
-    description: 'Two-factor authentication enabled',
   },
 
   // Sistema

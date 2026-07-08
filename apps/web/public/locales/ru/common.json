@@ -65,11 +65,12 @@
     "prune": "Очистить систему",
     "pruneConfirmBody": "Unused Docker resources will be removed (stopped containers, dangling images, unused volumes and networks).",
     "pruneSuccess": "Prune System: {{total}} items removed",
-    "pruneError": "Could not complete system cleanup"
+    "pruneError": "Could not complete system cleanup",
+    "enabled": "Включено",
+    "disabled": "Отключено"
   },
   "containers": {
     "title": "Контейнеры",
-    "comingSoon": "Управление контейнерами скоро появится...",
     "create": "Создавать",
     "searchPlaceholder": "Поиск по имени, изображению или идентификатору...",
     "containers": "контейнеры",
@@ -113,7 +114,20 @@
       "message": "Вы уверены, что хотите удалить {{name}}?"
     },
     "stats": {
-      "comingSoon": "Просмотр статистики скоро появится"
+      "cpuUsage": "Использование CPU",
+      "cores": "{{count}} ядер",
+      "memory": "Память",
+      "networkIo": "Сеть I/O",
+      "txRate": "TX: {{rate}}/s",
+      "processes": "Процессы",
+      "activePids": "Активные PID",
+      "cpuMemoryChart": "CPU и память (24ч)",
+      "networkChart": "Сеть I/O (24ч)",
+      "cpuPercent": "CPU %",
+      "memoryPercent": "Память %",
+      "read": "Чтение",
+      "write": "Запись",
+      "diskIo": "Диск I/O"
     },
     "logs": {
       "title": "Журналы контейнера",
@@ -172,7 +186,6 @@
   },
   "images": {
     "title": "Образы",
-    "comingSoon": "Управление образами скоро появится...",
     "totalSize": "Общий размер: {{size}}",
     "pullButton": "Вытащить изображение",
     "searchPlaceholder": "Поиск по репозиторию, тегу или идентификатору...",
@@ -214,7 +227,6 @@
   },
   "volumes": {
     "title": "Тома",
-    "comingSoon": "Управление томами скоро появится...",
     "create": "Создать объем",
     "createTitle": "Создать новый том",
     "createButton": "Создавать",
@@ -263,7 +275,6 @@
   },
   "networks": {
     "title": "Сети",
-    "comingSoon": "Управление сетями скоро появится...",
     "create": "Создать сеть",
     "createTitle": "Создать новую сеть",
     "createButton": "Создавать",
@@ -310,7 +321,6 @@
   },
   "builds": {
     "title": "Сборки",
-    "comingSoon": "Управление сборками скоро появится...",
     "empty": "Ни одна сборка не выполняется",
     "status": "Статус",
     "tags": "Теги",
@@ -320,7 +330,6 @@
   },
   "compose": {
     "title": "Стеки Compose",
-    "comingSoon": "Управление Compose скоро появится...",
     "empty": "Стеки составления не найдены",
     "name": "Имя",
     "status": "Статус",
@@ -331,7 +340,6 @@
   },
   "tunnels": {
     "title": "Туннели Cloudflare",
-    "comingSoon": "Управление туннелями скоро появится...",
     "empty": "Туннели не найдены",
     "name": "Имя",
     "status": "Статус",
@@ -954,5 +962,11 @@
         "description": "Исходный код, changelog и лучшие практики деплоя."
       }
     }
+  },
+  "resourceChart": {
+    "cpu": "CPU",
+    "memory": "Память",
+    "disk": "Диск",
+    "networkIo": "Сеть I/O"
   }
 }

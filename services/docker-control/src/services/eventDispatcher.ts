@@ -22,6 +22,7 @@ async function sendToNotificationService(event: NotificationEvent): Promise<void
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-Internal-Secret': process.env.INTERNAL_API_SECRET || '',
       },
       body: JSON.stringify(event),
       signal: controller.signal,

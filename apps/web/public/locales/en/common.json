@@ -66,7 +66,9 @@
     "prune": "Prune System",
     "pruneConfirmBody": "Unused Docker resources will be removed (stopped containers, dangling images, unused volumes and networks).",
     "pruneSuccess": "Prune System: {{total}} items removed",
-    "pruneError": "Could not complete system cleanup"
+    "pruneError": "Could not complete system cleanup",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
   },
   "containers": {
     "title": "Containers",
@@ -113,7 +115,20 @@
       "message": "Are you sure you want to remove {{name}}?"
     },
     "stats": {
-      "comingSoon": "Statistics view is coming soon"
+      "cpuUsage": "CPU Usage",
+      "cores": "{{count}} cores",
+      "memory": "Memory",
+      "networkIo": "Network I/O",
+      "txRate": "TX: {{rate}}/s",
+      "processes": "Processes",
+      "activePids": "Active PIDs",
+      "cpuMemoryChart": "CPU & Memory (24h)",
+      "networkChart": "Network I/O (24h)",
+      "cpuPercent": "CPU %",
+      "memoryPercent": "Memory %",
+      "read": "Read",
+      "write": "Write",
+      "diskIo": "Disk I/O"
     },
     "logs": {
       "title": "Container logs",
@@ -947,5 +962,11 @@
     "no": "No",
     "enabled": "Enabled",
     "disabled": "Disabled"
+  },
+  "resourceChart": {
+    "cpu": "CPU",
+    "memory": "Memory",
+    "disk": "Disk",
+    "networkIo": "Network I/O"
   }
 }

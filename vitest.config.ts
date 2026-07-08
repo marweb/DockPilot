@@ -5,12 +5,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: [
-      'tests/**/*.{test,spec}.{ts,tsx}',
-      '**/__tests__/**/*.{test,spec}.{ts,tsx}',
-      'services/**/tests/**/*.{test,spec}.{ts,tsx}',
+    include: ['services/*/tests/**/*.{test,spec}.{ts,tsx}'],
+    exclude: [
+      '**/node_modules/**',
+      'dist/**',
+      '.turbo/**',
+      'apps/**',
+      'tests/**',
     ],
-    exclude: ['node_modules', 'dist', '.turbo', 'tests/e2e/**/*', 'services/**/tests/e2e/**/*'],
     setupFiles: ['./tests/setup.ts'],
     coverage: {
       provider: 'v8',
@@ -19,6 +21,7 @@ export default defineConfig({
         'node_modules/',
         'dist/',
         'tests/',
+        'apps/',
         '**/*.d.ts',
         '**/*.config.{ts,js}',
         '**/types/**',
@@ -35,11 +38,7 @@ export default defineConfig({
     testTimeout: 10000,
     hookTimeout: 10000,
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: true,
-      },
-    },
+    singleThread: true,
   },
   resolve: {
     alias: {

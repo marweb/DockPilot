@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import {
   LineChart,
@@ -145,6 +146,7 @@ const ContainerStats: React.FC<ContainerStatsProps> = ({
   isRealTime = false,
   className,
 }) => {
+  const { t } = useTranslation();
   const [internalData, setInternalData] = useState<ContainerStatsDataPoint[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
@@ -268,14 +270,14 @@ const ContainerStats: React.FC<ContainerStatsProps> = ({
       {/* Current Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard
-          title="CPU Usage"
+          title={t('containers.stats.cpuUsage')}
           value={`${currentStats.cpuPercent.toFixed(1)}%`}
-          subtitle={`${currentStats.cpuCores.toFixed(2)} cores`}
+          subtitle={t('containers.stats.cores', { count: currentStats.cpuCores.toFixed(2) })}
           icon={<Cpu className="w-5 h-5" />}
           trend={currentStats.cpuPercent > 80 ? 'up' : 'neutral'}
         />
         <StatCard
-          title="Memory"
+          title={t('containers.stats.memory')}
           value={`${currentStats.memoryPercent.toFixed(1)}%`}
           subtitle={`${formatBytes(currentStats.memoryUsed * 1024 * 1024)} / ${formatBytes(
             currentStats.memoryTotal * 1024 * 1024
@@ -284,16 +286,16 @@ const ContainerStats: React.FC<ContainerStatsProps> = ({
           trend={currentStats.memoryPercent > 80 ? 'up' : 'neutral'}
         />
         <StatCard
-          title="Network I/O"
+          title={t('containers.stats.networkIo')}
           value={`${formatBytes(currentStats.networkRx)}/s`}
-          subtitle={`TX: ${formatBytes(currentStats.networkTx)}/s`}
+          subtitle={t('containers.stats.txRate', { rate: formatBytes(currentStats.networkTx) })}
           icon={<Network className="w-5 h-5" />}
           trend="neutral"
         />
         <StatCard
-          title="Processes"
+          title={t('containers.stats.processes')}
           value={currentStats.pids.toString()}
-          subtitle="Active PIDs"
+          subtitle={t('containers.stats.activePids')}
           icon={<HardDrive className="w-5 h-5" />}
           trend="neutral"
         />
@@ -303,7 +305,7 @@ const ContainerStats: React.FC<ContainerStatsProps> = ({
       <div className="mb-6">
         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
           <Cpu className="w-4 h-4" />
-          CPU & Memory (24h)
+          {t('containers.stats.cpuMemoryChart')}
         </h4>
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
@@ -340,7 +342,7 @@ const ContainerStats: React.FC<ContainerStatsProps> = ({
               <Area
                 type="monotone"
                 dataKey="cpuPercent"
-                name="CPU %"
+                name={t('containers.stats.cpuPercent')}
                 stroke="#3b82f6"
                 fill="url(#cpuContainerGradient)"
                 strokeWidth={2}
@@ -349,7 +351,7 @@ const ContainerStats: React.FC<ContainerStatsProps> = ({
               <Area
                 type="monotone"
                 dataKey="memoryPercent"
-                name="Memory %"
+                name={t('containers.stats.memoryPercent')}
                 stroke="#10b981"
                 fill="url(#memoryContainerGradient)"
                 strokeWidth={2}
@@ -364,7 +366,7 @@ const ContainerStats: React.FC<ContainerStatsProps> = ({
       <div className="mb-6">
         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
           <Network className="w-4 h-4" />
-          Network I/O (24h)
+          {t('containers.stats.networkChart')}
         </h4>
         <div className="h-40">
           <ResponsiveContainer width="100%" height="100%">
@@ -441,14 +443,14 @@ const ContainerStats: React.FC<ContainerStatsProps> = ({
               <Legend />
               <Bar
                 dataKey="diskRead"
-                name="Read"
+                name={t('containers.stats.read')}
                 fill="#f59e0b"
                 radius={[2, 2, 0, 0]}
                 animationDuration={1000}
               />
               <Bar
                 dataKey="diskWrite"
-                name="Write"
+                name={t('containers.stats.write')}
                 fill="#ef4444"
                 radius={[2, 2, 0, 0]}
                 animationDuration={1000}

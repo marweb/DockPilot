@@ -1,6 +1,6 @@
 {
   "name": "dockpilot",
-  "version": "1.0.0",
+  "version": "2.0.8",
   "description": "Web-based Docker administration GUI - Self-hosted alternative to Docker Desktop",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test",
-    "test:unit": "vitest run",
+    "test:unit": "vitest run --config vitest.config.ts",
     "test:e2e": "playwright test",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
@@ -29,23 +29,37 @@
   "author": "DockPilot Team",
   "license": "MIT",
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
   },
-  "packageManager": "pnpm@9.15.9",
+  "packageManager": "pnpm@10.12.1",
+  "pnpm": {
+    "onlyBuiltDependencies": ["argon2", "better-sqlite3", "esbuild", "protobufjs"],
+    "overrides": {
+      "flatted": ">=3.3.3",
+      "picomatch": ">=4.0.4",
+      "fast-uri": ">=3.1.0",
+      "form-data": ">=4.0.4",
+      "bn.js": ">=5.2.3",
+      "ajv": ">=8.18.0",
+      "yaml": ">=2.8.2",
+      "@babel/helpers": ">=7.29.6"
+    }
+  },
   "devDependencies": {
-    "@playwright/test": "^1.41.0",
-    "@types/node": "^20.11.0",
-    "@typescript-eslint/eslint-plugin": "^8.55.0",
-    "@typescript-eslint/parser": "^8.55.0",
-    "@vitest/coverage-v8": "^1.2.0",
-    "eslint": "^8.56.0",
-    "prettier": "^3.2.4",
-    "turbo": "^1.12.0",
-    "typescript": "^5.3.3",
-    "vitest": "^1.2.0"
-  },
-  "dependencies": {
-    "recharts": "^3.7.0"
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^22.15.0",
+    "@typescript-eslint/eslint-plugin": "^8.63.0",
+    "@typescript-eslint/parser": "^8.63.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.0.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "prettier": "^3.9.4",
+    "turbo": "^2.10.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.63.0",
+    "vitest": "^4.1.10"
   }
 }

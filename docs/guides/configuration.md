@@ -39,8 +39,10 @@ Variables para el servicio de API Gateway.
 | ------------------ | ----------------------------- | ------------- | ------------- |
 | `API_PORT`         | Puerto HTTP                   | 3000          | 8080          |
 | `API_HOST`         | Host para binding             | 0.0.0.0       | 127.0.0.1     |
-| `JWT_SECRET`       | Clave secreta para JWT        | **REQUERIDO** | base64-string |
-| `JWT_EXPIRES_IN`   | Expiración del token (seg)    | 3600          | 86400         |
+| `JWT_SECRET`           | Clave secreta para JWT        | **REQUERIDO** | base64-string |
+| `INTERNAL_API_SECRET`  | Secreto para comunicación interna entre servicios | **REQUERIDO** | hex-64-chars |
+| `MASTER_KEY`           | Clave maestra para cifrar notificaciones y credenciales | **REQUERIDO en prod** | base64-random-48 |
+| `JWT_EXPIRES_IN`       | Expiración del token (seg)    | 3600          | 86400         |
 | `JWT_REFRESH_DAYS` | Días de validez refresh token | 7             | 30            |
 
 ### URLs de Servicios

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Search, RefreshCw, Download } from 'lucide-react';
 import type { Image as DockerImage } from '@dockpilot/types';
@@ -129,7 +129,7 @@ export default function Images() {
         images={filteredImages || []}
         isLoading={isLoading}
         onDelete={handleDeleteClick}
-        isDeleting={deleteMutation.isLoading}
+        isDeleting={deleteMutation.isPending}
         formatSize={formatSize}
       />
 
@@ -171,10 +171,10 @@ export default function Images() {
                 </button>
                 <button
                   onClick={handleConfirmDelete}
-                  disabled={deleteMutation.isLoading}
+                  disabled={deleteMutation.isPending}
                   className="btn btn-danger"
                 >
-                  {deleteMutation.isLoading ? (
+                  {deleteMutation.isPending ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
                   ) : (
                     t('common.delete')

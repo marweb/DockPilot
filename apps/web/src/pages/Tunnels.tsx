@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQuery, useQueryClient } from 'react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   RefreshCw,
   Play,
@@ -493,7 +493,7 @@ export default function Tunnels() {
                         selectAccountMutation.mutate(next);
                       }
                     }}
-                    disabled={selectAccountMutation.isLoading || accountOptions.length === 0}
+                    disabled={selectAccountMutation.isPending || accountOptions.length === 0}
                   >
                     {(accountOptions.length > 0
                       ? accountOptions
@@ -508,7 +508,7 @@ export default function Tunnels() {
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={() => logoutMutation.mutate()}
-                  disabled={logoutMutation.isLoading}
+                  disabled={logoutMutation.isPending}
                 >
                   <LogOut className="h-4 w-4 mr-1" />
                   {t('tunnelsPage.auth.logout')}
@@ -539,7 +539,7 @@ export default function Tunnels() {
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={() => tokenLoginMutation.mutate()}
-                  disabled={!apiToken || tokenLoginMutation.isLoading}
+                  disabled={!apiToken || tokenLoginMutation.isPending}
                 >
                   <LogIn className="h-4 w-4 mr-1" />
                   {t('tunnelsPage.auth.loginWithToken')}
@@ -547,7 +547,7 @@ export default function Tunnels() {
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={() => oauthLoginMutation.mutate()}
-                  disabled={oauthLoginMutation.isLoading}
+                  disabled={oauthLoginMutation.isPending}
                 >
                   {t('tunnelsPage.auth.startOauth')}
                 </button>
@@ -709,7 +709,7 @@ export default function Tunnels() {
               <button
                 className="btn btn-primary"
                 onClick={() => createTunnelMutation.mutate()}
-                disabled={!serviceContainerId || !hostname || createTunnelMutation.isLoading}
+                disabled={!serviceContainerId || !hostname || createTunnelMutation.isPending}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 {t('tunnelsPage.management.createButton')}
@@ -795,7 +795,7 @@ export default function Tunnels() {
                             })
                           }
                           className="rounded"
-                          disabled={updateSettingsMutation.isLoading}
+                          disabled={updateSettingsMutation.isPending}
                         />
                         {t('tunnelsPage.cards.autoStartLabel', {
                           status: tunnel.autoStart
@@ -810,7 +810,7 @@ export default function Tunnels() {
                         <button
                           onClick={() => startMutation.mutate(tunnel.id)}
                           className="btn btn-primary btn-sm"
-                          disabled={startMutation.isLoading}
+                          disabled={startMutation.isPending}
                         >
                           <Play className="h-4 w-4 mr-1" />
                           {t('tunnels.start')}
@@ -819,7 +819,7 @@ export default function Tunnels() {
                         <button
                           onClick={() => stopMutation.mutate(tunnel.id)}
                           className="btn btn-secondary btn-sm"
-                          disabled={stopMutation.isLoading}
+                          disabled={stopMutation.isPending}
                         >
                           <Square className="h-4 w-4 mr-1" />
                           {t('tunnels.stop')}
@@ -828,7 +828,7 @@ export default function Tunnels() {
                       <button
                         onClick={() => deleteMutation.mutate(tunnel.id)}
                         className="btn btn-danger btn-sm"
-                        disabled={deleteMutation.isLoading}
+                        disabled={deleteMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
                         {t('tunnels.delete')}

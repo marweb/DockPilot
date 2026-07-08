@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, RefreshCw, Plus, AlertTriangle, Check } from 'lucide-react';
 import type { Volume } from '@dockpilot/types';
 import api from '../api/client';
@@ -144,7 +144,7 @@ export default function Volumes() {
         volumes={filteredVolumes || []}
         isLoading={isLoading}
         onDelete={(name) => deleteMutation.mutate(name)}
-        isDeleting={deleteMutation.isLoading}
+        isDeleting={deleteMutation.isPending}
         formatSize={formatSize}
       />
 
@@ -190,10 +190,10 @@ export default function Volumes() {
                   </button>
                   <button
                     type="submit"
-                    disabled={!newVolumeName.trim() || createMutation.isLoading}
+                    disabled={!newVolumeName.trim() || createMutation.isPending}
                     className="btn btn-primary"
                   >
-                    {createMutation.isLoading ? (
+                    {createMutation.isPending ? (
                       <RefreshCw className="h-4 w-4 animate-spin" />
                     ) : (
                       t('volumes.createButton')
@@ -229,10 +229,10 @@ export default function Volumes() {
                 </button>
                 <button
                   onClick={handlePrune}
-                  disabled={pruneMutation.isLoading}
+                  disabled={pruneMutation.isPending}
                   className="btn btn-danger"
                 >
-                  {pruneMutation.isLoading ? (
+                  {pruneMutation.isPending ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
                   ) : (
                     t('volumes.pruneButton')

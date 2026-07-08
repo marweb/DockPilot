@@ -14,6 +14,8 @@ const configSchema = z.object({
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   rateLimitMax: z.number().default(100),
   rateLimitWindow: z.string().default('1 minute'),
+  masterKey: z.string().min(16).optional(),
+  internalApiSecret: z.string().min(32),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -33,5 +35,7 @@ export function loadConfig(): Config {
     logLevel: process.env.LOG_LEVEL,
     rateLimitMax: process.env.RATE_LIMIT_MAX ? parseInt(process.env.RATE_LIMIT_MAX, 10) : undefined,
     rateLimitWindow: process.env.RATE_LIMIT_WINDOW,
+    masterKey: process.env.MASTER_KEY,
+    internalApiSecret: process.env.INTERNAL_API_SECRET,
   });
 }

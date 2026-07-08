@@ -1,10 +1,10 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+RUN corepack enable && corepack prepare pnpm@10.12.1 --activate
 
 # Copy package files
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
@@ -32,12 +32,12 @@ RUN pnpm --filter @dockpilot/types build
 RUN pnpm --filter @dockpilot/api-gateway build
 
 # Production stage
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+RUN corepack enable && corepack prepare pnpm@10.12.1 --activate
 
 # Copy built files
 COPY --from=builder /app/services/api-gateway/dist ./dist

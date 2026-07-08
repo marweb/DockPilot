@@ -100,7 +100,7 @@ const updateRepoBody = createRepoBody.partial();
 
 const deployRepoBody = z.object({
   stackName: z.string().optional(),
-  env: z.record(z.string()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
   build: z.boolean().default(false),
   removeOrphans: z.boolean().default(true),
 });

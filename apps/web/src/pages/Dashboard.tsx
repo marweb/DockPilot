@@ -1,9 +1,68 @@
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Box, Image, HardDrive, Network, Activity, Cpu, MemoryStick } from 'lucide-react';
+import { useMemo } from 'react';
+import { Activity, Cpu, MemoryStick } from 'lucide-react';
 import api from '../api/client';
 import { useToast } from '../contexts/ToastContext';
+import StatsOverview from '../components/dashboard/StatsOverview';
+import ResourceChart from '../components/dashboard/ResourceChart';
+import ActivityFeed from '../components/dashboard/ActivityFeed';
+
+interface AuditLog {
+  id: string;
+  timestamp: string;
+  username: string;
+  action: string;
+  resource: string;
+  resourceId?: string;
+  details?: Record<string, unknown>;
+}
+
+function mapAuditToActivity(log: AuditLog) {
+  const actionMap: Record<string, string> = {
+    'container.start': 'container_start',
+    'container.stop': 'container_stop',
+    'container.restart': 'container_restart',
+    'container.delete': 'container_delete',
+    'image.pull': 'image_pull',
+    'image.delete': 'image_delete',
+    'volume.create': 'volume_create',
+    'volume.delete': 'volume_delete',
+    'network.create': 'network_create',
+    'network.delete': 'network_delete',
+    'build.start': 'build_start',
+    'build.success': 'build_success',
+    'build.fail': 'build_fail',
+  };
+
+  const type = actionMap[log.action] || 'system_info';
+
+  return {
+    id: log.id,
+    type: type as
+      | 'container_start'
+      | 'container_stop'
+      | 'container_restart'
+      | 'container_delete'
+      | 'image_pull'
+      | 'image_delete'
+      | 'volume_create'
+      | 'volume_delete'
+      | 'network_create'
+      | 'network_delete'
+      | 'build_start'
+      | 'build_success'
+      | 'build_fail'
+      | 'system_warning'
+      | 'system_info',
+    message: log.action.replace(/\./g, ' '),
+    details: log.resourceId ? `${log.resource}: ${log.resourceId}` : log.resource,
+    timestamp: new Date(log.timestamp).getTime(),
+    user: log.username,
+    target: log.resourceId,
+  };
+}
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -11,32 +70,96 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  const { data: dockerInfo } = useQuery('docker-info', () =>
-    api.get('/info').then((res) => res.data.data)
-  );
+  const { data: dockerInfo } = useQuery({
+    queryKey: ['docker-info'],
+    queryFn: () => api.get('/info').then((res) => res.data.data),
+  });
 
-  const { data: containers } = useQuery('containers', () =>
-    api.get('/containers').then((res) => res.data.data)
-  );
+  const { data: containers } = useQuery({
+    queryKey: ['containers'],
+    queryFn: () => api.get('/containers').then((res) => res.data.data),
+  });
 
-  const { data: images } = useQuery('images', () =>
-    api.get('/images').then((res) => res.data.data)
-  );
+  const { data: images } = useQuery({
+    queryKey: ['images'],
+    queryFn: () => api.get('/images').then((res) => res.data.data),
+  });
 
-  const { data: volumes } = useQuery('volumes', () =>
-    api.get('/volumes').then((res) => res.data.data)
-  );
+  const { data: volumes } = useQuery({
+    queryKey: ['volumes'],
+    queryFn: () => api.get('/volumes').then((res) => res.data.data),
+  });
 
-  const { data: networks } = useQuery('networks', () =>
-    api.get('/networks').then((res) => res.data.data)
-  );
+  const { data: networks } = useQuery({
+    queryKey: ['networks'],
+    queryFn: () => api.get('/networks').then((res) => res.data.data),
+  });
+
+  const { data: builds } = useQuery({
+    queryKey: ['builds'],
+    queryFn: () => api.get('/builds').then((res) => res.data.data),
+  });
+
+  const { data: auditLogs, isLoading: auditLoading } = useQuery({
+    queryKey: ['audit-logs'],
+    queryFn: () =>
+      api.get('/audit/logs', { params: { limit: 20 } }).then((res) => res.data.data as AuditLog[]),
+    retry: false,
+  });
+
+  const { data: resourceStats, isLoading: resourceLoading } = useQuery({
+    queryKey: ['dashboard-resource-stats'],
+    queryFn: async () => {
+      const running =
+        containers?.filter((c: { status: string }) => c.status === 'running').slice(0, 5) || [];
+
+      if (running.length === 0) {
+        return [];
+      }
+
+      const stats = await Promise.all(
+        running.map(async (container: { id: string }) => {
+          const response = await api.get(`/containers/${container.id}/stats`);
+          const data = response.data.data;
+          return {
+            timestamp: Date.now(),
+            cpu: data?.cpuPercent ?? 0,
+            memory: data?.memoryPercent ?? 0,
+            disk: 0,
+            networkRx: data?.networkRx ?? 0,
+            networkTx: data?.networkTx ?? 0,
+          };
+        })
+      );
+
+      return stats;
+    },
+    enabled: Boolean(containers?.length),
+    refetchInterval: 5000,
+  });
 
   const runningContainers =
     containers?.filter((c: { status: string }) => c.status === 'running').length || 0;
-  const totalContainers = containers?.length || 0;
+  const stoppedContainers = (containers?.length || 0) - runningContainers;
   const totalImages = images?.length || 0;
   const totalVolumes = volumes?.length || 0;
   const totalNetworks = networks?.length || 0;
+
+  const buildStats = useMemo(() => {
+    const list = builds || [];
+    return {
+      success: list.filter((b: { status: string }) => b.status === 'success').length,
+      failed: list.filter((b: { status: string }) => b.status === 'failed').length,
+      pending: list.filter((b: { status: string }) =>
+        ['running', 'pending', 'building'].includes(b.status)
+      ).length,
+    };
+  }, [builds]);
+
+  const activities = useMemo(
+    () => (auditLogs || []).map(mapAuditToActivity),
+    [auditLogs]
+  );
 
   const pruneMutation = useMutation({
     mutationFn: async () => {
@@ -94,63 +217,35 @@ export default function Dashboard() {
         {t('dashboard.title')}
       </h1>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {t('dashboard.containers')}
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {runningContainers} / {totalContainers}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t('dashboard.running')}</p>
-            </div>
-            <div className="p-3 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
-              <Box className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-            </div>
-          </div>
-        </div>
+      <StatsOverview
+        containers={{
+          running: runningContainers,
+          stopped: stoppedContainers,
+          total: containers?.length || 0,
+        }}
+        images={{
+          total: totalImages,
+          totalSize: '-',
+        }}
+        volumes={{
+          count: totalVolumes,
+          usedSpace: '-',
+        }}
+        networks={{
+          count: totalNetworks,
+        }}
+        builds={buildStats}
+      />
 
-        <div className="card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.images')}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalImages}</p>
-            </div>
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-              <Image className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.volumes')}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalVolumes}</p>
-            </div>
-            <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
-              <HardDrive className="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.networks')}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalNetworks}</p>
-            </div>
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
-              <Network className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-            </div>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <ResourceChart
+          data={resourceStats}
+          isLoading={resourceLoading}
+          isRealTime={Boolean(resourceStats?.length)}
+        />
+        <ActivityFeed activities={activities} isLoading={auditLoading} />
       </div>
 
-      {/* System Info */}
       <div className="card">
         <div className="card-header">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -173,7 +268,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.memory')}</p>
                 <p className="font-medium text-gray-900 dark:text-gray-100">
-                  {dockerInfo?.memoryLimit ? 'Enabled' : 'Disabled'}
+                  {dockerInfo?.memoryLimit ? t('dashboard.enabled') : t('dashboard.disabled')}
                 </p>
               </div>
             </div>
@@ -187,7 +282,7 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Box className="h-5 w-5 text-gray-400" />
+              <Cpu className="h-5 w-5 text-gray-400" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.version')}</p>
                 <p className="font-medium text-gray-900 dark:text-gray-100">
@@ -199,7 +294,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Actions */}
       <div className="card">
         <div className="card-header">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -217,7 +311,7 @@ export default function Dashboard() {
             <button
               className="btn btn-secondary"
               onClick={handlePruneSystem}
-              disabled={pruneMutation.isLoading}
+              disabled={pruneMutation.isPending}
             >
               {t('dashboard.prune')}
             </button>

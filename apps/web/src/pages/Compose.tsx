@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from 'react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
@@ -295,7 +295,7 @@ export default function Compose() {
               </div>
               <button
                 className="btn btn-secondary"
-                disabled={!canValidate || preflightMutation.isLoading}
+                disabled={!canValidate || preflightMutation.isPending}
                 onClick={() => preflightMutation.mutate()}
               >
                 <ShieldCheck className="h-4 w-4 mr-1" />
@@ -346,7 +346,7 @@ export default function Compose() {
               )}
               <button
                 className="btn btn-primary"
-                disabled={!preflightResult?.valid || deployMutation.isLoading}
+                disabled={!preflightResult?.valid || deployMutation.isPending}
                 onClick={() => deployMutation.mutate()}
               >
                 <Rocket className="h-4 w-4 mr-1" />
@@ -404,7 +404,7 @@ export default function Compose() {
                         <button
                           onClick={() => downMutation.mutate(stack.name)}
                           className="btn btn-secondary btn-sm"
-                          disabled={downMutation.isLoading}
+                          disabled={downMutation.isPending}
                         >
                           <Square className="h-4 w-4 mr-1" />
                           {t('composePage.actions.stop')}
@@ -422,7 +422,7 @@ export default function Compose() {
                         <button
                           onClick={() => deleteMutation.mutate(stack.name)}
                           className="btn btn-danger btn-sm"
-                          disabled={deleteMutation.isLoading}
+                          disabled={deleteMutation.isPending}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
                           {t('composePage.actions.delete')}

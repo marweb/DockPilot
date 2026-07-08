@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { timingSafeEqual } from 'crypto';
 import { z } from 'zod';
 import {
   getNotificationRules,
@@ -22,9 +23,32 @@ const ruleSchema = z.object({
   cooldownMinutes: z.number().min(0).max(1440).default(0),
 });
 
+function validateInternalSecret(
+  provided: string | undefined,
+  expected: string
+): boolean {
+  if (!provided || !expected) {
+    return false;
+  }
+
+  const providedBuffer = Buffer.from(provided);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(providedBuffer, expectedBuffer);
+}
+
 export async function notificationRulesRoutes(fastify: FastifyInstance) {
   // GET /api/notifications/rules - Obtener todas las reglas
-  fastify.get('/notifications/rules', async (request, reply) => {
+  fastify.get(
+    '/notifications/rules',
+    {
+      preHandler: requireAdmin,
+    },
+    async (request, reply) => {
     try {
       const rules = getNotificationRules();
       return {
@@ -38,10 +62,16 @@ export async function notificationRulesRoutes(fastify: FastifyInstance) {
         error: { message: 'Failed to fetch notification rules' },
       });
     }
-  });
+  }
+  );
 
   // GET /api/notifications/rules/matrix - Matriz evento×canal
-  fastify.get('/notifications/rules/matrix', async (request, reply) => {
+  fastify.get(
+    '/notifications/rules/matrix',
+    {
+      preHandler: requireAdmin,
+    },
+    async (request, reply) => {
     try {
       const matrix = getNotificationRulesMatrix();
       return {
@@ -58,7 +88,8 @@ export async function notificationRulesRoutes(fastify: FastifyInstance) {
         error: { message: 'Failed to fetch notification matrix' },
       });
     }
-  });
+  }
+  );
 
   // POST /api/notifications/rules - Crear nueva regla
   fastify.post(
@@ -170,7 +201,12 @@ export async function notificationRulesRoutes(fastify: FastifyInstance) {
   );
 
   // GET /api/notifications/history - Historial de notificaciones
-  fastify.get('/notifications/history', async (request, reply) => {
+  fastify.get(
+    '/notifications/history',
+    {
+      preHandler: requireAdmin,
+    },
+    async (request, reply) => {
     try {
       const query = request.query as { limit?: string };
       const limit = parseInt(query.limit || '50', 10);
@@ -187,17 +223,29 @@ export async function notificationRulesRoutes(fastify: FastifyInstance) {
         error: { message: 'Failed to fetch notification history' },
       });
     }
-  });
+  }
+  );
 
   // POST /api/notifications/events - Internal endpoint for receiving events from docker-control
   fastify.post(
     '/notifications/events',
-    {
-      // Allow internal service calls without auth
-      config: { skipAuth: true },
-    },
     async (request, reply) => {
       try {
+        const internalSecret = fastify.config.internalApiSecret;
+        const providedSecret = request.headers['x-internal-secret'];
+
+        if (
+          !validateInternalSecret(
+            typeof providedSecret === 'string' ? providedSecret : undefined,
+            internalSecret
+          )
+        ) {
+          return reply.status(401).send({
+            success: false,
+            error: { message: 'Invalid or missing internal API secret' },
+          });
+        }
+
         const body = request.body as {
           eventType: string;
           severity: 'info' | 'warning' | 'critical';

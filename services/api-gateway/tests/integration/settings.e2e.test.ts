@@ -147,10 +147,10 @@ describe('Settings End-to-End', () => {
 
       expect(getChannelsResponse.statusCode).toBe(200);
       const channelsBody = JSON.parse(getChannelsResponse.payload);
-      expect(channelsBody.data).toHaveLength(1);
-      expect(channelsBody.data[0].provider).toBe('smtp');
+      expect(channelsBody.data.channels).toHaveLength(1);
+      expect(channelsBody.data.channels[0].provider).toBe('smtp');
       // Config should be encrypted
-      expect(channelsBody.data[0].config.data).toMatch(/^enc:/);
+      expect(channelsBody.data.channels[0].config.data).toMatch(/^enc:/);
     });
 
     it('should handle encryption correctly across API', async () => {
@@ -193,7 +193,7 @@ describe('Settings End-to-End', () => {
       });
 
       const body = JSON.parse(getResponse.payload);
-      expect(body.data[0].config.data).toMatch(/^enc:/);
+      expect(body.data.channels[0].config.data).toMatch(/^enc:/);
     });
   });
 
@@ -372,7 +372,7 @@ describe('Settings End-to-End', () => {
 
       expect(getResponse.statusCode).toBe(200);
       const body = JSON.parse(getResponse.payload);
-      expect(body.data.length).toBeGreaterThanOrEqual(1);
+      expect(body.data.channels.length).toBeGreaterThanOrEqual(1);
     });
   });
 

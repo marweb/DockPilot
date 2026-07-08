@@ -298,6 +298,14 @@ else
   echo "MASTER_KEY=${MASTER_KEY}" >> "$ENV_FILE"
 fi
 
+# Generate INTERNAL_API_SECRET for service-to-service communication
+INTERNAL_API_SECRET=$(openssl rand -hex 32)
+if grep -q "^INTERNAL_API_SECRET=" "$ENV_FILE" 2>/dev/null; then
+  sed -i "s|^INTERNAL_API_SECRET=.*|INTERNAL_API_SECRET=${INTERNAL_API_SECRET}|" "$ENV_FILE"
+else
+  echo "INTERNAL_API_SECRET=${INTERNAL_API_SECRET}" >> "$ENV_FILE"
+fi
+
 # Set version
 if grep -q "^DOCKPILOT_VERSION=" "$ENV_FILE" 2>/dev/null; then
   sed -i "s|^DOCKPILOT_VERSION=.*|DOCKPILOT_VERSION=${LATEST_VERSION}|" "$ENV_FILE"

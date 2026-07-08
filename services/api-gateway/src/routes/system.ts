@@ -197,7 +197,7 @@ const _notificationConfigSchema = z.object({
       message: 'Invalid email address',
     })
     .optional(),
-  config: z.record(z.unknown()),
+  config: z.record(z.string(), z.unknown()),
 });
 
 /**
@@ -753,7 +753,7 @@ export async function systemRoutes(fastify: FastifyInstance): Promise<void> {
             error: {
               code: 'VALIDATION_ERROR',
               message: 'Invalid configuration',
-              details: error.errors,
+              details: error.issues,
             },
           });
         }

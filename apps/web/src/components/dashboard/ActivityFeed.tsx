@@ -255,7 +255,7 @@ const groupActivitiesByDate = (activities: Activity[]) => {
 };
 
 const ActivityFeed: React.FC<ActivityFeedProps> = ({
-  activities = defaultActivities,
+  activities = [],
   isLoading = false,
   hasMore = false,
   onLoadMore,

@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import Docker from 'dockerode';
 import { z } from 'zod';
 import { getDocker } from '../services/docker.js';
 import type { Volume, VolumeInspect } from '@dockpilot/types';
@@ -7,8 +8,8 @@ import type { Volume, VolumeInspect } from '@dockpilot/types';
 const createVolumeBody = z.object({
   name: z.string(),
   driver: z.string().default('local'),
-  labels: z.record(z.string()).optional(),
-  options: z.record(z.string()).optional(),
+  labels: z.record(z.string(), z.string()).optional(),
+  options: z.record(z.string(), z.string()).optional(),
 });
 
 export async function volumeRoutes(fastify: FastifyInstance) {
@@ -91,7 +92,7 @@ export async function volumeRoutes(fastify: FastifyInstance) {
           Driver: driver,
           Labels: labels,
           DriverOpts: options,
-        });
+        } as Docker.VolumeCreateOptions);
 
         return reply.send({ success: true, message: `Volume ${name} created` });
       } catch (error) {

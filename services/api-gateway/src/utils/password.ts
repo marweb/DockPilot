@@ -257,7 +257,6 @@ export async function verifyAndRehash(
 
   // Check if rehashing is needed
   const needsRehash = argon2.needsRehash(hash, {
-    type: argon2.argon2id,
     memoryCost: DEFAULT_OPTIONS.memoryCost,
     timeCost: DEFAULT_OPTIONS.timeCost,
     parallelism: DEFAULT_OPTIONS.parallelism,
@@ -344,32 +343,6 @@ export function validatePasswordStrength(password: string): {
     errors,
     score,
   };
-}
-
-/**
- * Check if a password has been compromised using haveibeenpwned API
- * Note: This requires network access and should be used sparingly
- * @param password - Password to check
- * @returns Promise resolving to true if password is compromised
- */
-export async function isPasswordCompromised(password: string): Promise<boolean> {
-  // This is a placeholder - in production, you might want to implement
-  // the k-anonymity API from haveibeenpwned.com
-  // For now, just check against common passwords
-  const commonPasswords = [
-    'password',
-    '123456',
-    '12345678',
-    'qwerty',
-    'abc123',
-    'password123',
-    'admin',
-    'letmein',
-    'welcome',
-    'monkey',
-  ];
-
-  return commonPasswords.includes(password.toLowerCase());
 }
 
 /**

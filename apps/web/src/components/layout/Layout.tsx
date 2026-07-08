@@ -244,7 +244,11 @@ export default function Layout({ children }: LayoutProps) {
             <span>DockPilot</span>
             <span className="text-gray-300">/</span>
             <span className="text-gray-900 dark:text-gray-100 capitalize">
-              {location.pathname === '/' ? 'Dashboard' : location.pathname.split('/')[1]}
+              {location.pathname === '/'
+                ? t('nav.dashboard')
+                : t(`nav.${location.pathname.split('/')[1]}`, {
+                    defaultValue: location.pathname.split('/')[1],
+                  })}
             </span>
           </nav>
 
@@ -420,10 +424,10 @@ export default function Layout({ children }: LayoutProps) {
               © {currentYear} DockPilot. {t('footer.allRightsReserved')}
             </p>
             <div className="flex items-center gap-4">
-              <Link to="/settings" className="hover:text-primary-600 transition-colors">
+              <Link to="/documentation" className="hover:text-primary-600 transition-colors">
                 {t('footer.documentation')}
               </Link>
-              <Link to="/settings" className="hover:text-primary-600 transition-colors">
+              <Link to="/support" className="hover:text-primary-600 transition-colors">
                 {t('footer.support')}
               </Link>
               <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">

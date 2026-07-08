@@ -65,11 +65,12 @@
     "prune": "Nettoyer Système",
     "pruneConfirmBody": "Unused Docker resources will be removed (stopped containers, dangling images, unused volumes and networks).",
     "pruneSuccess": "Prune System: {{total}} items removed",
-    "pruneError": "Could not complete system cleanup"
+    "pruneError": "Could not complete system cleanup",
+    "enabled": "Activé",
+    "disabled": "Désactivé"
   },
   "containers": {
     "title": "Conteneurs",
-    "comingSoon": "Gestion des conteneurs à venir...",
     "create": "Créer",
     "searchPlaceholder": "Recherchez par nom, image ou identifiant...",
     "containers": "conteneurs",
@@ -113,7 +114,20 @@
       "message": "Êtes-vous sûr de vouloir supprimer {{name}} ?"
     },
     "stats": {
-      "comingSoon": "La vue Statistiques sera bientôt disponible"
+      "cpuUsage": "Utilisation CPU",
+      "cores": "{{count}} cœurs",
+      "memory": "Mémoire",
+      "networkIo": "E/S réseau",
+      "txRate": "TX : {{rate}}/s",
+      "processes": "Processus",
+      "activePids": "PIDs actifs",
+      "cpuMemoryChart": "CPU et mémoire (24h)",
+      "networkChart": "E/S réseau (24h)",
+      "cpuPercent": "CPU %",
+      "memoryPercent": "Mémoire %",
+      "read": "Lecture",
+      "write": "Écriture",
+      "diskIo": "E/S disque"
     },
     "logs": {
       "title": "Journaux de conteneur",
@@ -172,7 +186,6 @@
   },
   "images": {
     "title": "Images",
-    "comingSoon": "Gestion des images à venir...",
     "totalSize": "Taille totale : {{size}}",
     "pullButton": "Extraire l'image",
     "searchPlaceholder": "Recherche par référentiel, tag ou identifiant...",
@@ -214,7 +227,6 @@
   },
   "volumes": {
     "title": "Volumes",
-    "comingSoon": "Gestion des volumes à venir...",
     "create": "Créer du volume",
     "createTitle": "Créer un nouveau volume",
     "createButton": "Créer",
@@ -263,7 +275,6 @@
   },
   "networks": {
     "title": "Réseaux",
-    "comingSoon": "Gestion des réseaux à venir...",
     "create": "Créer un réseau",
     "createTitle": "Créer un nouveau réseau",
     "createButton": "Créer",
@@ -310,7 +321,6 @@
   },
   "builds": {
     "title": "Constructions",
-    "comingSoon": "Gestion des constructions à venir...",
     "empty": "Aucune build en cours d'exécution",
     "status": "Statut",
     "tags": "Balises",
@@ -320,7 +330,6 @@
   },
   "compose": {
     "title": "Stacks Compose",
-    "comingSoon": "Gestion compose à venir...",
     "empty": "Aucune pile de composition trouvée",
     "name": "Nom",
     "status": "Statut",
@@ -331,7 +340,6 @@
   },
   "tunnels": {
     "title": "Tunnels Cloudflare",
-    "comingSoon": "Gestion des tunnels à venir...",
     "empty": "Aucun tunnel trouvé",
     "name": "Nom",
     "status": "Statut",
@@ -954,5 +962,11 @@
         "description": "Code source, journal des modifications et bonnes pratiques de déploiement."
       }
     }
+  },
+  "resourceChart": {
+    "cpu": "CPU",
+    "memory": "Mémoire",
+    "disk": "Disque",
+    "networkIo": "E/S réseau"
   }
 }

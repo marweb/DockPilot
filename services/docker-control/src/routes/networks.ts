@@ -9,7 +9,7 @@ const createNetworkBody = z.object({
   driver: z.string().default('bridge'),
   subnet: z.string().optional(),
   gateway: z.string().optional(),
-  labels: z.record(z.string()).optional(),
+  labels: z.record(z.string(), z.string()).optional(),
 });
 
 const connectContainerBody = z.object({

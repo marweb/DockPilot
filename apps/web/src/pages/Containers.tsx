@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Play,
@@ -289,7 +289,7 @@ export default function Containers() {
             {selectedContainer.status !== 'running' && (
               <button
                 onClick={() => startMutation.mutate(selectedContainer.id)}
-                disabled={startMutation.isLoading}
+                disabled={startMutation.isPending}
                 className="btn btn-primary btn-sm"
                 title={t('containers.actions.start')}
               >
@@ -300,7 +300,7 @@ export default function Containers() {
             {selectedContainer.status === 'running' && (
               <button
                 onClick={() => stopMutation.mutate(selectedContainer.id)}
-                disabled={stopMutation.isLoading}
+                disabled={stopMutation.isPending}
                 className="btn btn-secondary btn-sm"
                 title={t('containers.actions.stop')}
               >
@@ -310,7 +310,7 @@ export default function Containers() {
             )}
             <button
               onClick={() => restartMutation.mutate(selectedContainer.id)}
-              disabled={restartMutation.isLoading}
+              disabled={restartMutation.isPending}
               className="btn btn-secondary btn-sm"
               title={t('containers.actions.restart')}
             >
@@ -319,7 +319,7 @@ export default function Containers() {
             </button>
             <button
               onClick={() => handleDeleteClick(selectedContainer)}
-              disabled={removeMutation.isLoading}
+              disabled={removeMutation.isPending}
               className="btn btn-danger btn-sm"
               title={t('containers.actions.remove')}
             >
@@ -432,10 +432,10 @@ export default function Containers() {
         onStop={(id) => stopMutation.mutate(id)}
         onRestart={(id) => restartMutation.mutate(id)}
         onDelete={handleDeleteClick}
-        isStarting={startMutation.isLoading}
-        isStopping={stopMutation.isLoading}
-        isRestarting={restartMutation.isLoading}
-        isDeleting={removeMutation.isLoading}
+        isStarting={startMutation.isPending}
+        isStopping={stopMutation.isPending}
+        isRestarting={restartMutation.isPending}
+        isDeleting={removeMutation.isPending}
       />
 
       {/* Delete Modal */}
@@ -455,10 +455,10 @@ export default function Containers() {
                 </button>
                 <button
                   onClick={handleConfirmDelete}
-                  disabled={removeMutation.isLoading}
+                  disabled={removeMutation.isPending}
                   className="btn btn-danger"
                 >
-                  {removeMutation.isLoading ? (
+                  {removeMutation.isPending ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
                   ) : (
                     t('common.delete')

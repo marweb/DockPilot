@@ -24,6 +24,8 @@ async function buildConfig(): Promise<Config> {
     logLevel: 'error',
     rateLimitMax: 100,
     rateLimitWindow: '1 minute',
+    masterKey: 'test-master-key-with-at-least-16-chars',
+    internalApiSecret: 'test-internal-api-secret-minimum-32-chars',
   };
 }
 

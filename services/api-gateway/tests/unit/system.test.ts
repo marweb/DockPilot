@@ -181,7 +181,7 @@ describe('System Routes', () => {
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.payload);
       expect(body.success).toBe(true);
-      expect(Array.isArray(body.data)).toBe(true);
+      expect(Array.isArray(body.data.channels)).toBe(true);
     });
   });
 
